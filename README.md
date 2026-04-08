@@ -5,7 +5,7 @@ Sigue los pasos a continuación:
 
 ## 1 Entrar a la carpeta del frontend
 ```bash
-cd frontend
+cd frontend-gimnasio
 ```
 ## 2 Instalar dependencias
 ```bash

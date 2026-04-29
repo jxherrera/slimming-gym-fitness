@@ -1,0 +1,30 @@
+/* src/pages/Pages.css */
+.page-container {
+  padding-top: 120px; /* Espacio para que el Navbar no tape el título */
+  padding-bottom: 50px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--bg-dark); /* Usa el color que definimos en index.css */
+}
+
+.content-wrap {
+  width: 80%;
+  max-width: 1000px;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 3.5rem;
+  color: var(--primary-red);
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+}
+
+.page-description {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  color: var(--text-light);
+  margin-bottom: 2rem;
+}

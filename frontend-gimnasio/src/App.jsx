@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import SobreNosotros from './pages/SobreNosotros';
 import Planes from './pages/Planes';
+import Login from './pages/Login';
 
 function App() {
   return (

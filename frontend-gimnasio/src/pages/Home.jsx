@@ -1,7 +1,6 @@
 import React from 'react';
 import './Home.css';
 
-// Usamos la URL que te pasé directamente como una constante
 const heroImg = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop"; 
 
 const Home = () => {

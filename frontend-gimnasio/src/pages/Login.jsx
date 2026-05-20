@@ -50,23 +50,19 @@ const Login = () => {
         return;
       }
 
-      // 1. Extraemos el rol directamente (el backend ahora envía 'user.role' limpio)
       const role = (data.user?.role || '').toString().trim().toLowerCase();
 
-      // 2. Evaluamos la ruta a la que debe ir basados solo en el nombre del rol
       const redirectPath = role === 'admin' 
         ? '/admin' 
         : role === 'coach' 
           ? '/coach' 
           : '/member';
 
-      // 3. Mostramos mensaje de bienvenida y redirigimos
       const welcomeName = data.user?.firstName ? ` ${data.user.firstName}` : '';
       setMessage(`${data.message || (isLogin ? 'Sesión iniciada correctamente' : 'Usuario registrado con éxito')}. ¡Bienvenido${welcomeName}!`);
 
       navigate(redirectPath);
 
-      // 4. Limpiamos el formulario si fue un registro exitoso
       if (!isLogin) {
         setFormData({
           IDNumber: '',

@@ -62,7 +62,6 @@ nav a {
   color: var(--blanco-nieve);
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.3s ease;
 }
 
 nav a:hover {
@@ -77,7 +76,6 @@ nav a:hover {
   border-radius: 50px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .btn-login:hover {
@@ -133,7 +131,6 @@ nav a:hover {
   border-radius: 50px;
   cursor: pointer;
   box-shadow: 0 10px 25px rgba(210, 0, 0, 0.5);
-  transition: all 0.3s ease;
 }
 
 .btn-cta:hover {
@@ -163,7 +160,6 @@ nav a:hover {
   width: 320px;
   text-align: center;
   box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-  transition: transform 0.3s ease;
 }
 
 .card:hover {
@@ -185,4 +181,7 @@ nav a:hover {
 .highlight {
   color: var(--rojo-hero);
   font-weight: bold;
+}
+
+
 }

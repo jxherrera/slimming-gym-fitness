@@ -1,3 +1,4 @@
+.login-page,
 .login-container {
   display: flex;
   justify-content: center;
@@ -8,6 +9,7 @@
   padding: 20px;
 }
 
+.login-form,
 .login-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
@@ -58,7 +60,8 @@
   box-shadow: 0 0 15px rgba(187, 22, 22, 0.4);
 }
 
-.submit-btn {
+.submit-btn,
+.login-btn {
   width: 100%;
   padding: 12px;
   margin-top: 1rem;
@@ -72,7 +75,8 @@
   transition: 0.3s;
 }
 
-.submit-btn:hover {
+.submit-btn:hover,
+.login-btn:hover {
   filter: brightness(1.2);
   box-shadow: 0 8px 20px rgba(187, 22, 22, 0.3);
 }

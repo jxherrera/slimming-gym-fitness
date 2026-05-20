@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/auth';
+
 const Login = () => {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     IDNumber: '',
@@ -9,7 +13,8 @@ const Login = () => {
     LastName: '',
     Email: '',
     Password: '',
-    PhoneNumber: ''
+    PhoneNumber: '',
+    RoleName: 'Member'
   });
   const [message, setMessage] = useState('');
 
@@ -17,11 +22,66 @@ const Login = () => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aquí enviarías 'formData' a tu API de Node.js/ASP.NET para el INSERT en la tabla Users
-    console.log("Datos enviados:", formData);
-    setMessage(isLogin ? 'Sesión iniciada correctamente' : 'Usuario registrado en la tabla Users');
+    setMessage('');
+
+    const endpoint = isLogin ? `${API_BASE}/login` : `${API_BASE}/register`;
+    const payload = isLogin
+      ? { Email: formData.Email, Password: formData.Password }
+      : {
+          ...formData,
+          RoleName: formData.RoleName || 'Member'
+        };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.message || 'Ocurrió un error en la petición.');
+        return;
+      }
+
+      // 1. Extraemos el rol directamente (el backend ahora envía 'user.role' limpio)
+      const role = (data.user?.role || '').toString().trim().toLowerCase();
+
+      // 2. Evaluamos la ruta a la que debe ir basados solo en el nombre del rol
+      const redirectPath = role === 'admin' 
+        ? '/admin' 
+        : role === 'coach' 
+          ? '/coach' 
+          : '/member';
+
+      // 3. Mostramos mensaje de bienvenida y redirigimos
+      const welcomeName = data.user?.firstName ? ` ${data.user.firstName}` : '';
+      setMessage(`${data.message || (isLogin ? 'Sesión iniciada correctamente' : 'Usuario registrado con éxito')}. ¡Bienvenido${welcomeName}!`);
+
+      navigate(redirectPath);
+
+      // 4. Limpiamos el formulario si fue un registro exitoso
+      if (!isLogin) {
+        setFormData({
+          IDNumber: '',
+          FirstName: '',
+          LastName: '',
+          Email: '',
+          Password: '',
+          PhoneNumber: '',
+          RoleName: 'Member'
+        });
+      }
+    } catch (error) {
+      console.error('Error al conectar con la API:', error);
+      setMessage('No se pudo conectar con el servidor.');
+    }
   };
 
   return (
@@ -55,6 +115,15 @@ const Login = () => {
               <div className="input-group">
                 <label htmlFor="PhoneNumber">Teléfono</label>
                 <input type="text" id="PhoneNumber" onChange={handleChange} />
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="RoleName">Rol</label>
+                <select id="RoleName" value={formData.RoleName} onChange={handleChange}>
+                  <option value="Member">Member</option>
+                  <option value="Coach">Coach</option>
+                  <option value="Admin">Admin</option>
+                </select>
               </div>
             </>
           )}

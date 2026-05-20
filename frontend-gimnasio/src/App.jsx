@@ -5,9 +5,6 @@ import Home from './pages/Home';
 import SobreNosotros from './pages/SobreNosotros';
 import Planes from './pages/Planes';
 import Login from './pages/Login';
-import Admin from './pages/admin';
-import Coach from './pages/Coach';
-import Member from './pages/Member';
 
 function App() {
   return (

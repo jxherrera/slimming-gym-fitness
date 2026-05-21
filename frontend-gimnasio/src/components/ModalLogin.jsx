@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import './ModalLogin.css';
 
 const ModalLogin = ({ isVisible, onClose }) => {
+  const navigate = useNavigate();
+
   if (!isVisible) return null;
 
   return (
@@ -22,6 +25,19 @@ const ModalLogin = ({ isVisible, onClose }) => {
           
           <button type="submit" className="btn-entrar">ENTRAR</button>
           <a href="#" className="forgot-pass">¿Olvidaste tu contraseña?</a>
+
+          <div style={{ marginTop: '12px', textAlign: 'center' }}>
+            <button
+              type="button"
+              className="btn-link"
+              onClick={() => {
+                onClose();
+                navigate('/login');
+              }}
+            >
+              ¿No tienes cuenta? Regístrate
+            </button>
+          </div>
         </form>
       </div>
     </div>

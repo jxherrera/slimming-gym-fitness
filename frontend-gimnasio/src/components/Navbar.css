@@ -1,40 +1,41 @@
-/* src/components/Navbar.css */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 10%; 
+  padding: 0 10%; 
   width: 100%;
   height: 90px;
-  background-color: transparent; 
-  position: absolute;
+  box-sizing: border-box;
+  position: fixed;
   top: 0;
   left: 0;
+  background-color: #1a0b0b;
   z-index: 100;
 }
 
 .logo {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-light);
+  color: #fff;
+  text-decoration: none;
 }
 
 .red-text {
-  color: var(--primary-red);
+  color: #ff3b3b;
 }
 
 .nav-menu {
   display: flex;
-  list-style: none; 
   align-items: center;
+  list-style: none; 
+  margin: 0;
+  padding: 0;
 }
 
 .nav-menu li {
-  list-style: none;
   padding: 0 0.5rem; 
 }
 
-/* ESTILO DE LOS LINKS CON EFECTO ÓVALO BLANCO */
 .nav-menu li a {
   text-decoration: none; 
   color: #fff;
@@ -43,57 +44,59 @@
   padding: 8px 20px;
   border-radius: 50px;
   border: 1px solid transparent;
+  transition: all 0.3s ease;
 }
 
-/* EFECTO HOVER EN BLANCO */
 .nav-menu li a:hover {
-  color: #fff;                 /* El texto se mantiene blanco */
-  border: 1px solid #fff;      /* El óvalo ahora es blanco */
-  background-color: rgba(255, 255, 255, 0.1); /* Un fondo blanco muy suave (10%) */
+  border: 1px solid #fff;      
+  background-color: rgba(255, 255, 255, 0.1); 
 }
 
 .btn-login {
-  padding: 10px 25px;
-  border: 1px solid var(--primary-red);
-  border-radius: 50px;
-  font-weight: 600;
-  color: var(--primary-red) !important;
-  text-decoration: none;
+  background: transparent;
+  color: #fff;
+  border: 1px solid #ff3b3b;
+  border-radius: 25px; 
+  padding: 8px 20px; 
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  outline: none;
 }
 
 .btn-login:hover {
-  background-color: var(--primary-red);
-  color: #fff !important;
+  background-color: #ff3b3b;
+  color: #fff;
+  box-shadow: 0px 0px 10px rgba(255, 59, 59, 0.5);
 }
 
-.btn-mobile {
+.btn-mobile, 
+.hamburger {
   display: none; 
 }
 
 .hamburger {
-  display: none; 
   cursor: pointer;
 }
 
-/* --- RESPONSIVE MEDIA QUERIES --- */
-
 @media screen and (max-width: 940px) {
   .header {
-    padding: 1rem 5%;
+    padding: 0 5%;
   }
 
   .nav-menu {
     flex-direction: column;
     justify-content: center;
-    align-items: center;
     width: 100%;
     height: 100vh;
     background: rgba(0, 0, 0, 0.95);
-    position: absolute;
+    position: fixed;
     top: -100vh; 
     left: 0;
-    z-index: -1;
-    list-style: none;
+    z-index: 99;
+    transition: top 0.4s ease-in-out;
   }
 
   .nav-menu.active {
@@ -108,11 +111,6 @@
     font-size: 1.5rem;
   }
 
-  /* Ajuste para que el hover blanco también se vea bien en móvil */
-  .nav-menu li a:hover {
-    border: 1px solid #fff;
-  }
-
   .btn-group-desktop {
     display: none;
   }
@@ -122,46 +120,27 @@
     margin-top: 2rem;
   }
 
+  .btn-login-nav {
+    background: transparent;
+    color: #fff;
+    border: 1px solid #ff3b3b;
+    border-radius: 25px; 
+    padding: 10px 25px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .btn-login-nav:hover {
+    background-color: #ff3b3b;
+    color: #fff;
+    box-shadow: 0px 0px 10px rgba(255, 59, 59, 0.5);
+  }
+
   .hamburger {
     display: block;
+    z-index: 101;
   }
-}
-.btn-login {
-  background: transparent; /* Quita el fondo gris */
-  border: 1px solid #ff3b3b; /* El borde rojo que tenías */
-  color: #fff; /* Texto blanco */
-  padding: 8px 16px;
-  cursor: pointer;
-  font-family: inherit; /* Para que use la misma letra que el resto */
-  font-size: 1rem;
-  transition: 0.3s;
-  border-radius: 4px; /* Opcional, para suavizar las esquinas */
-}
-
-.btn-login:hover {
-  background-color: #ff3b3b;
-  color: #000; /* O el color que prefieras al pasar el mouse */
-}
-.btn-login {
-  background: transparent;
-  color: #fff;
-  /* El secreto está en poner un valor alto, 
-     25px o 30px suele ser suficiente para redondearlo totalmente */
-  border: 1px solid #ff3b3b;
-  border-radius: 25px; 
-  
-  padding: 8px 20px; /* Un poco más de espacio a los lados para que luzca mejor */
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  outline: none;
-}
-
-.btn-login:hover {
-  background-color: #ff3b3b;
-  color: #fff;
-  /* Opcional: un ligero brillo al pasar el mouse */
-  box-shadow: 0px 0px 10px rgba(255, 59, 59, 0.5);
 }

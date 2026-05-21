@@ -1,120 +1,118 @@
-.login-page,
-.login-container {
+/* --- CONTENEDOR PRINCIPAL --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10%; 
+  width: 100%;
+  height: 90px;
+  box-sizing: border-box; 
+  
+  position: fixed; 
+  top: 0;
+  left: 0;
+  background-color: transparent;
+  z-index: 100;
+  
+  transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out, background-color 0.3s ease;
+}
+
+.header.hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.login-page {
+  min-height: calc(100vh - 80px); 
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background: radial-gradient(circle at top right, #330000, #000000);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  padding: 20px;
-}
-
-.login-form,
-.login-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  padding: 2.5rem;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-  width: 100%;
-  max-width: 420px;
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.login-card h2 {
-  margin-bottom: 2rem;
-  color: #fff;
-  font-size: 2.2rem;
-  letter-spacing: 1px;
-}
-
-.input-group {
-  margin-bottom: 1.2rem;
-  text-align: left;
-}
-
-.input-group label {
-  display: block;
-  margin-bottom: 0.4rem;
-  color: #bbb;
-  font-size: 0.9rem;
-  margin-left: 5px;
-}
-
-.input-group input {
-  width: 100%;
-  padding: 12px 15px;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
+  padding: 2rem 1rem;
   box-sizing: border-box;
-  transition: 0.3s;
 }
 
-.input-group input:focus {
-  outline: none;
-  transform: scale(1.02);
-  box-shadow: 0 0 15px rgba(187, 22, 22, 0.4);
-}
-
-.submit-btn,
-.login-btn {
+.login-form {
+  background-color: #2b1313;
   width: 100%;
-  padding: 12px;
-  margin-top: 1rem;
-  background: linear-gradient(135deg, #bb1616 0%, #750d0d 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.3s;
+  max-width: 450px;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
 }
 
-.submit-btn:hover,
-.login-btn:hover {
-  filter: brightness(1.2);
-  box-shadow: 0 8px 20px rgba(187, 22, 22, 0.3);
+.form-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
-.toggle-container {
-  margin-top: 1.5rem;
-  color: #888;
-  font-size: 0.9rem;
+.form-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
 }
 
-.toggle-btn {
+.toggle-link {
   background: none;
   border: none;
-  color: #ff4d4d;
-  font-weight: bold;
-  cursor: pointer;
-  margin-left: 8px;
+  color: #d1d1d1;
   text-decoration: underline;
-  transition: 0.2s;
-}
-
-.toggle-btn:hover {
-  color: #fff;
-}
-
-.message {
-  margin-top: 1.5rem;
-  padding: 10px;
-  border-radius: 8px;
+  cursor: pointer;
   font-size: 0.9rem;
 }
 
-.message.error {
-  background: rgba(217, 83, 79, 0.2);
-  color: #d9534f;
+.toggle-link:hover {
+  color: #ffffff;
 }
 
-.message.success {
-  background: rgba(92, 184, 92, 0.2);
-  color: #5cb85c;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  color: #e0e0e0;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #4a2929;
+  background-color: #f5f5f5;
+  color: #333;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: #e62020;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.login-btn:hover {
+  background-color: #c41818;
+}
+
+.message-box {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #ffcccc;
 }

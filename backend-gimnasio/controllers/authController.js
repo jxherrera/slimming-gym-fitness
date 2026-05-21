@@ -2,7 +2,7 @@ const { poolPromise, sql } = require('../config/db');
 const bcrypt = require('bcrypt');
 
 exports.register = async (req, res) => {
-    const { IDNumber, FirstName, LastName, Email, Password, PhoneNumber, RoleName } = req.body;
+    const { IDNumber, FirstName, LastName, Email, Password, PhoneNumber, RoleID } = req.body;
 
     try {
         const salt = await bcrypt.genSalt(10);
@@ -10,22 +10,34 @@ exports.register = async (req, res) => {
 
         const pool = await poolPromise;
 
-        const validRoles = ['Admin', 'Coach', 'Member'];
-        const roleName = validRoles.includes(RoleName) ? RoleName : 'Member';
+        const roleMapping = {
+            1: 'Member',
+            2: 'Coach',
+            3: 'Admin'
+        };
+
+        let roleId = Number(RoleID) || 1;
+        if (![1, 2, 3].includes(roleId)) roleId = 1;
+
+        const roleName = roleMapping[roleId];
 
         const roleResult = await pool.request()
-            .input('RoleName', sql.VarChar, roleName)
-            .query(`SELECT RoleID FROM Roles WHERE RoleName = @RoleName`);
+            .input('RoleID', sql.Int, roleId)
+            .query(`SELECT RoleID FROM Roles WHERE RoleID = @RoleID`);
 
-        let roleId;
-        
         if (roleResult.recordset.length === 0) {
-            const insertRoleResult = await pool.request()
+            const roleByNameResult = await pool.request()
                 .input('RoleName', sql.VarChar, roleName)
-                .query(`INSERT INTO Roles (RoleName) OUTPUT INSERTED.RoleID VALUES (@RoleName)`);
-            roleId = insertRoleResult.recordset[0].RoleID;
-        } else {
-            roleId = roleResult.recordset[0].RoleID;
+                .query(`SELECT RoleID FROM Roles WHERE RoleName = @RoleName`);
+
+            if (roleByNameResult.recordset.length > 0) {
+                roleId = roleByNameResult.recordset[0].RoleID;
+            } else {
+                const insertRoleResult = await pool.request()
+                    .input('RoleName', sql.VarChar, roleName)
+                    .query(`INSERT INTO Roles (RoleName) OUTPUT INSERTED.RoleID VALUES (@RoleName)`);
+                roleId = insertRoleResult.recordset[0].RoleID;
+            }
         }
 
         await pool.request()
@@ -69,7 +81,7 @@ exports.login = async (req, res) => {
         const result = await pool.request()
             .input('Email', sql.VarChar, Email)
             .query(`
-                SELECT u.UserID, u.FirstName, u.LastName, u.Email, u.PasswordHash, r.RoleName
+                SELECT u.UserID, u.FirstName, u.LastName, u.Email, u.PasswordHash, u.RoleID, r.RoleName
                 FROM Users u
                 LEFT JOIN Roles r ON u.RoleID = r.RoleID
                 WHERE u.Email = @Email
@@ -84,6 +96,16 @@ exports.login = async (req, res) => {
             });
         }
 
+        const roleMapping = {
+            1: 'Member',
+            2: 'Coach',
+            3: 'Admin'
+        };
+
+        const roleName = user.RoleName && user.RoleName.trim()
+            ? user.RoleName.trim()
+            : roleMapping[user.RoleID] || 'Member';
+
         res.json({
             success: true,
             message: 'Inicio de sesión exitoso.',
@@ -92,7 +114,7 @@ exports.login = async (req, res) => {
                 firstName: user.FirstName,
                 lastName: user.LastName,
                 email: user.Email,
-                role: user.RoleName ? user.RoleName.trim() : 'Member' 
+                role: roleName
             }
         });
 

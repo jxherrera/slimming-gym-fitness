@@ -4,42 +4,51 @@ import './Login.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/auth';
 
+// Estado inicial limpio para evitar escribirlo dos veces
+const INITIAL_FORM_STATE = {
+  email: '',
+  password: '',
+  IDNumber: '',
+  FirstName: '',
+  LastName: '',
+  PhoneNumber: '',
+  RoleID: 1
+};
+
 const Login = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    IDNumber: '',
-    FirstName: '',
-    LastName: '',
-    Email: '',
-    Password: '',
-    PhoneNumber: '',
-    RoleName: 'Member'
-  });
   const [message, setMessage] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState(INITIAL_FORM_STATE);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setMessage(''); // Limpiar mensajes de error al cambiar de pestaña
+    setFormData(INITIAL_FORM_STATE); // Resetear datos para evitar que se mezclen
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
 
-    const endpoint = isLogin ? `${API_BASE}/login` : `${API_BASE}/register`;
+    const endpoint = `${API_BASE}/${isLogin ? 'login' : 'register'}`;
+    
+    // Construcción del payload
     const payload = isLogin
-      ? { Email: formData.Email, Password: formData.Password }
-      : {
-          ...formData,
-          RoleName: formData.RoleName || 'Member'
-        };
+      ? { Email: formData.email, Password: formData.password }
+      : { ...formData, Email: formData.email, Password: formData.password };
 
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -50,30 +59,23 @@ const Login = () => {
         return;
       }
 
-      const role = (data.user?.role || '').toString().trim().toLowerCase();
-
-      const redirectPath = role === 'admin' 
-        ? '/admin' 
-        : role === 'coach' 
-          ? '/coach' 
-          : '/member';
+      // Lógica de redirección simplificada con un objeto (Diccionario)
+      const role = (data.user?.role || 'member').toString().trim().toLowerCase();
+      const routes = {
+        admin: '/admin',
+        coach: '/coach',
+        member: '/member'
+      };
+      const redirectPath = routes[role] || '/member';
 
       const welcomeName = data.user?.firstName ? ` ${data.user.firstName}` : '';
-      setMessage(`${data.message || (isLogin ? 'Sesión iniciada correctamente' : 'Usuario registrado con éxito')}. ¡Bienvenido${welcomeName}!`);
+      const successMsg = isLogin ? 'Sesión iniciada correctamente' : 'Usuario registrado con éxito';
+      setMessage(`${data.message || successMsg}. ¡Bienvenido${welcomeName}!`);
 
+      // Redirigir y limpiar si es registro
       navigate(redirectPath);
+      if (!isLogin) setFormData(INITIAL_FORM_STATE);
 
-      if (!isLogin) {
-        setFormData({
-          IDNumber: '',
-          FirstName: '',
-          LastName: '',
-          Email: '',
-          Password: '',
-          PhoneNumber: '',
-          RoleName: 'Member'
-        });
-      }
     } catch (error) {
       console.error('Error al conectar con la API:', error);
       setMessage('No se pudo conectar con el servidor.');
@@ -81,73 +83,53 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
+    <div className="login-page">
+      <form className="login-form" onSubmit={handleSubmit}>
         <div className="form-header">
-          <h2>{isLogin ? '¡Bienvenido!' : 'Registro de Socio'}</h2>
-          <p>{isLogin ? 'Ingresa tus credenciales' : 'Completa tus datos personales'}</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          
-          {!isLogin && (
-            <>
-              <div className="input-row">
-                <div className="input-group">
-                  <label htmlFor="FirstName">Nombre</label>
-                  <input type="text" id="FirstName" onChange={handleChange} required />
-                </div>
-                <div className="input-group">
-                  <label htmlFor="LastName">Apellido</label>
-                  <input type="text" id="LastName" onChange={handleChange} required />
-                </div>
-              </div>
-              
-              <div className="input-group">
-                <label htmlFor="IDNumber">Identificación (Cédula/Pasaporte)</label>
-                <input type="text" id="IDNumber" onChange={handleChange} required />
-              </div>
-
-              <div className="input-group">
-                <label htmlFor="PhoneNumber">Teléfono</label>
-                <input type="text" id="PhoneNumber" onChange={handleChange} />
-              </div>
-
-              <div className="input-group">
-                <label htmlFor="RoleName">Rol</label>
-                <select id="RoleName" value={formData.RoleName} onChange={handleChange}>
-                  <option value="Member">Member</option>
-                  <option value="Coach">Coach</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
-            </>
-          )}
-
-          <div className="input-group">
-            <label htmlFor="Email">Correo Electrónico</label>
-            <input type="email" id="Email" onChange={handleChange} placeholder="nombre@ejemplo.com" required />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="Password">Contraseña</label>
-            <input type="password" id="Password" onChange={handleChange} placeholder="••••••••" required />
-          </div>
-
-          <button type="submit" className="submit-btn">
-            {isLogin ? 'Iniciar Sesión' : 'Registrar Usuario'}
-          </button>
-        </form>
-
-        <div className="toggle-container">
-          <span>{isLogin ? "¿Eres nuevo?" : "¿Ya tienes cuenta?"}</span>
-          <button className="toggle-btn" onClick={() => { setIsLogin(!isLogin); setMessage(''); }}>
-            {isLogin ? "Crea una cuenta aquí" : "Inicia sesión"}
+          <h2>{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</h2>
+          <button type="button" className="toggle-link" onClick={toggleMode}>
+            {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Iniciar sesión'}
           </button>
         </div>
+
+        {/* Campos exclusivos de Registro */}
+        {!isLogin && (
+          <>
+            <div className="form-group">
+              <label>ID Número:</label>
+              <input type="text" name="IDNumber" value={formData.IDNumber} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Nombre:</label>
+              <input type="text" name="FirstName" value={formData.FirstName} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Apellido:</label>
+              <input type="text" name="LastName" value={formData.LastName} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Teléfono:</label>
+              <input type="text" name="PhoneNumber" value={formData.PhoneNumber} onChange={handleChange} />
+            </div>
+          </>
+        )}
+
+        {/* Campos comunes */}
+        <div className="form-group">
+          <label>Email:</label>
+          <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+        </div>
+        <div className="form-group">
+          <label>Contraseña:</label>
+          <input type="password" name="password" value={formData.password} onChange={handleChange} required />
+        </div>
+
+        <button type="submit" className="login-btn">
+          {isLogin ? 'Entrar' : 'Crear cuenta'}
+        </button>
 
         {message && <p className="message-box">{message}</p>}
-      </div>
+      </form>
     </div>
   );
 };

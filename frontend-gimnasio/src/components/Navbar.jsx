@@ -1,51 +1,58 @@
-// src/components/Navbar.jsx
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { FaBars, FaTimes } from 'react-icons/fa'; // Necesitas instalar react-icons
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FaBars, FaTimes } from 'react-icons/fa';
 import './Navbar.css';
 
 const Navbar = () => {
-  const [click, setClick] = useState(false);
-  const handleClick = () => setClick(!click);
+  const navigate = useNavigate();
   const location = useLocation();
+  const [click, setClick] = useState(false);
+
+  const handleClick = () => setClick(!click);
+  const closeMenu = () => setClick(false);
+  
+  const goToLogin = () => {
+    navigate('/login');
+    closeMenu();
+  };
 
   const isLoginPage = location.pathname === '/login';
 
   return (
     <div className="header">
-      <Link to="/">
+      <Link to="/" onClick={closeMenu} style={{ textDecoration: 'none' }}>
         <h1 className="logo">SLIMMING <span className="red-text">GYM</span></h1>
       </Link>
       
-      {/* Menú de navegación */}
-      <ul className={click ? "nav-menu active" : "nav-menu"}>
-        <li>
-          <Link to="/" onClick={handleClick}>Inicio</Link>
-        </li>
-        <li>
-          <Link to="/sobre-nosotros" onClick={handleClick}>Sobre Nosotros</Link>
-        </li>
-        <li>
-          <Link to="/planes" onClick={handleClick}>Planes</Link>
-        </li>
-        {!isLoginPage && (
-          <li className="btn-mobile">
-             <Link to="/login" className="btn-login" onClick={handleClick}>Iniciar Sesión</Link>
-          </li>
-        )}
-      </ul>
-
-      {/* Botón Iniciar Sesión para Desktop */}
       {!isLoginPage && (
-        <div className="btn-group-desktop">
-          <Link to="/login" className="btn-login">Iniciar Sesión</Link>
-        </div>
-      )}
+        <>
+          <ul className={click ? "nav-menu active" : "nav-menu"}>
+            <li><Link to="/" onClick={closeMenu}>Inicio</Link></li>
+            <li><Link to="/sobre-nosotros" onClick={closeMenu}>Sobre Nosotros</Link></li>
+            <li><Link to="/planes" onClick={closeMenu}>Planes</Link></li>
+            
+            <li className="btn-mobile">
+               <button className="btn-login-nav" onClick={goToLogin}>
+                 Iniciar Sesión
+               </button>
+            </li>
+          </ul>
 
-      {/* Icono de Hamburguesa para celular */}
-      <div className="hamburger" onClick={handleClick}>
-        {click ? (<FaTimes size={20} style={{color: '#fff'}} />) : (<FaBars size={20} style={{color: '#fff'}} />)}
-      </div>
+          <div className="btn-group-desktop">
+            <button className="btn-login" onClick={goToLogin}>
+              Iniciar Sesión
+            </button>
+          </div>
+
+          <div className="hamburger" onClick={handleClick}>
+            {click ? (
+              <FaTimes size={24} style={{ color: '#fff' }} />
+            ) : (
+              <FaBars size={24} style={{ color: '#fff' }} />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

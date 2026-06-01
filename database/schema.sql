@@ -54,3 +54,26 @@ CREATE TABLE Attendance (
     CheckInTime DATETIME DEFAULT GETDATE(), 
     FOREIGN KEY (UserID) REFERENCES Users(UserID) 
 );
+-- 7. NOTIFICATIONS TABLE -- Almacena alertas de vencimiento, renovaciones y del sistema
+CREATE TABLE Notifications ( 
+    NotificationID INT PRIMARY KEY IDENTITY(1,1), 
+    UserID INT, -- El usuario (socio o admin) que recibe la notificación
+    Title VARCHAR(100) NOT NULL,
+    Message VARCHAR(255) NOT NULL, 
+    Type VARCHAR(50), -- Ej: 'Vencimiento', 'Renovacion', 'Sistema'
+    IsRead BIT DEFAULT 0, -- 0 (Falso) para no leída, 1 (Verdadero) para leída
+    CreatedAt DATETIME DEFAULT GETDATE(), 
+    FOREIGN KEY (UserID) REFERENCES Users(UserID) 
+);
+-- 8. PAYMENTS TABLE -- Historial de transacciones con soporte para comprobantes
+CREATE TABLE Payments (
+    PaymentID INT PRIMARY KEY IDENTITY(1,1),
+    SubscriptionID INT, 
+    AmountPaid DECIMAL(10,2) NOT NULL,
+    PaymentDate DATETIME DEFAULT GETDATE(),
+    PaymentMethod VARCHAR(50), -- Ej: 'Efectivo', 'Tarjeta', 'Transferencia'
+    ReferenceNumber VARCHAR(100), -- Número de comprobante o documento del banco
+    ReceiptUrl VARCHAR(500), -- AQUÍ VA EL LINK DE LA FOTO DEL COMPROBANTE
+    Status CHAR(1) DEFAULT 'P', -- 'P' para Pendiente de revisión, 'A' para Aprobado
+    FOREIGN KEY (SubscriptionID) REFERENCES Subscriptions(SubscriptionID)
+);

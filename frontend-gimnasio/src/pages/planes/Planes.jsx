@@ -1,5 +1,5 @@
 import React from 'react';
-import './Pages.css'; 
+import '../../components/layout/Pages.css'; 
 
 const Planes = () => {
   return (

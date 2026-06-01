@@ -1,13 +1,13 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import SobreNosotros from './pages/SobreNosotros';
-import Planes from './pages/Planes';
-import Login from './pages/Login';
-import Admin from './pages/Admin';
-import Coach from './pages/Coach';
-import Member from './pages/Member';
+import Navbar from './components/layout/Navbar';
+import Home from './pages/home/Home';
+import SobreNosotros from './pages/sobrenossotros/SobreNosotros';
+import Planes from './pages/planes/Planes';
+import Login from './pages/login/Login';
+import Admin from './pages/admin/admin';
+import Coach from './pages/admin/Coach';
+import Member from './pages/admin/Member';
 
 
 function App() {

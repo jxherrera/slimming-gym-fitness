@@ -1,5 +1,5 @@
 import React from 'react';
-import './Pages.css'; // Ahora sí lo encontrará
+import '../../components/layout/Pages.css';
 
 const SobreNosotros = () => {
   return (

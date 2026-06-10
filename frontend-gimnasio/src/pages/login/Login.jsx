@@ -85,6 +85,9 @@ const Login = () => {
   return (
     <div className="login-page">
       <form className="login-form" onSubmit={handleSubmit}>
+        <button type="button" className="back-arrow" onClick={() => navigate(-1)} aria-label="Volver">
+          ⇦
+        </button>
         <div className="form-header">
           <h2>{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</h2>
           <button type="button" className="toggle-link" onClick={toggleMode}>

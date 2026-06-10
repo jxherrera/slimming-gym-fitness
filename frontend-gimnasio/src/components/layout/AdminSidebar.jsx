@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   FaBars, FaTimes, FaHome, FaUser, FaDumbbell, 
   FaCalendarAlt, FaMoneyBillWave, FaCog, FaClipboardList
@@ -8,74 +8,48 @@ import './AdminSidebar.css';
 
 const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
 
   const toggleMobileSidebar = () => {
     setIsOpen(!isOpen);
   };
 
-  const isCoach = location.pathname.startsWith('/coach');
-  const isMember = location.pathname.startsWith('/member');
-
-  let roleTitle = 'GYM ADMIN';
-  let dashboardName = 'Admin Dashboard';
-  let basePath = '/admin';
-
-  if (isCoach) {
-    roleTitle = 'GYM COACHES';
-    dashboardName = 'Coach Dashboard';
-    basePath = '/coach';
-  } else if (isMember) {
-    roleTitle = 'GYM MEMBER';
-    dashboardName = 'Member Dashboard';
-    basePath = '/member';
-  }
-
   const menuItems = [
     {
-      path: basePath,
-      name: dashboardName,
+      path: '/admin',
+      name: 'Admin Dashboard',
       icon: <FaHome />
-    }
-  ];
-
-  if (!isCoach && !isMember) {
-    menuItems.push(
-      {
-        path: '/coach',
-        name: 'Coaches',
-        icon: <FaDumbbell />
-      },
-      {
-        path: '/member',
-        name: 'Members',
-        icon: <FaUser />
-      }
-    );
-  }
-
-  menuItems.push(
+    },
     {
-      path: `${basePath}/planes`,
+      path: '/coach',
+      name: 'Coaches',
+      icon: <FaDumbbell />
+    },
+    {
+      path: '/member',
+      name: 'Members',
+      icon: <FaUser />
+    },
+    {
+      path: '/admin/planes',
       name: 'Planes',
       icon: <FaClipboardList />
     },
     {
-      path: `${basePath}/horarios`,
+      path: '/admin/horarios',
       name: 'Horarios',
       icon: <FaCalendarAlt />
     },
     {
-      path: `${basePath}/pagos`,
-      name: 'Historial de pagos',
+      path: '/admin/pagos',
+      name: 'Pagos',
       icon: <FaMoneyBillWave />
     },
     {
-      path: `${basePath}/configuracion`,
+      path: '/admin/configuracion',
       name: 'Configuración',
       icon: <FaCog />
     }
-  );
+  ];
 
   return (
     <>
@@ -89,7 +63,7 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         onMouseLeave={() => !isCollapsed && toggleCollapse()}
       >
         <div className="sidebar-header">
-          <h2 className="logo">{isCollapsed ? roleTitle.charAt(4) || 'G' : roleTitle}</h2>
+          <h2 className="logo">{isCollapsed ? 'G' : 'GYM ADMIN'}</h2>
         </div>
         
         <div className="sidebar-menu">

@@ -1,7 +1,7 @@
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background-color: var(--admin-bg);
+  background-color: #f4f5f7;
   width: 100%;
 }
 
@@ -11,17 +11,28 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: margin 0.2s ease, width 0.2s ease;
-  width: auto;
-  padding: 18px 0 30px;
+  transition: all 0.3s ease;
+  width: calc(100% - 250px);
 }
 
 .admin-layout.collapsed .admin-content {
   margin-left: 80px;
+  width: calc(100% - 80px);
 }
 
 .admin-content-inner {
-  width: 100%;
-  max-width: 1440px;
-  margin: 0;
-  padding: 0 24px 0 12px;
+  padding: 30px;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .admin-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .admin-content-inner {
+    padding: 20px;
+    padding-top: 60px; /* Para hacer espacio al botón del menú hamburguesa */
+  }
+}

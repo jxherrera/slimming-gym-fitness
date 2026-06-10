@@ -1,0 +1,27 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--admin-bg);
+  width: 100%;
+}
+
+.admin-content {
+  flex: 1;
+  margin-left: 250px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin 0.2s ease, width 0.2s ease;
+  width: auto;
+  padding: 18px 0 30px;
+}
+
+.admin-layout.collapsed .admin-content {
+  margin-left: 80px;
+}
+
+.admin-content-inner {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0;
+  padding: 0 24px 0 12px;

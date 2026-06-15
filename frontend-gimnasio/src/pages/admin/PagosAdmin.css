@@ -1,0 +1,174 @@
+.pagos-admin-content {
+  margin-top: 20px;
+  padding: 0 18px;
+}
+
+.member-info-cell,
+.plan-info-cell,
+.method-info-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-name {
+  font-weight: 600;
+  color: var(--admin-heading);
+}
+
+.member-email {
+  font-size: 0.82rem;
+  color: var(--admin-muted);
+}
+
+.plan-name {
+  font-weight: 600;
+}
+
+.plan-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--admin-accent);
+}
+
+.payment-method {
+  font-weight: 600;
+}
+
+.ref-number {
+  font-size: 0.85rem;
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--admin-muted);
+}
+
+.thumbnail-wrapper {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  cursor: pointer;
+  background: #000;
+}
+
+.receipt-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.thumbnail-wrapper:hover .receipt-thumbnail {
+  transform: scale(1.1);
+  opacity: 0.8;
+}
+
+.thumbnail-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.thumbnail-wrapper:hover .thumbnail-overlay {
+  opacity: 1;
+}
+
+.no-receipt {
+  font-size: 0.85rem;
+  color: var(--admin-muted);
+  font-style: italic;
+}
+
+.payment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-approve {
+  padding: 8px 14px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-approve:hover {
+  background: #059669;
+}
+
+.btn-reject {
+  padding: 8px 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-reject:hover {
+  background: #dc2626;
+}
+
+/* Lightbox Image Zoom Modal */
+.image-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.9);
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  cursor: zoom-out;
+}
+
+.lightbox-container {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+  background: var(--admin-surface);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.lightbox-close:hover {
+  background: #dc2626;
+}

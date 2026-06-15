@@ -73,6 +73,7 @@ const Login = () => {
       setMessage(`${data.message || successMsg}. ¡Bienvenido${welcomeName}!`);
 
       // Redirigir y limpiar si es registro
+      localStorage.setItem('user', JSON.stringify(data.user || { role: role }));
       navigate(redirectPath);
       if (!isLogin) setFormData(INITIAL_FORM_STATE);
 

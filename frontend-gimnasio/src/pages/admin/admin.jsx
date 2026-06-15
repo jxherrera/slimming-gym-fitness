@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { FaChartLine, FaUserTie, FaUsers, FaUserPlus, FaDollarSign } from 'react-icons/fa';
 import './admin.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Admin = () => {
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: '◆' },
-    { id: 'coaches', label: 'Entrenadores', icon: '▲' },
-    { id: 'members', label: 'Miembros', icon: '■' },
-    { id: 'register', label: 'Registrar usuario', icon: '✚' }
+    { id: 'dashboard', label: 'Dashboard', icon: <FaChartLine /> },
+    { id: 'coaches', label: 'Entrenadores', icon: <FaUserTie /> },
+    { id: 'members', label: 'Miembros', icon: <FaUsers /> },
+    { id: 'register', label: 'Registrar usuario', icon: <FaUserPlus /> }
   ];
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -42,24 +41,30 @@ const Admin = () => {
     managePlans: false,
     sendMessages: false
   });
+  const [assignedStudents, setAssignedStudents] = useState([]);
+  const [allMembers, setAllMembers] = useState([]);
+  const [isCoachSaving, setIsCoachSaving] = useState(false);
+  const [coachSaveMsg, setCoachSaveMsg] = useState('');
 
   const themeClass = isDarkMode ? 'theme-dark' : 'theme-light';
   const themeIcon = isDarkMode ? '☀️' : '🌙';
 
   const loadAdminEntities = async () => {
     try {
-      const [coachesRes, membersRes] = await Promise.all([
+      const [coachesRes, membersRes, allMembersRes] = await Promise.all([
         fetch(`${API_BASE}/users/role/coach`),
-        fetch(`${API_BASE}/users/role/member`)
+        fetch(`${API_BASE}/users/role/member`),
+        fetch(`${API_BASE}/coaches/members`)
       ]);
 
       if (!coachesRes.ok || !membersRes.ok) {
         throw new Error('No se pudo cargar la información del panel administrativo.');
       }
 
-      const [coachesData, membersData] = await Promise.all([
+      const [coachesData, membersData, allMembersData] = await Promise.all([
         coachesRes.json(),
-        membersRes.json()
+        membersRes.json(),
+        allMembersRes.ok ? allMembersRes.json() : { success: false }
       ]);
 
       setEntities({
@@ -84,6 +89,10 @@ const Admin = () => {
           plan: user.plan || 'Sin plan'
         }))
       });
+      
+      if (allMembersData && allMembersData.success) {
+        setAllMembers(allMembersData.members);
+      }
       setApiError('');
     } catch (error) {
       console.error('Error cargando datos del admin:', error);
@@ -170,7 +179,7 @@ const Admin = () => {
     }));
   };
 
-  const selectCoachForPermissions = (coach) => {
+  const selectCoachForPermissions = async (coach) => {
     setPermissionForm(prev => ({
       ...prev,
       coachId: coach.id,
@@ -179,6 +188,78 @@ const Admin = () => {
       managePlans: false,
       sendMessages: false
     }));
+    setAssignedStudents([]);
+    setCoachSaveMsg('');
+
+    try {
+      const response = await fetch(`${API_BASE}/coaches/${coach.id}/settings`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setPermissionForm({
+            coachId: coach.id,
+            coachName: coach.name,
+            manageRoutines: data.permissions.canEditOthersRoutines,
+            managePlans: data.permissions.canManagePlans,
+            sendMessages: data.permissions.canSendMessages
+          });
+          setAssignedStudents(data.students || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar la configuración del entrenador:', error);
+    }
+  };
+
+  const handleAddStudent = (studentId) => {
+    const student = allMembers.find(m => m.id === studentId);
+    if (student && !assignedStudents.some(s => s.id === studentId)) {
+      setAssignedStudents(prev => [...prev, { id: student.id, name: student.name, email: student.email }]);
+    }
+  };
+
+  const handleRemoveStudent = (studentId) => {
+    setAssignedStudents(prev => prev.filter(s => s.id !== studentId));
+  };
+
+  const handleSaveCoachSettings = async () => {
+    if (!permissionForm.coachId) return;
+    setIsCoachSaving(true);
+    setCoachSaveMsg('');
+    try {
+      const response = await fetch(`${API_BASE}/coaches/${permissionForm.coachId}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          permissions: {
+            canEditOthersRoutines: permissionForm.manageRoutines,
+            canManagePlans: permissionForm.managePlans,
+            canSendMessages: permissionForm.sendMessages
+          },
+          studentIds: assignedStudents.map(s => s.id)
+        })
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setCoachSaveMsg('Ajustes y asignaciones guardadas con éxito.');
+        // Refresh all members to update assignment labels in selector
+        const allMembersRes = await fetch(`${API_BASE}/coaches/members`);
+        if (allMembersRes.ok) {
+          const allMembersData = await allMembersRes.json();
+          if (allMembersData.success) {
+            setAllMembers(allMembersData.members);
+          }
+        }
+      } else {
+        setCoachSaveMsg(data.message || 'Error al guardar los ajustes.');
+      }
+    } catch (error) {
+      console.error('Error al guardar ajustes:', error);
+      setCoachSaveMsg('Error de conexión con el servidor.');
+    } finally {
+      setIsCoachSaving(false);
+    }
   };
 
   const openEditModal = (item) => {
@@ -348,29 +429,29 @@ const Admin = () => {
           <div className="tab-content">
             <h2>Visión general</h2>
             <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon">■</div>
+              <div className="stat-card stat-card-members">
+                <div className="stat-icon stat-icon-members"><FaUsers /></div>
                 <div>
                   <p className="stat-label">Miembros activos</p>
                   <h3>{entities.members.length}</h3>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon">▲</div>
+              <div className="stat-card stat-card-coaches">
+                <div className="stat-icon stat-icon-coaches"><FaUserTie /></div>
                 <div>
                   <p className="stat-label">Entrenadores</p>
                   <h3>{entities.coaches.length}</h3>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon">◆</div>
+              <div className="stat-card stat-card-revenue">
+                <div className="stat-icon stat-icon-revenue"><FaDollarSign /></div>
                 <div>
                   <p className="stat-label">Ingresos estimados</p>
                   <h3>${(entities.members.length * 50).toLocaleString()}</h3>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="stat-icon">▬</div>
+              <div className="stat-card stat-card-retention">
+                <div className="stat-icon stat-icon-retention"><FaChartLine /></div>
                 <div>
                   <p className="stat-label">Retención</p>
                   <h3>+15%</h3>
@@ -531,58 +612,125 @@ const Admin = () => {
               </div>
             </div>
             {activeTab === 'coaches' && (
-              <div className="permission-panel">
+              <div className="permission-panel form-section" style={{ marginTop: '24px' }}>
                 <div className="section-header">
-                  <h3>Permisos de entrenadores</h3>
-                  <p>Comienza a configurar permisos por entrenador antes de agregar acciones adicionales.</p>
+                  <h3>Permisos y Alumnos de Entrenadores</h3>
+                  <p>Configura permisos específicos y gestiona qué alumnos tiene asignados cada entrenador.</p>
                 </div>
                 <div className="permission-form">
-                  <div className="permission-select">
-                    <label>
-                      Seleccionar entrenador
-                      <select
-                        value={permissionForm.coachId}
-                        onChange={(e) => {
-                          const selected = entities.coaches.find(coach => coach.id.toString() === e.target.value);
-                          if (selected) selectCoachForPermissions(selected);
-                        }}
+                  <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <span style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Seleccionar entrenador</span>
+                    <select
+                      className="premium-select"
+                      value={permissionForm.coachId}
+                      onChange={(e) => {
+                        const selected = entities.coaches.find(coach => coach.id.toString() === e.target.value);
+                        if (selected) selectCoachForPermissions(selected);
+                      }}
+                      style={{ width: '100%', maxWidth: '400px', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)' }}
+                    >
+                      <option value="" style={{ color: '#000' }}>-- Elige un coach --</option>
+                      {entities.coaches.map(coach => (
+                        <option key={coach.id} value={coach.id} style={{ color: '#000' }}>{coach.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {permissionForm.coachId && (
+                    <>
+                      <div className="permission-checkboxes" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', background: 'var(--admin-surface-alt)', padding: '16px', borderRadius: '8px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={permissionForm.manageRoutines}
+                            onChange={(e) => handlePermissionChange('manageRoutines', e.target.checked)}
+                            style={{ width: '18px', height: '18px', accentColor: 'var(--admin-accent)' }}
+                          />
+                          Editar rutinas de otros entrenadores
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={permissionForm.managePlans}
+                            onChange={(e) => handlePermissionChange('managePlans', e.target.checked)}
+                            style={{ width: '18px', height: '18px', accentColor: 'var(--admin-accent)' }}
+                          />
+                          Ajustar planes
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={permissionForm.sendMessages}
+                            onChange={(e) => handlePermissionChange('sendMessages', e.target.checked)}
+                            style={{ width: '18px', height: '18px', accentColor: 'var(--admin-accent)' }}
+                          />
+                          Enviar notificaciones
+                        </label>
+                      </div>
+
+                      <div className="students-assignment-section">
+                        <h4>Alumnos Asignados</h4>
+                        {assignedStudents.length === 0 ? (
+                          <p className="no-students-msg">Este entrenador no tiene alumnos asignados actualmente.</p>
+                        ) : (
+                          <div className="assigned-students-list">
+                            {assignedStudents.map(student => (
+                              <div key={student.id} className="student-tag">
+                                <span>{student.name} ({student.email})</span>
+                                <button 
+                                  type="button" 
+                                  className="btn-remove-student" 
+                                  onClick={() => handleRemoveStudent(student.id)}
+                                  aria-label="Desasignar"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="add-student-control" style={{ marginTop: '20px' }}>
+                          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+                            Asignar nuevo alumno:
+                          </label>
+                            <select 
+                              value="" 
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val) handleAddStudent(Number(val));
+                              }}
+                              style={{ width: '100%', maxWidth: '400px', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--admin-border)', background: 'transparent', color: 'var(--admin-text)' }}
+                            >
+                              <option value="" style={{ color: '#000' }}>-- Selecciona un alumno --</option>
+                              {allMembers
+                                .filter(member => !assignedStudents.some(s => s.id === member.id))
+                                .map(member => (
+                                  <option key={member.id} value={member.id} style={{ color: '#000' }}>
+                                    {member.name} {member.coachName ? `(Con: ${member.coachName})` : '(Sin entrenador)'}
+                                  </option>
+                                ))
+                              }
+                            </select>
+                        </div>
+                      </div>
+
+                      <button 
+                        type="button" 
+                        className="btn-submit btn-save-coach" 
+                        onClick={handleSaveCoachSettings}
+                        disabled={isCoachSaving}
                       >
-                        <option value="">-- Elige un coach --</option>
-                        {entities.coaches.map(coach => (
-                          <option key={coach.id} value={coach.id}>{coach.name}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  <div className="permission-checkboxes">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={permissionForm.manageRoutines}
-                        onChange={(e) => handlePermissionChange('manageRoutines', e.target.checked)}
-                      />
-                      Gestionar rutinas
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={permissionForm.managePlans}
-                        onChange={(e) => handlePermissionChange('managePlans', e.target.checked)}
-                      />
-                      Ajustar planes
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={permissionForm.sendMessages}
-                        onChange={(e) => handlePermissionChange('sendMessages', e.target.checked)}
-                      />
-                      Enviar notificaciones
-                    </label>
-                  </div>
-                  <div className="permission-note">
-                    <p>Este panel es un comienzo para administrar permisos de entrenadores. Guardar aquí aún no modifica el backend, pero ya puedes usarlo como prototipo visual.</p>
-                  </div>
+                        {isCoachSaving ? 'Guardando...' : 'Guardar Cambios de Entrenador'}
+                      </button>
+                      
+                      {coachSaveMsg && (
+                        <p className={`coach-message-box ${coachSaveMsg.includes('Error') ? 'error-text' : ''}`}>
+                          {coachSaveMsg}
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             )}

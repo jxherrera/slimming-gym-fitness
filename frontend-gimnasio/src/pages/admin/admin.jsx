@@ -1,18 +1,8 @@
-<<<<<<< Updated upstream
-import React from 'react';
-=======
 import React, { useState, useEffect } from 'react';
 import { FaChartLine, FaUserTie, FaUsers, FaUserPlus, FaDollarSign } from 'react-icons/fa';
->>>>>>> Stashed changes
 import './admin.css';
 
 const Admin = () => {
-<<<<<<< Updated upstream
-  return (
-    <div className="admin-page">
-      <h1>Bienvenido, Admin</h1>
-      <p>Esta sección es solo de prueba. Aquí puedes verificar el acceso del administrador.</p>
-=======
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: <FaChartLine /> },
     { id: 'coaches', label: 'Entrenadores', icon: <FaUserTie /> },
@@ -808,7 +798,6 @@ const Admin = () => {
           </div>
         </div>
       )}
->>>>>>> Stashed changes
     </div>
   );
 };

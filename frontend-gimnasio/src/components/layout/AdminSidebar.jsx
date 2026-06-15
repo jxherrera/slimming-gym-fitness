@@ -13,43 +13,59 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
     setIsOpen(!isOpen);
   };
 
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : {};
+  let role = String(user.role || 'member').toLowerCase();
+  if (role === '1') role = 'member';
+  if (role === '2') role = 'coach';
+  if (role === '3') role = 'admin';
+
   const menuItems = [
     {
       path: '/admin',
       name: 'Admin Dashboard',
-      icon: <FaHome />
+      icon: <FaHome />,
+      roles: ['admin']
     },
     {
       path: '/coach',
       name: 'Coaches',
-      icon: <FaDumbbell />
+      icon: <FaDumbbell />,
+      roles: ['admin', 'coach']
     },
     {
       path: '/member',
       name: 'Members',
-      icon: <FaUser />
+      icon: <FaUser />,
+      roles: ['admin', 'coach', 'member']
     },
     {
       path: '/admin/planes',
       name: 'Planes',
-      icon: <FaClipboardList />
+      icon: <FaClipboardList />,
+      roles: ['admin']
     },
     {
       path: '/admin/horarios',
       name: 'Horarios',
-      icon: <FaCalendarAlt />
+      icon: <FaCalendarAlt />,
+      roles: ['admin', 'coach']
     },
     {
       path: '/admin/pagos',
       name: 'Pagos',
-      icon: <FaMoneyBillWave />
+      icon: <FaMoneyBillWave />,
+      roles: ['admin']
     },
     {
       path: '/admin/configuracion',
       name: 'Configuración',
-      icon: <FaCog />
+      icon: <FaCog />,
+      roles: ['admin']
     }
   ];
+
+  const filteredItems = menuItems.filter(item => item.roles.includes(role) || role === 'admin');
 
   return (
     <>
@@ -67,7 +83,7 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         </div>
         
         <div className="sidebar-menu">
-          {menuItems.map((item, index) => (
+          {filteredItems.map((item, index) => (
             <NavLink
               to={item.path}
               key={index}

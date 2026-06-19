@@ -20,7 +20,7 @@ const getClientsByCoach = async (req, res) => {
                     R.Goal
                 FROM Users U
                 INNER JOIN Routines R ON U.UserID = R.UserID
-                WHERE R.CoachID = @CoachID AND U.Status = 'Activo'
+                WHERE R.CoachID = @CoachID AND U.Status = 'A'
             `);
 
         res.status(200).json({

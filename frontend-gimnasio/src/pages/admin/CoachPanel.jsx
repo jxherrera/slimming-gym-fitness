@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 
 const CoachPanel = () => {
-    // 1. Estados Globales
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -11,7 +10,7 @@ const CoachPanel = () => {
     const [goalInput, setGoalInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const coachId = 1; 
+    const coachId = 2; 
 
     const fetchClients = async () => {
         try {

@@ -1,4 +1,4 @@
-const { sql, poolPromise } = require('../config/db'); // Importamos la conexión a SQL Server
+const { sql, poolPromise } = require('../config/db'); 
 
 
 const getClientsByCoach = async (req, res) => {
@@ -20,7 +20,7 @@ const getClientsByCoach = async (req, res) => {
                     R.Goal
                 FROM Users U
                 INNER JOIN Routines R ON U.UserID = R.UserID
-                WHERE R.CoachID = @CoachID AND U.Status = 'Activo'
+                WHERE R.CoachID = @CoachID AND U.Status = 'A'
             `);
 
         res.status(200).json({
@@ -34,6 +34,42 @@ const getClientsByCoach = async (req, res) => {
     }
 };
 
+const assignRoutine = async (req, res) => {
+    try {
+        const { userId, coachId, goal } = req.body;
+
+        if (!userId || !coachId || !goal) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Datos incompletos. Se requiere userId, coachId y goal.' 
+            });
+        }
+
+        const pool = await poolPromise;
+        
+        const result = await pool.request()
+            .input('UserID', sql.Int, userId)
+            .input('CoachID', sql.Int, coachId)
+            .input('Goal', sql.NVarChar(255), goal) 
+            .query(`
+                INSERT INTO Routines (UserID, CoachID, Goal)
+                OUTPUT INSERTED.RoutineID, INSERTED.UserID, INSERTED.CoachID, INSERTED.Goal
+                VALUES (@UserID, @CoachID, @Goal)
+            `);
+
+        res.status(201).json({
+            success: true,
+            message: 'Rutina asignada exitosamente.',
+            routine: result.recordset[0] 
+        });
+
+    } catch (error) {
+        console.error('Error al asignar la rutina:', error);
+        res.status(500).json({ success: false, message: 'Error interno del servidor al guardar la rutina.' });
+    }
+};
+
 module.exports = {
-    getClientsByCoach
+    getClientsByCoach,
+    assignRoutine
 };

@@ -16,11 +16,16 @@ const getClientsByCoach = async (req, res) => {
                 SELECT DISTINCT 
                     U.UserID, 
                     U.Email, 
-                    U.Status,
-                    R.Goal
+                    CASE WHEN U.Status = 'A' THEN 'Activo' ELSE 'Inactivo' END AS Status,
+                    (
+                        SELECT TOP 1 R.Goal 
+                        FROM Routines R 
+                        WHERE R.UserID = U.UserID 
+                        ORDER BY R.RoutineID DESC
+                    ) AS Goal
                 FROM Users U
-                INNER JOIN Routines R ON U.UserID = R.UserID
-                WHERE R.CoachID = @CoachID AND U.Status = 'A'
+                INNER JOIN CoachAssignments CA ON U.UserID = CA.MemberID
+                WHERE CA.CoachID = @CoachID AND U.Status = 'A'
             `);
 
         res.status(200).json({

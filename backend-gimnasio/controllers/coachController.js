@@ -137,3 +137,175 @@ exports.removeAssignment = async (req, res) => {
         res.status(500).json({ message: 'Error removing assignment', error: err.message });
     }
 };
+
+// GET /api/coaches/members
+// Retrieves all active members along with their assigned coach's name (if any).
+exports.getMembersWithCoaches = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT 
+                u.UserID AS id, 
+                u.FirstName + ' ' + u.LastName AS name,
+                c.FirstName + ' ' + c.LastName AS coachName
+            FROM Users u
+            LEFT JOIN CoachAssignments ca ON u.UserID = ca.MemberID
+            LEFT JOIN Users c ON ca.CoachID = c.UserID
+            WHERE u.RoleID = 1 AND u.Status = 'A'
+        `);
+        res.status(200).json({ success: true, members: result.recordset });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Error retrieving members with coaches', error: err.message });
+    }
+};
+
+// GET /api/coaches/:id/settings
+// Retrieves a coach's permissions and assigned students.
+exports.getCoachSettings = async (req, res) => {
+    try {
+        const coachId = Number(req.params.id);
+        const pool = await poolPromise;
+
+        // Query permissions
+        const permResult = await pool.request()
+            .input('CoachID', sql.Int, coachId)
+            .query(`
+                SELECT 
+                    ISNULL(CanEditOthersRoutines, 0) AS canEditOthersRoutines,
+                    ISNULL(CanManagePlans, 0) AS canManagePlans,
+                    ISNULL(CanSendMessages, 0) AS canSendMessages
+                FROM CoachPermissions
+                WHERE CoachID = @CoachID
+            `);
+
+        const permissions = permResult.recordset[0] || {
+            canEditOthersRoutines: false,
+            canManagePlans: false,
+            canSendMessages: false
+        };
+
+        // Query assigned students
+        const studentsResult = await pool.request()
+            .input('CoachID', sql.Int, coachId)
+            .query(`
+                SELECT 
+                    u.UserID AS id,
+                    u.FirstName + ' ' + u.LastName AS name,
+                    u.Email AS email
+                FROM CoachAssignments ca
+                INNER JOIN Users u ON ca.MemberID = u.UserID
+                WHERE ca.CoachID = @CoachID AND u.Status = 'A'
+            `);
+
+        res.status(200).json({
+            success: true,
+            permissions: {
+                canEditOthersRoutines: !!permissions.canEditOthersRoutines,
+                canManagePlans: !!permissions.canManagePlans,
+                canSendMessages: !!permissions.canSendMessages
+            },
+            students: studentsResult.recordset
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Error retrieving coach settings', error: err.message });
+    }
+};
+
+// PUT /api/coaches/:id/settings
+// Updates a coach's permissions and assigned students.
+exports.updateCoachSettings = async (req, res) => {
+    try {
+        const coachId = Number(req.params.id);
+        const { permissions, studentIds } = req.body;
+
+        if (!permissions) {
+            return res.status(400).json({ success: false, message: 'Permissions are required' });
+        }
+
+        const pool = await poolPromise;
+
+        // 1. Update or insert permissions
+        const permCheck = await pool.request()
+            .input('CoachID', sql.Int, coachId)
+            .query('SELECT * FROM CoachPermissions WHERE CoachID = @CoachID');
+
+        const canEditOthersRoutines = permissions.canEditOthersRoutines ? 1 : 0;
+        const canManagePlans = permissions.canManagePlans ? 1 : 0;
+        const canSendMessages = permissions.canSendMessages ? 1 : 0;
+
+        if (permCheck.recordset.length > 0) {
+            await pool.request()
+                .input('CoachID', sql.Int, coachId)
+                .input('CanEditOthersRoutines', sql.Bit, canEditOthersRoutines)
+                .input('CanManagePlans', sql.Bit, canManagePlans)
+                .input('CanSendMessages', sql.Bit, canSendMessages)
+                .query(`
+                    UPDATE CoachPermissions
+                    SET CanEditOthersRoutines = @CanEditOthersRoutines,
+                        CanManagePlans = @CanManagePlans,
+                        CanSendMessages = @CanSendMessages
+                    WHERE CoachID = @CoachID
+                `);
+        } else {
+            await pool.request()
+                .input('CoachID', sql.Int, coachId)
+                .input('CanEditOthersRoutines', sql.Bit, canEditOthersRoutines)
+                .input('CanManagePlans', sql.Bit, canManagePlans)
+                .input('CanSendMessages', sql.Bit, canSendMessages)
+                .query(`
+                    INSERT INTO CoachPermissions (CoachID, CanEditOthersRoutines, CanManagePlans, CanSendMessages)
+                    VALUES (@CoachID, @CanEditOthersRoutines, @CanManagePlans, @CanSendMessages)
+                `);
+        }
+
+        // 2. Remove students no longer assigned to this coach
+        if (studentIds && studentIds.length > 0) {
+            const safeIds = studentIds.map(Number).filter(id => !isNaN(id));
+            if (safeIds.length > 0) {
+                const queryText = `
+                    DELETE FROM CoachAssignments 
+                    WHERE CoachID = @CoachID 
+                      AND MemberID NOT IN (${safeIds.join(',')})
+                `;
+                await pool.request()
+                    .input('CoachID', sql.Int, coachId)
+                    .query(queryText);
+            } else {
+                await pool.request()
+                    .input('CoachID', sql.Int, coachId)
+                    .query('DELETE FROM CoachAssignments WHERE CoachID = @CoachID');
+            }
+        } else {
+            // Remove all assignments for this coach if studentIds is empty
+            await pool.request()
+                .input('CoachID', sql.Int, coachId)
+                .query('DELETE FROM CoachAssignments WHERE CoachID = @CoachID');
+        }
+
+        // 3. Insert or update assignments for the selected students
+        if (studentIds && studentIds.length > 0) {
+            for (const studentId of studentIds) {
+                const sId = Number(studentId);
+                if (isNaN(sId)) continue;
+
+                // Delete any existing assignment for this student first (since MemberID is UNIQUE)
+                await pool.request()
+                    .input('MemberID', sql.Int, sId)
+                    .query('DELETE FROM CoachAssignments WHERE MemberID = @MemberID');
+
+                // Insert the new assignment
+                await pool.request()
+                    .input('CoachID', sql.Int, coachId)
+                    .input('MemberID', sql.Int, sId)
+                    .query('INSERT INTO CoachAssignments (CoachID, MemberID) VALUES (@CoachID, @MemberID)');
+            }
+        }
+
+        res.status(200).json({ success: true, message: 'Coach settings and assignments updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Error updating coach settings', error: err.message });
+    }
+};

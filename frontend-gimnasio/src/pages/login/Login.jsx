@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 import './Login.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/auth';
 
 // Estado inicial limpio para evitar escribirlo dos veces
 const INITIAL_FORM_STATE = {
@@ -17,6 +17,7 @@ const INITIAL_FORM_STATE = {
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [message, setMessage] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
@@ -38,7 +39,7 @@ const Login = () => {
     e.preventDefault();
     setMessage('');
 
-    const endpoint = `${API_BASE}/${isLogin ? 'login' : 'register'}`;
+    const endpoint = `auth/${isLogin ? 'login' : 'register'}`;
     
     // Construcción del payload
     const payload = isLogin
@@ -46,40 +47,20 @@ const Login = () => {
       : { ...formData, Email: formData.email, Password: formData.password };
 
     try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data.message || 'Ocurrió un error en la petición.');
-        return;
-      }
-
-      // Lógica de redirección simplificada con un objeto (Diccionario)
-      const role = (data.user?.role || 'member').toString().trim().toLowerCase();
-      const routes = {
-        admin: '/admin',
-        coach: '/coach',
-        member: '/member'
-      };
-      const redirectPath = routes[role] || '/member';
+      const response = await api.post(endpoint, payload);
+      const data = response.data;
 
       const welcomeName = data.user?.firstName ? ` ${data.user.firstName}` : '';
       const successMsg = isLogin ? 'Sesión iniciada correctamente' : 'Usuario registrado con éxito';
       setMessage(`${data.message || successMsg}. ¡Bienvenido${welcomeName}!`);
 
-      // Redirigir y limpiar si es registro
-      localStorage.setItem('user', JSON.stringify(data.user || { role: role }));
-      navigate(redirectPath);
+      // Redirigir y limpiar
+      login(data.user || {});
       if (!isLogin) setFormData(INITIAL_FORM_STATE);
 
     } catch (error) {
       console.error('Error al conectar con la API:', error);
-      setMessage('No se pudo conectar con el servidor.');
+      setMessage(error.response?.data?.message || 'No se pudo conectar con el servidor.');
     }
   };
 

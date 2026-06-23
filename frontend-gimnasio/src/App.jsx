@@ -1,30 +1,40 @@
 import React from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import Navbar from './components/layout/Navbar';
 import AdminLayout from './components/layout/AdminLayout';
 import Home from './pages/home/Home';
 import SobreNosotros from './pages/sobrenossotros/SobreNosotros';
 import Planes from './pages/planes/Planes';
 import Login from './pages/login/Login';
-import Admin from './pages/admin/admin';
-import Coach from './pages/admin/Coach';
-import Member from './pages/admin/Member';
-import AdminPlanes from './pages/admin/AdminPlanes';
-import AdminPagos from './pages/admin/AdminPagos';
+import Admin from './pages/admin/dashboard/AdminDashboard';
+import Coach from './pages/admin/coaches/Coach';
+import CoachPanel from './pages/admin/coaches/CoachPanel';
+import Member from './pages/admin/members/Member';
+import AdminPlanes from './pages/admin/planes/AdminPlanes';
+import AdminPagos from './pages/admin/pagos/AdminPagos';
 
 function ProtectedRoute({ children, allowedRoles }) {
-  const userStr = localStorage.getItem('user');
-  if (!userStr) return <Navigate to="/login" replace />;
-  const user = JSON.parse(userStr);
-  let role = String(user.role || 'member').toLowerCase();
-  if (role === '1') role = 'member';
-  if (role === '2') role = 'coach';
-  if (role === '3') role = 'admin';
+  const { user, role, loading } = useAuth();
+  
+  if (loading) return null; // Avoid flicker
+  if (!user) return <Navigate to="/login" replace />;
 
   if (!allowedRoles.includes(role) && role !== 'admin') {
     return <Navigate to={role === 'coach' ? '/coach' : '/member'} replace />;
   }
   return children;
+}
+
+function CoachRouteWrapper() {
+  const { role, loading } = useAuth();
+  
+  if (loading) return null;
+
+  if (role === 'admin') {
+    return <Coach />;
+  }
+  return <CoachPanel />;
 }
 
 function App() {
@@ -46,7 +56,7 @@ function App() {
           {/* Rutas de Administrador */}
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
-            <Route path="/coach" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><Coach /></ProtectedRoute>} />
+            <Route path="/coach" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><CoachRouteWrapper /></ProtectedRoute>} />
             <Route path="/member" element={<ProtectedRoute allowedRoles={['admin', 'coach', 'member']}><Member /></ProtectedRoute>} />
             <Route path="/admin/planes" element={<ProtectedRoute allowedRoles={['admin']}><AdminPlanes /></ProtectedRoute>} />
             <Route path="/admin/pagos" element={<ProtectedRoute allowedRoles={['admin']}><AdminPagos /></ProtectedRoute>} />

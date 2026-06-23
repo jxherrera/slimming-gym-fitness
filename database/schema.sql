@@ -77,3 +77,23 @@ CREATE TABLE Payments (
     Status CHAR(1) DEFAULT 'P', -- 'P' para Pendiente de revisión, 'A' para Aprobado
     FOREIGN KEY (SubscriptionID) REFERENCES Subscriptions(SubscriptionID)
 );
+
+-- 9. COACH PERMISSIONS TABLE -- Stores permissions for coaches (CanEditOthersRoutines, CanManagePlans, CanSendMessages)
+CREATE TABLE CoachPermissions (
+    PermissionID INT PRIMARY KEY IDENTITY(1,1),
+    CoachID INT UNIQUE,
+    CanEditOthersRoutines BIT DEFAULT 0,
+    CanManagePlans BIT DEFAULT 0,
+    CanSendMessages BIT DEFAULT 0,
+    FOREIGN KEY (CoachID) REFERENCES Users(UserID)
+);
+
+-- 10. COACH ASSIGNMENTS TABLE -- Links members to their assigned coach
+CREATE TABLE CoachAssignments (
+    AssignmentID INT PRIMARY KEY IDENTITY(1,1),
+    CoachID INT,
+    MemberID INT UNIQUE,
+    AssignedAt DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (CoachID) REFERENCES Users(UserID),
+    FOREIGN KEY (MemberID) REFERENCES Users(UserID)
+);

@@ -16,11 +16,16 @@ const getClientsByCoach = async (req, res) => {
                 SELECT DISTINCT 
                     U.UserID, 
                     U.Email, 
-                    U.Status,
-                    R.Goal
+                    CASE WHEN U.Status = 'A' THEN 'Activo' ELSE 'Inactivo' END AS Status,
+                    (
+                        SELECT TOP 1 R.Goal 
+                        FROM Routines R 
+                        WHERE R.UserID = U.UserID 
+                        ORDER BY R.RoutineID DESC
+                    ) AS Goal
                 FROM Users U
-                INNER JOIN Routines R ON U.UserID = R.UserID
-                WHERE R.CoachID = @CoachID AND U.Status = 'A'
+                INNER JOIN CoachAssignments CA ON U.UserID = CA.MemberID
+                WHERE CA.CoachID = @CoachID AND U.Status = 'A'
             `);
 
         res.status(200).json({
@@ -69,7 +74,44 @@ const assignRoutine = async (req, res) => {
     }
 };
 
+// Obtiene las rutinas activas asignadas a un socio en particular para mostrarlas en su panel
+const getUserRoutines = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'El ID de usuario es requerido.' });
+        }
+
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('UserID', sql.Int, userId)
+            .query(`
+                SELECT 
+                    R.RoutineID, 
+                    R.RoutineName, 
+                    R.Goal, 
+                    R.AssignedAt, 
+                    (U.FirstName + ' ' + U.LastName) as CoachName
+                FROM Routines R
+                LEFT JOIN Users U ON R.CoachID = U.UserID
+                WHERE R.UserID = @UserID AND R.Status = 'A'
+                ORDER BY R.AssignedAt DESC
+            `);
+
+        res.status(200).json({
+            success: true,
+            routines: result.recordset
+        });
+
+    } catch (error) {
+        console.error('Error al obtener rutinas del usuario:', error);
+        res.status(500).json({ success: false, message: 'Error interno al consultar la base de datos.' });
+    }
+};
+
 module.exports = {
     getClientsByCoach,
-    assignRoutine
+    assignRoutine,
+    getUserRoutines // Exportado para permitir la consulta de rutinas asignadas desde el panel de usuario
 };

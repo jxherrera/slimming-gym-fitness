@@ -9,4 +9,9 @@ router.get('/assignments', coachController.getAssignments);
 router.post('/:id/assign', coachController.assignMember);
 router.delete('/assign/:memberId', coachController.removeAssignment);
 
+// New settings & assignments endpoints for Admin panel
+router.get('/members', coachController.getMembersWithCoaches);
+router.get('/:id/settings', coachController.getCoachSettings);
+router.put('/:id/settings', coachController.updateCoachSettings);
+
 module.exports = router;

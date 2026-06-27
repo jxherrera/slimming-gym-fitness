@@ -22,7 +22,8 @@ CREATE TABLE Plans (
     PlanID INT PRIMARY KEY IDENTITY(1,1), 
     PlanName VARCHAR(50) NOT NULL, 
     Price DECIMAL(10,2) NOT NULL, -- Use LaTeX format in docs: $$ \text{Price} $$ 
-    DurationDays INT NOT NULL 
+    DurationDays INT NOT NULL,
+    Status CHAR(1) DEFAULT 'A' -- 'A' for Active, 'I' for Inactive
 ); 
  -- 4. SUBSCRIPTIONS TABLE -- Links members to their specific active plans [cite: 138] 
 CREATE TABLE Subscriptions ( 

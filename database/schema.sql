@@ -22,7 +22,8 @@ CREATE TABLE Plans (
     PlanID INT PRIMARY KEY IDENTITY(1,1), 
     PlanName VARCHAR(50) NOT NULL, 
     Price DECIMAL(10,2) NOT NULL, -- Use LaTeX format in docs: $$ \text{Price} $$ 
-    DurationDays INT NOT NULL 
+    DurationDays INT NOT NULL,
+    Status CHAR(1) DEFAULT 'A' -- 'A' for Active, 'I' for Inactive
 ); 
  -- 4. SUBSCRIPTIONS TABLE -- Links members to their specific active plans [cite: 138] 
 CREATE TABLE Subscriptions ( 
@@ -76,4 +77,22 @@ CREATE TABLE Payments (
     ReceiptUrl VARCHAR(500), -- AQUÍ VA EL LINK DE LA FOTO DEL COMPROBANTE
     Status CHAR(1) DEFAULT 'P', -- 'P' para Pendiente de revisión, 'A' para Aprobado
     FOREIGN KEY (SubscriptionID) REFERENCES Subscriptions(SubscriptionID)
+);
+
+-- 9. COACH_PERMISSIONS TABLE -- Advanced permissions for coaches
+CREATE TABLE CoachPermissions (
+    PermissionID INT PRIMARY KEY IDENTITY(1,1),
+    CoachID INT UNIQUE,
+    CanEditOthersRoutines BIT DEFAULT 0,
+    FOREIGN KEY (CoachID) REFERENCES Users(UserID)
+);
+
+-- 10. COACH_ASSIGNMENTS TABLE -- Assign members to a specific coach
+CREATE TABLE CoachAssignments (
+    AssignmentID INT PRIMARY KEY IDENTITY(1,1),
+    CoachID INT,
+    MemberID INT UNIQUE,
+    AssignedAt DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (CoachID) REFERENCES Users(UserID),
+    FOREIGN KEY (MemberID) REFERENCES Users(UserID)
 );

@@ -1,5 +1,6 @@
 const { poolPromise, sql } = require('../config/db');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 exports.register = async (req, res) => {
     const { IDNumber, FirstName, LastName, Email, Password, PhoneNumber, RoleID } = req.body;
@@ -106,9 +107,16 @@ exports.login = async (req, res) => {
             ? user.RoleName.trim()
             : roleMapping[user.RoleID] || 'Member';
 
+        const token = jwt.sign(
+            { userId: user.UserID, role: roleName },
+            process.env.JWT_SECRET || 'supersecret_fallback_key',
+            { expiresIn: '24h' }
+        );
+
         res.json({
             success: true,
             message: 'Inicio de sesión exitoso.',
+            token,
             user: {
                 userId: user.UserID,
                 firstName: user.FirstName,

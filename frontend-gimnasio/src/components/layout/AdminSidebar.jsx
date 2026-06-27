@@ -1,71 +1,58 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { 
   FaBars, FaTimes, FaHome, FaUser, FaDumbbell, 
-  FaCalendarAlt, FaMoneyBillWave, FaCog, FaClipboardList
+  FaCalendarAlt, FaMoneyBillWave, FaCog, FaClipboardList,
+  FaChevronDown, FaChevronRight, FaSearch
 } from 'react-icons/fa';
 import './AdminSidebar.css';
 
 const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState({
+    'GESTIONAR': true,
+    'ENTRENAR': true,
+    'FIDELIZAR': true
+  });
 
   const toggleMobileSidebar = () => {
     setIsOpen(!isOpen);
   };
 
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : {};
-  let role = String(user.role || 'member').toLowerCase();
-  if (role === '1') role = 'member';
-  if (role === '2') role = 'coach';
-  if (role === '3') role = 'admin';
+  const toggleGroup = (groupTitle) => {
+    setOpenGroups(prev => ({
+      ...prev,
+      [groupTitle]: !prev[groupTitle]
+    }));
+  };
 
-  const menuItems = [
+  const { role, logout } = useAuth();
+
+  const menuGroups = [
     {
-      path: '/admin',
-      name: 'Admin Dashboard',
-      icon: <FaHome />,
-      roles: ['admin']
+      title: 'GESTIONAR',
+      items: [
+        { path: '/admin', name: 'Panel', icon: <FaHome />, roles: ['admin'] },
+        { path: '/member', name: 'Clientes', icon: <FaUser />, roles: ['admin', 'coach', 'member'] },
+        { path: '/coach', name: 'Entrenadores', icon: <FaDumbbell />, roles: ['admin', 'coach'] },
+      ]
     },
     {
-      path: '/coach',
-      name: 'Coaches',
-      icon: <FaDumbbell />,
-      roles: ['admin', 'coach']
+      title: 'ENTRENAR',
+      items: [
+        { path: '/admin/planes', name: 'Planes', icon: <FaClipboardList />, roles: ['admin'] },
+        { path: '/admin/horarios', name: 'Agenda', icon: <FaCalendarAlt />, roles: ['admin', 'coach'] },
+      ]
     },
     {
-      path: '/member',
-      name: 'Members',
-      icon: <FaUser />,
-      roles: ['admin', 'coach', 'member']
-    },
-    {
-      path: '/admin/planes',
-      name: 'Planes',
-      icon: <FaClipboardList />,
-      roles: ['admin']
-    },
-    {
-      path: '/admin/horarios',
-      name: 'Horarios',
-      icon: <FaCalendarAlt />,
-      roles: ['admin', 'coach']
-    },
-    {
-      path: '/admin/pagos',
-      name: 'Pagos',
-      icon: <FaMoneyBillWave />,
-      roles: ['admin']
-    },
-    {
-      path: '/admin/configuracion',
-      name: 'Configuración',
-      icon: <FaCog />,
-      roles: ['admin']
+      title: 'FIDELIZAR',
+      items: [
+        { path: '/admin/pagos', name: 'Pagos', icon: <FaMoneyBillWave />, roles: ['admin'] },
+        { path: '/admin/configuracion', name: 'Tareas / Configuración', icon: <FaCog />, roles: ['admin'] }
+      ]
     }
   ];
-
-  const filteredItems = menuItems.filter(item => item.roles.includes(role) || role === 'admin');
 
   return (
     <>
@@ -79,28 +66,61 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         onMouseLeave={() => !isCollapsed && toggleCollapse()}
       >
         <div className="sidebar-header">
-          <h2 className="logo">{isCollapsed ? 'G' : 'GYM ADMIN'}</h2>
+          <div className="logo-container">
+            <div className="logo-box"></div>
+            <span className="logo-text">Tu Logo <FaChevronDown className="logo-dropdown" /></span>
+          </div>
+        </div>
+
+        <div className="sidebar-search">
+          <div className="search-input-wrapper">
+            <FaSearch className="search-icon" />
+            <input type="text" placeholder="Buscar..." />
+          </div>
         </div>
         
         <div className="sidebar-menu">
-          {filteredItems.map((item, index) => (
-            <NavLink
-              to={item.path}
-              key={index}
-              className={({ isActive }) => isActive ? 'menu-item active' : 'menu-item'}
-              onClick={() => setIsOpen(false)}
-            >
-              <div className="icon">{item.icon}</div>
-              <div className="link-text">{item.name}</div>
-            </NavLink>
-          ))}
+          {menuGroups.map((group, gIndex) => {
+            const filteredItems = group.items.filter(item => item.roles.includes(role) || role === 'admin');
+            if (filteredItems.length === 0) return null;
+
+            const isGroupOpen = openGroups[group.title];
+
+            return (
+              <div key={gIndex} className="menu-group">
+                <div 
+                  className="menu-group-header" 
+                  onClick={() => toggleGroup(group.title)}
+                >
+                  <span className="group-title">{group.title}</span>
+                  {isGroupOpen ? <FaChevronDown className="group-chevron" /> : <FaChevronRight className="group-chevron" />}
+                </div>
+                
+                {isGroupOpen && (
+                  <div className="menu-group-items">
+                    {filteredItems.map((item, index) => (
+                      <NavLink
+                        to={item.path}
+                        key={index}
+                        className={({ isActive }) => isActive ? 'menu-item active' : 'menu-item'}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <div className="icon">{item.icon}</div>
+                        <div className="link-text">{item.name}</div>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
         
         <div className="sidebar-footer">
-          <NavLink to="/" className="menu-item exit-link">
+          <button onClick={logout} className="menu-item exit-link" style={{ background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
             <div className="icon"><FaTimes /></div>
-            <div className="link-text">Salir al sitio</div>
-          </NavLink>
+            <div className="link-text">Cerrar Sesión</div>
+          </button>
         </div>
       </div>
     </>
@@ -108,3 +128,4 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
 };
 
 export default AdminSidebar;
+

@@ -205,3 +205,51 @@ exports.deleteUser = async (req, res) => {
     });
   }
 };
+
+// Calcula los días restantes de la membresía del socio y obtiene información de su estado de suscripción y solicitudes de pago
+exports.getUserSubscription = async (req, res) => {
+  const userId = Number(req.params.id);
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'ID de usuario no válido.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('UserID', sql.Int, userId)
+      .query(`
+        SELECT TOP 1
+          s.SubscriptionID as subscriptionId,
+          s.StartDate as startDate,
+          s.EndDate as endDate,
+          s.PaymentStatus as paymentStatus,
+          p.PlanID as planId,
+          p.PlanName as planName,
+          p.DurationDays as durationDays,
+          p.Price as price,
+          DATEDIFF(day, GETDATE(), s.EndDate) AS remainingDays,
+          (
+            SELECT TOP 1 Status 
+            FROM Payments pay 
+            WHERE pay.SubscriptionID = s.SubscriptionID 
+            ORDER BY pay.PaymentID DESC
+          ) AS paymentRequestStatus
+        FROM Subscriptions s
+        INNER JOIN Plans p ON s.PlanID = p.PlanID
+        WHERE s.UserID = @UserID
+        ORDER BY s.SubscriptionID DESC
+      `);
+
+    res.json({
+      success: true,
+      subscription: result.recordset[0] || null
+    });
+  } catch (error) {
+    console.error('Error al obtener suscripción del usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno al obtener los datos de la suscripción.',
+      error: error.message
+    });
+  }
+};

@@ -96,3 +96,50 @@ CREATE TABLE CoachAssignments (
     FOREIGN KEY (CoachID) REFERENCES Users(UserID),
     FOREIGN KEY (MemberID) REFERENCES Users(UserID)
 );
+CREATE TABLE dbo.Classes (
+    ClassID INT IDENTITY(1,1) PRIMARY KEY,
+    ClassName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(255),
+    Capacity INT NOT NULL, -- Límite de aforo
+    Status CHAR(1) DEFAULT 'A'
+);
+
+-- Tabla: ClassSchedules (Agenda semanal de las clases)
+CREATE TABLE dbo.ClassSchedules (
+    ScheduleID INT IDENTITY(1,1) PRIMARY KEY,
+    ClassID INT NOT NULL,
+    CoachID INT NOT NULL, -- El entrenador asignado a dictarla
+    DayOfWeek NVARCHAR(15) NOT NULL, -- Ej: 'Monday', 'Tuesday'
+    StartTime TIME NOT NULL,
+    EndTime TIME NOT NULL,
+    Status CHAR(1) DEFAULT 'A',
+    CONSTRAINT FK_ClassSchedules_Classes FOREIGN KEY (ClassID) REFERENCES dbo.Classes(ClassID),
+    CONSTRAINT FK_ClassSchedules_Coach FOREIGN KEY (CoachID) REFERENCES dbo.Users(UserID)
+);
+
+-- Tabla: ClassReservations (Control de aforo por alumno)
+CREATE TABLE dbo.ClassReservations (
+    ReservationID INT IDENTITY(1,1) PRIMARY KEY,
+    ScheduleID INT NOT NULL,
+    UserID INT NOT NULL, -- El alumno que reserva
+    ReservationDate DATE NOT NULL,
+    Status CHAR(1) DEFAULT 'A', -- 'A' = Activa, 'C' = Cancelada
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_ClassReservations_Schedule FOREIGN KEY (ScheduleID) REFERENCES dbo.ClassSchedules(ScheduleID),
+    CONSTRAINT FK_ClassReservations_User FOREIGN KEY (UserID) REFERENCES dbo.Users(UserID)
+);
+
+-- Tabla: PhysicalEvaluations (Historial antropométrico)
+CREATE TABLE dbo.PhysicalEvaluations (
+    EvaluationID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT NOT NULL, -- El alumno
+    CoachID INT NOT NULL, -- El entrenador que evalúa
+    EvaluationDate DATE NOT NULL DEFAULT GETDATE(),
+    WeightKg DECIMAL(5,2) NOT NULL,
+    BodyFatPercentage DECIMAL(5,2),
+    ChestPerimeter DECIMAL(5,2),
+    WaistPerimeter DECIMAL(5,2),
+    Notes NVARCHAR(500),
+    CONSTRAINT FK_PhysicalEvals_User FOREIGN KEY (UserID) REFERENCES dbo.Users(UserID),
+    CONSTRAINT FK_PhysicalEvals_Coach FOREIGN KEY (CoachID) REFERENCES dbo.Users(UserID)
+);

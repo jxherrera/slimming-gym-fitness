@@ -1,5 +1,10 @@
 import React from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+import { useAuth } from './hooks/useAuth';
+import ToastContainer from './components/common/Toast';
+import Spinner from './components/common/Spinner';
 import Navbar from './components/layout/Navbar';
 import AdminLayout from './components/layout/AdminLayout';
 import Home from './pages/home/Home';
@@ -13,9 +18,16 @@ import AdminPlanes from './pages/admin/AdminPlanes';
 import AdminPagos from './pages/admin/AdminPagos';
 
 function ProtectedRoute({ children, allowedRoles }) {
-  const userStr = localStorage.getItem('user');
-  if (!userStr) return <Navigate to="/login" replace />;
-  const user = JSON.parse(userStr);
+  const { user, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <Spinner fullPage text="Cargando sesión..." size="lg" />;
+  }
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
   let role = String(user.role || 'member').toLowerCase();
   if (role === '1') role = 'member';
   if (role === '2') role = 'coach';
@@ -27,7 +39,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-function App() {
+function MainLayout() {
   const location = useLocation();
   const isAdminRoute = ['/admin', '/coach', '/member'].some(path => location.pathname.startsWith(path));
   const hideNavbar = location.pathname === '/login' || isAdminRoute;
@@ -43,7 +55,7 @@ function App() {
           <Route path="/planes" element={<Planes />} />
           <Route path="/login" element={<Login />} />
           
-          {/* Rutas de Administrador */}
+          {/* Rutas Protegidas de Administración / Socio */}
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
             <Route path="/coach" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><Coach /></ProtectedRoute>} />
@@ -55,7 +67,18 @@ function App() {
           </Route>
         </Routes>
       </div>
+      <ToastContainer />
     </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <MainLayout />
+      </ToastProvider>
+    </AuthProvider>
   );
 }
 

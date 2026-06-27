@@ -4,18 +4,18 @@ import {
   FaBars, FaTimes, FaHome, FaUser, FaDumbbell, 
   FaCalendarAlt, FaMoneyBillWave, FaCog, FaClipboardList
 } from 'react-icons/fa';
+import { useAuth } from '../../hooks/useAuth';
 import './AdminSidebar.css';
 
 const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
 
   const toggleMobileSidebar = () => {
     setIsOpen(!isOpen);
   };
 
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : {};
-  let role = String(user.role || 'member').toLowerCase();
+  let role = String(user?.role || 'member').toLowerCase();
   if (role === '1') role = 'member';
   if (role === '2') role = 'coach';
   if (role === '3') role = 'admin';

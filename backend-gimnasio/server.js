@@ -36,7 +36,6 @@ app.use('/api/evaluations', evaluationRoutes);
 
 const PORT = process.env.PORT || 5001;
 
-// Start background cron jobs
 startCronJobs();
 
 app.listen(PORT, () => {

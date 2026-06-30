@@ -253,3 +253,111 @@ exports.getUserSubscription = async (req, res) => {
     });
   }
 };
+
+exports.getUserNotifications = async (req, res) => {
+  const userId = Number(req.params.id);
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'ID de usuario no válido.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('UserID', sql.Int, userId)
+      .query(`
+        SELECT NotificationID as id, Message as message, IsRead as isRead, CreatedAt as createdAt
+        FROM Notifications
+        WHERE UserID = @UserID
+        ORDER BY CreatedAt DESC
+      `);
+
+    res.json({
+      success: true,
+      notifications: result.recordset
+    });
+  } catch (error) {
+    console.error('Error al obtener notificaciones:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener notificaciones.',
+      error: error.message
+    });
+  }
+};
+
+exports.markNotificationRead = async (req, res) => {
+  const userId = Number(req.params.id);
+  const notifId = Number(req.params.notifId);
+  if (!userId || !notifId) {
+    return res.status(400).json({ success: false, message: 'Parámetros no válidos.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('UserID', sql.Int, userId)
+      .input('NotificationID', sql.Int, notifId)
+      .query(`
+        UPDATE Notifications
+        SET IsRead = 1
+        WHERE UserID = @UserID AND NotificationID = @NotificationID
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'Notificación no encontrada o no pertenece al usuario.' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Notificación marcada como leída.'
+    });
+  } catch (error) {
+    console.error('Error al marcar notificación como leída:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar la notificación.',
+      error: error.message
+    });
+  }
+};
+
+exports.getUserPayments = async (req, res) => {
+  const userId = Number(req.params.id);
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'ID de usuario no válido.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('UserID', sql.Int, userId)
+      .query(`
+        SELECT 
+          p.PaymentID as paymentId,
+          p.AmountPaid as amountPaid,
+          p.PaymentDate as paymentDate,
+          p.PaymentMethod as paymentMethod,
+          p.ReferenceNumber as referenceNumber,
+          p.ReceiptUrl as receiptUrl,
+          p.Status as status,
+          pl.PlanName as planName
+        FROM Payments p
+        INNER JOIN Subscriptions s ON p.SubscriptionID = s.SubscriptionID
+        INNER JOIN Plans pl ON s.PlanID = pl.PlanID
+        WHERE s.UserID = @UserID
+        ORDER BY p.PaymentDate DESC
+      `);
+
+    res.json({
+      success: true,
+      payments: result.recordset
+    });
+  } catch (error) {
+    console.error('Error al obtener historial de pagos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el historial de pagos.',
+      error: error.message
+    });
+  }
+};

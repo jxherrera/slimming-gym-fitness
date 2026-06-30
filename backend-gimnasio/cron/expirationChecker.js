@@ -36,8 +36,10 @@ const startCronJobs = () => {
                 if (checkNotif.recordset.length === 0) {
                     await pool.request()
                         .input('UserID', sql.Int, sub.UserID)
+                        .input('Title', sql.NVarChar, 'Aviso de Vencimiento')
                         .input('Message', sql.NVarChar, message)
-                        .query('INSERT INTO Notifications (UserID, Message) VALUES (@UserID, @Message)');
+                        .input('Type', sql.NVarChar, 'Vencimiento')
+                        .query('INSERT INTO Notifications (UserID, Title, Message, Type) VALUES (@UserID, @Title, @Message, @Type)');
                     notificationsCreated++;
                 }
             }

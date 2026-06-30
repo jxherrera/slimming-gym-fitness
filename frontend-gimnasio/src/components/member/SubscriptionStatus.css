@@ -1,0 +1,284 @@
+.subscription-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.subscription-card {
+  background: #16161c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.card-header-sub {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.header-icon {
+  font-size: 2rem;
+  color: #ff3b3b;
+}
+
+.card-header-sub h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #fff;
+}
+
+.card-header-sub p {
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.plan-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.plan-badge-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.plan-name-tag {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.status-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-pill.active {
+  background: rgba(0, 230, 118, 0.2);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.4);
+}
+
+.status-pill.pending {
+  background: rgba(255, 179, 0, 0.2);
+  color: #ffb300;
+  border: 1px solid rgba(255, 179, 0, 0.4);
+}
+
+.plan-dates-info {
+  font-size: 0.95rem;
+  color: #bbb;
+}
+
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ddd;
+}
+
+.percent-text {
+  color: #ff3b3b;
+}
+
+.progress-bar-track {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill-graphic {
+  height: 100%;
+  background: linear-gradient(90deg, #ff3b3b, #ff7300);
+  border-radius: 10px;
+  transition: width 0.6s ease-in-out;
+  box-shadow: 0 0 12px rgba(255, 59, 59, 0.5);
+}
+
+.progress-bar-fill-graphic.warning-fill {
+  background: linear-gradient(90deg, #ff3b3b, #d32f2f);
+}
+
+.days-counter {
+  font-size: 0.85rem;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.no-sub-box {
+  padding: 20px;
+  text-align: center;
+  color: #aaa;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+}
+
+.catalog-title {
+  margin-bottom: 20px;
+}
+
+.catalog-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.catalog-title p {
+  margin: 4px 0 0 0;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.plan-card {
+  background: #1c1c24;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.plan-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 59, 59, 0.4);
+  box-shadow: 0 10px 30px rgba(255, 59, 59, 0.15);
+}
+
+.plan-card.current-plan {
+  border: 2px solid #ff3b3b;
+  background: linear-gradient(180deg, rgba(255, 59, 59, 0.08) 0%, #1c1c24 100%);
+}
+
+.current-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  background: #ff3b3b;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 10px rgba(255, 59, 59, 0.4);
+}
+
+.catalog-plan-name {
+  margin: 0 0 12px 0;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.catalog-plan-price {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: baseline;
+}
+
+.catalog-plan-price .currency {
+  font-size: 1.2rem;
+  color: #ff3b3b;
+  font-weight: 700;
+}
+
+.catalog-plan-price .amount {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 4px;
+}
+
+.catalog-plan-price .period {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.plan-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-grow: 1;
+}
+
+.plan-features-list li {
+  font-size: 0.88rem;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.check-feat {
+  color: #00e676;
+  font-size: 0.95rem;
+}
+
+.select-plan-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #ff3b3b;
+  border-radius: 10px;
+  padding: 11px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.select-plan-btn:hover:not(.btn-disabled) {
+  background: #ff3b3b;
+  box-shadow: 0 4px 15px rgba(255, 59, 59, 0.4);
+}
+
+.select-plan-btn.btn-disabled {
+  border-color: #444;
+  color: #666;
+  cursor: default;
+}

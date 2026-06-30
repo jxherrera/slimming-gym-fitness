@@ -2,7 +2,7 @@ const { sql, poolPromise } = require('../config/db');
 
 const addEvaluation = async (req, res) => {
     try {
-        const { userId, coachId, weightKg, bodyFatPercentage, chestPerimeter, waistPerimeter, notes } = req.body;
+        const { userId, coachId, weightKg, bodyFatPercentage, muscleMassPercentage } = req.body;
 
         if (!userId || !coachId || !weightKg) {
             return res.status(400).json({ success: false, message: 'Faltan datos obligatorios (Usuario, Entrenador o Peso).' });
@@ -15,14 +15,12 @@ const addEvaluation = async (req, res) => {
             .input('CoachID', sql.Int, coachId)
             .input('WeightKg', sql.Decimal(5,2), weightKg)
             .input('BodyFatPercentage', sql.Decimal(5,2), bodyFatPercentage || null)
-            .input('ChestPerimeter', sql.Decimal(5,2), chestPerimeter || null)
-            .input('WaistPerimeter', sql.Decimal(5,2), waistPerimeter || null)
-            .input('Notes', sql.NVarChar(500), notes || '')
+            .input('MuscleMassPercentage', sql.Decimal(5,2), muscleMassPercentage || null)
             .query(`
                 INSERT INTO dbo.PhysicalEvaluations 
-                (UserID, CoachID, WeightKg, BodyFatPercentage, ChestPerimeter, WaistPerimeter, Notes)
+                (UserID, CoachID, WeightKg, BodyFatPercentage, MuscleMassPercentage)
                 VALUES 
-                (@UserID, @CoachID, @WeightKg, @BodyFatPercentage, @ChestPerimeter, @WaistPerimeter, @Notes)
+                (@UserID, @CoachID, @WeightKg, @BodyFatPercentage, @MuscleMassPercentage)
             `);
 
         res.status(201).json({ success: true, message: 'Evaluación física registrada exitosamente.' });
@@ -45,9 +43,7 @@ const getEvaluationHistory = async (req, res) => {
                     EvaluationDate,
                     WeightKg,
                     BodyFatPercentage,
-                    ChestPerimeter,
-                    WaistPerimeter,
-                    Notes
+                    MuscleMassPercentage
                 FROM dbo.PhysicalEvaluations
                 WHERE UserID = @UserID
                 ORDER BY EvaluationDate DESC -- Mostramos la más reciente primero

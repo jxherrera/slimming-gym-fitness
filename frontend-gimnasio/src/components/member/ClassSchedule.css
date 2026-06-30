@@ -1,0 +1,244 @@
+.schedule-card-container {
+  background: #16161c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.schedule-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.schedule-icon {
+  font-size: 2.2rem;
+  color: #ff3b3b;
+}
+
+.schedule-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #fff;
+}
+
+.schedule-header p {
+  margin: 4px 0 0 0;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.days-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 0.9rem;
+  color: #bbb;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.days-btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.day-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ccc;
+  padding: 7px 15px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.day-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.day-btn.active {
+  background: #ff3b3b;
+  color: #fff;
+  border-color: #ff3b3b;
+  box-shadow: 0 4px 10px rgba(255, 59, 59, 0.4);
+}
+
+.classes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.class-card {
+  background: #1c1c24;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.class-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 59, 59, 0.3);
+}
+
+.class-card.booked {
+  border: 2px solid #00e676;
+  background: linear-gradient(180deg, rgba(0, 230, 118, 0.08) 0%, #1c1c24 100%);
+}
+
+.class-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.category-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+.category-badge.cardio {
+  background: rgba(255, 59, 59, 0.2);
+  color: #ff3b3b;
+}
+
+.category-badge.fuerza {
+  background: rgba(0, 230, 118, 0.2);
+  color: #00e676;
+}
+
+.category-badge.flexibilidad {
+  background: rgba(41, 182, 246, 0.2);
+  color: #29b6f6;
+}
+
+.class-day {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 600;
+}
+
+.class-title {
+  margin: 0 0 14px 0;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.class-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.detail-item {
+  font-size: 0.88rem;
+  color: #bbb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capacity-bar-box {
+  margin-bottom: 18px;
+}
+
+.capacity-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.capacity-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.capacity-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00e676, #ff3b3b);
+  border-radius: 6px;
+}
+
+.btn-book-class {
+  background: linear-gradient(135deg, #ff3b3b, #d32f2f);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(255, 59, 59, 0.3);
+}
+
+.btn-book-class:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 59, 59, 0.5);
+}
+
+.btn-book-class:disabled {
+  background: #333;
+  color: #777;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-cancel-reservation {
+  background: transparent;
+  color: #ff5252;
+  border: 1px solid #ff5252;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+
+.btn-cancel-reservation:hover {
+  background: rgba(255, 82, 82, 0.15);
+}
+
+.no-classes {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 30px;
+  color: #888;
+  font-style: italic;
+}

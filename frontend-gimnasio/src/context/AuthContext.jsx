@@ -1,57 +1,76 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useState, useEffect } from 'react';
+import { authService, setAuthTokenHeader, parseJwt } from '../services/authService';
 
-const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+    const initAuth = () => {
+      try {
+        const storedToken = authService.getStoredToken();
+        const storedUser = authService.getStoredUser();
+
+        if (storedToken && storedUser) {
+          const decoded = parseJwt(storedToken);
+          if (decoded && decoded.exp && decoded.exp * 1000 < Date.now()) {
+            console.warn('Token JWT expirado.');
+            authService.logout();
+          } else {
+            setToken(storedToken);
+            setUser(storedUser);
+            setAuthTokenHeader(storedToken);
+          }
+        }
+      } catch (error) {
+        console.error('Error al inicializar sesión:', error);
+        authService.logout();
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error('Failed to parse user from localStorage', e);
-    }
-    setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
-  const login = (userData) => {
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-    
-    let role = String(userData.role || 'member').toLowerCase();
-    if (role === '1') role = 'member';
-    if (role === '2') role = 'coach';
-    if (role === '3') role = 'admin';
-
-    if (role === 'admin') {
-      navigate('/admin');
-    } else if (role === 'coach') {
-      navigate('/coach');
-    } else {
-      navigate('/member');
+  const login = async (email, password) => {
+    setLoading(true);
+    try {
+      const result = await authService.login(email, password);
+      setUser(result.user);
+      setToken(result.token);
+      return result;
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const register = async (formData) => {
+    return await authService.register(formData);
   };
 
   const logout = () => {
-    localStorage.removeItem('user');
+    authService.logout();
     setUser(null);
-    navigate('/login');
+    setToken(null);
   };
 
-  const role = user ? String(user.role || 'member').toLowerCase() : null;
-  const parsedRole = role === '1' ? 'member' : role === '2' ? 'coach' : role === '3' ? 'admin' : role;
+  const value = {
+    user,
+    token,
+    loading,
+    isAuthenticated: !!token && !!user,
+    login,
+    register,
+    logout
+  };
 
   return (
-    <AuthContext.Provider value={{ user, role: parsedRole, login, logout, loading }}>
-      {!loading && children}
+    <AuthContext.Provider value={value}>
+      {children}
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);

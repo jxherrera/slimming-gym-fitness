@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 import './Login.css';
 
-// Estado inicial limpio para evitar escribirlo dos veces
 const INITIAL_FORM_STATE = {
   email: '',
   password: '',
@@ -17,10 +15,12 @@ const INITIAL_FORM_STATE = {
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
+  
   const [message, setMessage] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -31,36 +31,49 @@ const Login = () => {
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
-    setMessage(''); // Limpiar mensajes de error al cambiar de pestaña
-    setFormData(INITIAL_FORM_STATE); // Resetear datos para evitar que se mezclen
+    setMessage('');
+    setFormData(INITIAL_FORM_STATE);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
-
-    const endpoint = `auth/${isLogin ? 'login' : 'register'}`;
-    
-    // Construcción del payload
-    const payload = isLogin
-      ? { Email: formData.email, Password: formData.password }
-      : { ...formData, Email: formData.email, Password: formData.password };
+    setIsSubmitting(true);
 
     try {
-      const response = await api.post(endpoint, payload);
-      const data = response.data;
-
-      const welcomeName = data.user?.firstName ? ` ${data.user.firstName}` : '';
-      const successMsg = isLogin ? 'Sesión iniciada correctamente' : 'Usuario registrado con éxito';
-      setMessage(`${data.message || successMsg}. ¡Bienvenido${welcomeName}!`);
-
-      // Redirigir y limpiar
-      login(data.user || {}, data.token);
-      if (!isLogin) setFormData(INITIAL_FORM_STATE);
-
+      if (isLogin) {
+        const result = await login(formData.email, formData.password);
+        const role = (result.user?.role || 'member').toString().trim().toLowerCase();
+        
+        const routes = {
+          admin: '/admin',
+          coach: '/coach',
+          member: '/member'
+        };
+        const redirectPath = routes[role] || '/member';
+        
+        const welcomeName = result.user?.firstName ? ` ${result.user.firstName}` : '';
+        setMessage(`Sesión iniciada correctamente. ¡Bienvenido${welcomeName}!`);
+        
+        setTimeout(() => {
+          navigate(redirectPath);
+        }, 300);
+      } else {
+        const resData = await register(formData);
+        if (resData.success) {
+          setMessage(resData.message || 'Usuario registrado con éxito. Ahora puedes iniciar sesión.');
+          setIsLogin(true);
+          setFormData(INITIAL_FORM_STATE);
+        } else {
+          setMessage(resData.message || 'Ocurrió un error al registrar.');
+        }
+      }
     } catch (error) {
-      console.error('Error al conectar con la API:', error);
-      setMessage(error.response?.data?.message || 'No se pudo conectar con el servidor.');
+      console.error('Error durante la autenticación:', error);
+      const errMsg = error.response?.data?.message || error.message || 'Error al conectar con el servidor.';
+      setMessage(errMsg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -109,8 +122,8 @@ const Login = () => {
           <input type="password" name="password" value={formData.password} onChange={handleChange} required />
         </div>
 
-        <button type="submit" className="login-btn">
-          {isLogin ? 'Entrar' : 'Crear cuenta'}
+        <button type="submit" className="login-btn" disabled={isSubmitting}>
+          {isSubmitting ? 'Procesando...' : (isLogin ? 'Entrar' : 'Crear cuenta')}
         </button>
 
         {message && <p className="message-box">{message}</p>}

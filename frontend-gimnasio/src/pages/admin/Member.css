@@ -1,0 +1,142 @@
+/* Hoja de estilos para el panel del socio (Member.jsx) */
+.member-dashboard {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  color: #f3f4f6;
+  background-color: #0b0f19;
+  min-height: 100vh;
+}
+
+.member-header {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #1f2937;
+  padding-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.member-header h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ff3b3b, #ff7300);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.member-header p {
+  color: #9ca3af;
+  margin: 0.5rem 0 0 0;
+  font-size: 1.05rem;
+}
+
+/* Tab Navigation Bar */
+.member-tabs-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #aaa;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #ff3b3b, #d32f2f);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 15px rgba(255, 59, 59, 0.4);
+}
+
+.tab-content-area {
+  animation: tabFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.routine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.routine-item {
+  background: rgba(31, 41, 55, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.routine-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.routine-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.routine-coach {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.routine-goal {
+  color: #cbd5e1;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.5;
+  background: rgba(255, 59, 59, 0.08);
+  border-left: 3px solid #ff3b3b;
+  padding: 0.75rem 1rem;
+  border-radius: 0 8px 8px 0;
+}
+
+.no-data {
+  text-align: center;
+  color: #9ca3af;
+  padding: 2rem 0;
+  font-style: italic;
+}

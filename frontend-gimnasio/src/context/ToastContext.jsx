@@ -1,53 +1,37 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import '../components/common/Toast.css';
+import React, { createContext, useState, useCallback } from 'react';
 
-const ToastContext = createContext();
+export const ToastContext = createContext(null);
+
+let toastCount = 0;
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((message, type = 'info', duration = 3000) => {
-    const id = Date.now() + Math.random().toString(36).substr(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-
-    setTimeout(() => {
-      removeToast(id);
-    }, duration);
-  }, []);
-
   const removeToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   }, []);
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'success': return '✓';
-      case 'error': return '✗';
-      case 'warning': return '⚠';
-      default: return 'ℹ';
+  const showToast = useCallback((message, type = 'info', duration = 4000) => {
+    const id = ++toastCount;
+    const newToast = { id, message, type, duration };
+    
+    setToasts((prevToasts) => [...prevToasts, newToast]);
+
+    if (duration > 0) {
+      setTimeout(() => {
+        removeToast(id);
+      }, duration);
     }
-  };
+  }, [removeToast]);
+
+  const success = useCallback((msg, duration) => showToast(msg, 'success', duration), [showToast]);
+  const error = useCallback((msg, duration) => showToast(msg, 'error', duration), [showToast]);
+  const warning = useCallback((msg, duration) => showToast(msg, 'warning', duration), [showToast]);
+  const info = useCallback((msg, duration) => showToast(msg, 'info', duration), [showToast]);
 
   return (
-    <ToastContext.Provider value={{ addToast, removeToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, removeToast, success, error, warning, info }}>
       {children}
-      <div className="toast-container" id="toast-container">
-        {toasts.map((toast) => (
-          <div key={toast.id} className={`toast-card toast-${toast.type}`} onClick={() => removeToast(toast.id)}>
-            <span className="toast-icon">{getIcon(toast.type)}</span>
-            <span className="toast-message">{toast.message}</span>
-            <button className="toast-close">&times;</button>
-          </div>
-        ))}
-      </div>
     </ToastContext.Provider>
   );
-};
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
 };

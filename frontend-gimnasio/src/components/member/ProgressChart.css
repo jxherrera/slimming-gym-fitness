@@ -1,0 +1,154 @@
+.progress-card-container {
+  background: #16161c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.progress-icon {
+  font-size: 2.2rem;
+  color: #ff3b3b;
+}
+
+.progress-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #fff;
+}
+
+.progress-header p {
+  margin: 4px 0 0 0;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.btn-add-progress {
+  background: rgba(255, 59, 59, 0.15);
+  color: #ff3b3b;
+  border: 1px solid rgba(255, 59, 59, 0.4);
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+
+.btn-add-progress:hover {
+  background: #ff3b3b;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 59, 59, 0.4);
+}
+
+.metrics-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.metric-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #aaa;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.metric-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.metric-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: var(--active-color);
+  box-shadow: 0 0 10px var(--active-color);
+}
+
+.chart-wrapper {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.svg-chart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart-point-group circle {
+  transition: all 0.2s ease;
+}
+
+.chart-point-group:hover circle {
+  r: 8;
+  filter: drop-shadow(0 0 8px #fff);
+}
+
+.progress-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summary-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stat-value.diff-negative {
+  color: #00e676;
+}
+
+.stat-value.diff-positive {
+  color: #ff3b3b;
+}

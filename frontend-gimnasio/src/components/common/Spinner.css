@@ -1,61 +1,61 @@
-.spinner-wrapper {
-  display: inline-flex;
-  justify-content: center;
+.spinner-container {
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 12px;
+}
+
+.spinner-container.full-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
 }
 
 .spinner-ring {
-  box-sizing: border-box;
+  position: relative;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0%, #ff3b3b 100%);
+  animation: spinGlow 0.8s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  box-shadow: 0 0 15px rgba(255, 59, 59, 0.4);
+}
+
+.spinner-sm { width: 24px; height: 24px; }
+.spinner-md { width: 44px; height: 44px; }
+.spinner-lg { width: 68px; height: 68px; }
+
+.spinner-core {
   width: 100%;
   height: 100%;
+  background-color: #16161a;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  animation: spinnerRotate 0.8s linear infinite;
 }
 
-/* Tamaños */
-.size-small {
-  width: 20px;
-  height: 20px;
-}
-.size-small .spinner-ring {
-  border-width: 2px;
-}
-
-.size-medium {
-  width: 40px;
-  height: 40px;
-}
-.size-medium .spinner-ring {
-  border-width: 3px;
+.spinner-text {
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  animation: pulseText 1.5s ease-in-out infinite;
 }
 
-.size-large {
-  width: 60px;
-  height: 60px;
-}
-.size-large .spinner-ring {
-  border-width: 4px;
+@keyframes spinGlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Colores */
-.color-primary .spinner-ring {
-  border-top-color: #ff3b3b; /* Rojo Gym */
-}
-
-.color-secondary .spinner-ring {
-  border-top-color: #fff;
-}
-
-.color-accent .spinner-ring {
-  border-top-color: #3b82f6; /* Azul */
-}
-
-@keyframes spinnerRotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+@keyframes pulseText {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }

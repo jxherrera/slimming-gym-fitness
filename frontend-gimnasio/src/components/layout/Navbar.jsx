@@ -1,20 +1,40 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaBars, FaTimes } from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext';
+import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaTachometerAlt } from 'react-icons/fa';
+import { useAuth } from '../../hooks/useAuth';
 import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, role, logout } = useAuth();
   const [click, setClick] = useState(false);
+
+  const { user, isAuthenticated, logout } = useAuth();
 
   const handleClick = () => setClick(!click);
   const closeMenu = () => setClick(false);
   
   const goToLogin = () => {
     navigate('/login');
+    closeMenu();
+  };
+
+  const handleLogout = () => {
+    logout();
+    closeMenu();
+    navigate('/');
+  };
+
+  const getDashboardRoute = () => {
+    if (!user) return '/member';
+    const role = (user.role || 'member').toString().toLowerCase();
+    if (role === 'admin') return '/admin';
+    if (role === 'coach') return '/coach';
+    return '/member';
+  };
+
+  const goToPanel = () => {
+    navigate(getDashboardRoute());
     closeMenu();
   };
 
@@ -33,54 +53,38 @@ const Navbar = () => {
             <li><Link to="/sobre-nosotros" onClick={closeMenu}>Sobre Nosotros</Link></li>
             <li><Link to="/planes" onClick={closeMenu}>Planes</Link></li>
             
-            {user ? (
-              <>
-                <li className="nav-user-mobile-info">
-                  <span className="user-greeting-mobile">Hola, {user.firstName}</span>
-                </li>
-                <li className="btn-mobile">
-                  <button 
-                    className="btn-panel-nav" 
-                    onClick={() => {
-                      navigate(role === 'admin' ? '/admin' : role === 'coach' ? '/coach' : '/member');
-                      closeMenu();
-                    }}
-                  >
-                    Mi Panel
+            <li className="btn-mobile">
+              {isAuthenticated ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                  <span className="user-name-badge">
+                    <FaUserCircle /> {user?.firstName || user?.name || 'Usuario'}
+                  </span>
+                  <button className="btn-panel" onClick={goToPanel}>
+                    <FaTachometerAlt /> Mi Panel
                   </button>
-                </li>
-                <li className="btn-mobile">
-                  <button 
-                    className="btn-logout-nav" 
-                    onClick={() => {
-                      logout();
-                      closeMenu();
-                    }}
-                  >
-                    Cerrar Sesión
+                  <button className="btn-logout" onClick={handleLogout}>
+                    <FaSignOutAlt /> Cerrar Sesión
                   </button>
-                </li>
-              </>
-            ) : (
-              <li className="btn-mobile">
-                 <button className="btn-login-nav" onClick={goToLogin}>
-                   Iniciar Sesión
-                 </button>
-              </li>
-            )}
+                </div>
+              ) : (
+                <button className="btn-login-nav" onClick={goToLogin}>
+                  Iniciar Sesión
+                </button>
+              )}
+            </li>
           </ul>
 
           <div className="btn-group-desktop">
-            {user ? (
-              <div className="user-area-desktop">
-                <span className="user-greeting">
-                  Hola, <strong className="user-name">{user.firstName}</strong>
+            {isAuthenticated ? (
+              <div className="user-menu-group">
+                <span className="user-name-badge">
+                  <FaUserCircle /> {user?.firstName || user?.name || 'Usuario'}
                 </span>
-                <Link to={role === 'admin' ? '/admin' : role === 'coach' ? '/coach' : '/member'} className="btn-panel">
+                <button className="btn-panel" onClick={goToPanel}>
                   Mi Panel
-                </Link>
-                <button className="btn-logout" onClick={logout}>
-                  Cerrar Sesión
+                </button>
+                <button className="btn-logout" onClick={handleLogout} title="Cerrar Sesión">
+                  <FaSignOutAlt />
                 </button>
               </div>
             ) : (

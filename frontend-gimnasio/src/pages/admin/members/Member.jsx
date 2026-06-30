@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { FaDumbbell, FaMoneyBillWave, FaCalendarAlt, FaSpinner } from 'react-icons/fa';
+import { FaUser, FaDumbbell, FaCalendarAlt, FaMoneyBillWave, FaSpinner } from 'react-icons/fa';
+import { jsPDF } from 'jspdf';
 import '../shared/admin-core.css';
+import './components/MemberTabs.css';
 import { useAuth } from '../../../context/AuthContext';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
+import AlertModal from '../../../components/common/AlertModal';
+import UserProfile from './components/UserProfile';
+import SubscriptionStatus from './components/SubscriptionStatus';
+import ClassReservations from './components/ClassReservations';
+import ProgressCharts from './components/ProgressCharts';
+import Payments from './components/Payments';
 
 const Member = () => {
-  const { user } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const userId = user?.userId;
 
   // Control de Tema Oscuro/Claro desde Context
@@ -14,35 +22,27 @@ const Member = () => {
   const themeClass = isDarkMode ? 'theme-dark' : 'theme-light';
   const themeIcon = isDarkMode ? '☀️' : '🌙';
 
-  // Estados para la carga de datos del panel del socio
-  const [plans, setPlans] = useState([]);
+  // Estados para la carga de datos
   const [subscription, setSubscription] = useState(null);
   const [routines, setRoutines] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showPaymentOnly, setShowPaymentOnly] = useState(false);
 
-  // Estados del formulario de subida de pagos
+  // Estados de navegación interna (Pestañas)
+  const [activeTab, setActiveTab] = useState('perfil'); // 'perfil' | 'membresia' | 'clases' | 'progreso' | 'pagos'
   const [selectedPlanId, setSelectedPlanId] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Transferencia');
-  const [referenceNumber, setReferenceNumber] = useState('');
-  const [receiptUrl, setReceiptUrl] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
-  const [formError, setFormError] = useState('');
-  const [formSubmitting, setFormSubmitting] = useState(false);
 
-  // Consulta de la suscripción actual del socio y los planes del gimnasio
+  // Consulta de suscripción y rutinas del socio
   const fetchData = async () => {
     if (!userId) return;
     try {
       setLoading(true);
 
-      // Carga paralela de planes, suscripción del socio y sus rutinas correspondientes
-      const [plansRes, subRes, routinesRes] = await Promise.all([
-        api.get('/plans'),
+      const [subRes, routinesRes] = await Promise.all([
         api.get(`/users/${userId}/subscription`),
         api.get(`/routines/user/${userId}`)
       ]);
 
-      setPlans(plansRes.data);
       if (subRes.data.success) {
         setSubscription(subRes.data.subscription);
       }
@@ -60,69 +60,166 @@ const Member = () => {
     fetchData();
   }, [userId]);
 
-  // Manejador del formulario para registrar y subir un nuevo comprobante de pago
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    setFormSuccess('');
-    setFormError('');
+  // Manejo de selección de plan desde el catálogo
+  const handleSelectPlan = (planId) => {
+    setSelectedPlanId(planId);
+    setActiveTab('pagos');
+  };
 
-    if (!selectedPlanId || !paymentMethod || !referenceNumber || !receiptUrl) {
-      setFormError('Por favor, completa todos los campos del formulario.');
-      return;
-    }
-
-    try {
-      setFormSubmitting(true);
-      const response = await api.post('/payments/upload', {
-        userId,
-        planId: Number(selectedPlanId),
-        paymentMethod,
-        referenceNumber,
-        receiptUrl
-      });
-
-      const data = response.data;
-
-      if (data.success) {
-        setFormSuccess(data.message);
-        // Limpiar campos del formulario tras subir el comprobante de forma exitosa
-        setSelectedPlanId('');
-        setReferenceNumber('');
-        setReceiptUrl('');
-        // Recargar datos del panel para reflejar el pago pendiente de revisión
-        fetchData();
-      } else {
-        setFormError(data.message || 'Error al procesar el pago.');
+  // Exportar rutinas activas a PDF usando jsPDF
+  const exportRoutinesToPDF = () => {
+    if (routines.length === 0) return;
+    
+    const doc = new jsPDF();
+    
+    // Configurar Estilos y Fuentes
+    doc.setFillColor(43, 37, 50); // Fondo oscuro en la cabecera
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text("SLIMMING GYM FITNESS", 15, 25);
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Rutina de Entrenamiento Personalizada", 15, 33);
+    
+    // Información del Socio
+    doc.setTextColor(43, 37, 50);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Información del Socio", 15, 55);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(`Nombre: ${user?.firstName || 'Socio'} ${user?.lastName || ''}`, 15, 63);
+    doc.text(`Email: ${user?.email}`, 15, 70);
+    doc.text(`Fecha de Exportación: ${new Date().toLocaleDateString()}`, 15, 77);
+    
+    doc.setDrawColor(229, 231, 235);
+    doc.line(15, 83, 195, 83); // Divisor
+    
+    // Listado de Rutinas
+    let currentY = 95;
+    
+    routines.forEach((routine, index) => {
+      // Dibujar caja de rutina
+      doc.setFillColor(249, 250, 251);
+      doc.rect(15, currentY, 180, 40, 'F');
+      doc.setDrawColor(229, 231, 235);
+      doc.rect(15, currentY, 180, 40, 'S');
+      
+      doc.setTextColor(43, 37, 50);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(`${index + 1}. ${routine.RoutineName || 'Rutina de Entrenamiento'}`, 20, currentY + 10);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Objetivo: ${routine.Goal}`, 20, currentY + 20);
+      doc.text(`Entrenador: ${routine.CoachName || 'No asignado'}`, 20, currentY + 28);
+      
+      currentY += 50;
+      
+      // Manejo de salto de página si hay muchas rutinas
+      if (currentY > 260) {
+        doc.addPage();
+        currentY = 20;
       }
-    } catch (error) {
-      console.error('Error al enviar pago:', error);
-      setFormError('Ocurrió un error al enviar el comprobante de pago.');
-    } finally {
-      setFormSubmitting(false);
-    }
+    });
+    
+    // Guardar PDF
+    doc.save(`Rutina_${user?.firstName || 'Socio'}.pdf`);
   };
 
   if (loading) {
     return (
-      <div className="admin-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <FaSpinner className="spinner" style={{ fontSize: '3rem', animation: 'spin 1s linear infinite', color: '#3b82f6' }} />
+      <div className="admin-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <FaSpinner className="spinner" style={{ fontSize: '3rem', animation: 'spin 1s linear infinite', color: '#ff3b3b' }} />
       </div>
     );
   }
 
-  // Cálculos para la barra de progreso de días restantes
-  const hasSubscription = subscription && subscription.paymentStatus === 'P';
-  const remainingDays = subscription ? Math.max(0, subscription.remainingDays) : 0;
-  const durationDays = subscription ? subscription.durationDays : 30;
-  const progressPercent = hasSubscription ? Math.min(100, Math.max(0, (remainingDays / durationDays) * 100)) : 0;
-  const isWarningDays = remainingDays <= 7;
+  // Verificación de membresía activa
+  const hasSubscription = subscription && subscription.paymentStatus === 'P' && subscription.remainingDays > 0;
 
+  // Render para usuarios bloqueados (membresía inactiva)
+  if (!hasSubscription && !showPaymentOnly) {
+    const isUnderReview = subscription && subscription.paymentRequestStatus === 'P';
+    return (
+      <div className={`admin-page ${themeClass}`} style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <AlertModal
+          isOpen={true}
+          title={isUnderReview ? "Pago en Revisión" : "Acceso Restringido"}
+          message={
+            isUnderReview
+              ? "Tu comprobante de pago está siendo revisado por el administrador. Restableceremos tu acceso a las rutinas y reservas tan pronto como sea aprobado."
+              : "Tu membresía de Slimming Gym se encuentra inactiva, vencida o suspendida. Por favor, reporta un pago de transferencia o contacta al administrador para reactivar tu cuenta."
+          }
+          actions={
+            <>
+              {!isUnderReview && (
+                <button 
+                  className="btn-pill-blue" 
+                  onClick={() => setShowPaymentOnly(true)}
+                  style={{ padding: '12px', width: '100%', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  Reportar Pago
+                </button>
+              )}
+              <button 
+                className="btn-modal-cancel" 
+                onClick={logout}
+                style={{ padding: '12px', width: '100%', fontWeight: '600', marginTop: '10px', cursor: 'pointer' }}
+              >
+                Cerrar Sesión
+              </button>
+            </>
+          }
+        />
+      </div>
+    );
+  }
+
+  // Vista restringida del formulario de pagos (cuando el usuario vencido pulsa "Reportar Pago")
+  if (!hasSubscription && showPaymentOnly) {
+    return (
+      <div className={`admin-page ${themeClass} fade-in`} style={{ padding: '20px' }}>
+        <div className="settings-main-card" style={{ maxWidth: '700px', margin: '40px auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+            <button 
+              type="button" 
+              className="back-arrow" 
+              onClick={() => setShowPaymentOnly(false)} 
+              aria-label="Volver"
+              style={{ background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer' }}
+            >
+              ⇦
+            </button>
+            <h2 className="settings-title" style={{ margin: 0 }}>Reportar Pago de Membresía</h2>
+          </div>
+          
+          <Payments 
+            user={user} 
+            subscription={subscription} 
+            selectedPlanId={selectedPlanId}
+            setSelectedPlanId={setSelectedPlanId}
+            onPaymentSuccess={fetchData}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Panel del socio principal desbloqueado
   return (
     <div className={`admin-page ${themeClass} fade-in`} style={{ padding: '20px' }}>
       <div className="settings-main-card" style={{ maxWidth: '900px', margin: '0 auto' }}>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="settings-title" style={{ marginBottom: '10px' }}>Panel de Socio</h2>
+        {/* Cabecera del Panel */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h2 className="settings-title" style={{ margin: 0 }}>Panel de Socio</h2>
           <button
             type="button"
             className="theme-toggle"
@@ -134,157 +231,137 @@ const Member = () => {
           </button>
         </div>
         <p style={{ color: '#8b8593', marginBottom: '40px', fontSize: '15px' }}>
-          Bienvenido, <strong>{user.firstName || 'Socio'}</strong>. Gestiona tu membresía, pagos y rutinas aquí.
+          Bienvenido, <strong>{user?.firstName || 'Socio'}</strong>. Gestiona tu membresía, pagos y datos desde aquí.
         </p>
 
-        {/* --- SECCIÓN: ESTADO DE MEMBRESÍA --- */}
-        <div className="settings-sub-header">Membresía y Accesos</div>
-        
-        <div className="setting-row">
-          <div className={`setting-icon ${hasSubscription ? 'success' : 'warning'}`}>
-            <FaCalendarAlt />
-          </div>
-          <div className="setting-content">
-            <div className="setting-title">Estado de Suscripción</div>
-            <div className="setting-desc">
-              {subscription ? (
-                <>
-                  Plan <strong>{subscription.planName}</strong> • 
-                  {subscription.paymentStatus === 'P' ? (
-                     ` Vence el: ${new Date(subscription.endDate).toLocaleDateString()}`
-                  ) : subscription.paymentRequestStatus === 'P' ? (
-                     ' Pago en revisión por el administrador.'
-                  ) : subscription.paymentRequestStatus === 'R' ? (
-                     <span style={{ color: '#ef4444' }}> Comprobante rechazado.</span>
-                  ) : (
-                     ' Pendiente de pago.'
-                  )}
-                </>
+        {/* Navegación por pestañas */}
+        <div className="member-tabs-nav">
+          <button 
+            className={`member-tab-btn ${activeTab === 'perfil' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('perfil')}
+          >
+            <FaUser /> Mi Perfil
+          </button>
+          <button 
+            className={`member-tab-btn ${activeTab === 'membresia' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('membresia')}
+          >
+            <FaCalendarAlt /> Mi Membresía
+          </button>
+          <button 
+            className={`member-tab-btn ${activeTab === 'clases' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('clases')}
+          >
+            🗓️ Clases y Reservas
+          </button>
+          <button 
+            className={`member-tab-btn ${activeTab === 'progreso' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('progreso')}
+          >
+            📊 Mi Progreso
+          </button>
+          <button 
+            className={`member-tab-btn ${activeTab === 'pagos' ? 'tab-active' : ''}`}
+            onClick={() => setActiveTab('pagos')}
+          >
+            <FaMoneyBillWave /> Pagos e Historial
+          </button>
+        </div>
+
+        {/* Contenido dinámico de las pestañas */}
+        {activeTab === 'perfil' && (
+          <div className="tab-container">
+            <UserProfile user={user} onUpdateUser={updateUser} />
+            
+            {/* Mi Rutina del Día (Se muestra en la pestaña de Perfil) */}
+            <div style={{ marginTop: '40px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaDumbbell style={{ color: '#ff3b3b' }} /> Mi Rutina del Día
+                </h3>
+                {routines.length > 0 && (
+                  <button
+                    onClick={exportRoutinesToPDF}
+                    style={{
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#fff',
+                      padding: '6px 14px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    📥 Descargar PDF
+                  </button>
+                )}
+              </div>
+              
+              {routines.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {routines.map((routine) => (
+                    <div 
+                      key={routine.RoutineID} 
+                      style={{ 
+                        background: 'rgba(255, 255, 255, 0.02)', 
+                        border: '1px solid rgba(255, 255, 255, 0.05)', 
+                        padding: '20px', 
+                        borderRadius: '12px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <div>
+                        <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', color: '#fff' }}>{routine.RoutineName || 'Rutina de Entrenamiento'}</h4>
+                        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+                          Entrenador: <strong style={{ color: '#fff' }}>{routine.CoachName || 'No asignado'}</strong>
+                        </span>
+                      </div>
+                      <span style={{ background: 'rgba(255,59,59,0.1)', color: '#ff3b3b', padding: '4px 12px', borderRadius: '50px', fontSize: '12px', fontWeight: '700' }}>
+                        {routine.Goal}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                'No tienes suscripción activa.'
+                <div style={{ textAlign: 'center', padding: '40px 10px', color: 'rgba(255,255,255,0.4)', fontSize: '14px', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                  No tienes rutinas asignadas hoy. Consulta a tu entrenador personal.
+                </div>
               )}
             </div>
           </div>
-          <div className="setting-action">
-            {hasSubscription && (
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: '700', color: isWarningDays ? '#f59e0b' : '#10b981', fontSize: '14px' }}>
-                  {remainingDays} días restantes
-                </div>
-                <div style={{ width: '100px', height: '8px', background: '#e2e8f0', borderRadius: '4px', marginTop: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${progressPercent}%`, height: '100%', background: isWarningDays ? '#f59e0b' : '#10b981' }}></div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* --- SECCIÓN: RUTINAS --- */}
-        <div className="settings-sub-header">Mi Rutina del Día</div>
-        
-        {routines.length > 0 ? (
-          routines.map((routine) => (
-            <div key={routine.RoutineID} className="setting-row">
-              <div className="setting-icon">
-                <FaDumbbell />
-              </div>
-              <div className="setting-content">
-                <div className="setting-title">{routine.RoutineName || 'Rutina de Entrenamiento'}</div>
-                <div className="setting-desc">
-                  Entrenador: <strong>{routine.CoachName || 'No asignado'}</strong> • {routine.Goal}
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="setting-row" style={{ justifyContent: 'center', background: 'transparent', border: '1px dashed #cbcccf' }}>
-            <span style={{ color: '#8b8593', fontSize: '14px' }}>No tienes rutinas asignadas hoy. Consulta a tu entrenador.</span>
-          </div>
         )}
 
-        {/* --- SECCIÓN: PAGOS --- */}
-        <div className="settings-sub-header">Información Financiera</div>
-        
-        <div style={{ background: '#f8f9fa', padding: '24px', borderRadius: '16px', border: '1px solid #e5e7eb' }} className="theme-dark-fix-bg">
-          <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: '#2b2532' }} className="theme-dark-fix-text">Reportar nuevo pago</h3>
-          
-          {formSuccess && <div style={{ background: '#dcfce7', color: '#166534', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>{formSuccess}</div>}
-          {formError && <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>{formError}</div>}
-          
-          <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Plan a Pagar</label>
-                <select 
-                  className="form-select" 
-                  style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px' }}
-                  value={selectedPlanId} 
-                  onChange={(e) => setSelectedPlanId(e.target.value)}
-                  required
-                >
-                  <option value="">-- Elige un plan --</option>
-                  {plans.map((plan) => (
-                    <option key={plan.PlanID} value={plan.PlanID}>
-                      {plan.PlanName} - ${plan.Price}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        {activeTab === 'membresia' && (
+          <SubscriptionStatus 
+            subscription={subscription} 
+            onSelectPlan={handleSelectPlan} 
+          />
+        )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Método de Pago</label>
-                <select 
-                  className="form-select" 
-                  style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px' }}
-                  value={paymentMethod} 
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  required
-                >
-                  <option value="Transferencia">Transferencia Bancaria</option>
-                  <option value="Tarjeta">Tarjeta de Crédito / Débito</option>
-                  <option value="Efectivo">Depósito en Efectivo</option>
-                </select>
-              </div>
-            </div>
+        {activeTab === 'clases' && (
+          <ClassReservations user={user} />
+        )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Número de Referencia</label>
-                <input 
-                  type="text" 
-                  style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }}
-                  placeholder="Ej: TXN987654321" 
-                  value={referenceNumber}
-                  onChange={(e) => setReferenceNumber(e.target.value)}
-                  required
-                />
-              </div>
+        {activeTab === 'progreso' && (
+          <ProgressCharts user={user} />
+        )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>URL del Recibo</label>
-                <input 
-                  type="url" 
-                  style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }}
-                  placeholder="https://..." 
-                  value={receiptUrl}
-                  onChange={(e) => setReceiptUrl(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button 
-                type="submit" 
-                className="btn-pill-blue"
-                disabled={formSubmitting}
-                style={{ padding: '10px 24px' }}
-              >
-                {formSubmitting ? 'Enviando...' : 'Reportar Pago'}
-              </button>
-            </div>
-          </form>
-        </div>
+        {activeTab === 'pagos' && (
+          <Payments 
+            user={user} 
+            subscription={subscription} 
+            selectedPlanId={selectedPlanId}
+            setSelectedPlanId={setSelectedPlanId}
+            onPaymentSuccess={fetchData}
+          />
+        )}
 
       </div>
     </div>

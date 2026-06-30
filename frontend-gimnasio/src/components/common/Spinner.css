@@ -1,0 +1,61 @@
+.spinner-wrapper {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner-ring {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  animation: spinnerRotate 0.8s linear infinite;
+}
+
+/* Tamaños */
+.size-small {
+  width: 20px;
+  height: 20px;
+}
+.size-small .spinner-ring {
+  border-width: 2px;
+}
+
+.size-medium {
+  width: 40px;
+  height: 40px;
+}
+.size-medium .spinner-ring {
+  border-width: 3px;
+}
+
+.size-large {
+  width: 60px;
+  height: 60px;
+}
+.size-large .spinner-ring {
+  border-width: 4px;
+}
+
+/* Colores */
+.color-primary .spinner-ring {
+  border-top-color: #ff3b3b; /* Rojo Gym */
+}
+
+.color-secondary .spinner-ring {
+  border-top-color: #fff;
+}
+
+.color-accent .spinner-ring {
+  border-top-color: #3b82f6; /* Azul */
+}
+
+@keyframes spinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

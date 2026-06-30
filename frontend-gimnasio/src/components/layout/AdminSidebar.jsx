@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   FaBars, FaTimes, FaHome, FaUser, FaDumbbell, 
   FaCalendarAlt, FaMoneyBillWave, FaCog, FaClipboardList,
-  FaChevronDown, FaChevronRight, FaSearch
+  FaChevronDown, FaChevronRight, FaSearch, FaBell
 } from 'react-icons/fa';
 import './AdminSidebar.css';
 
@@ -36,6 +36,7 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         { path: '/admin', name: 'Panel', icon: <FaHome />, roles: ['admin'] },
         { path: '/member', name: 'Clientes', icon: <FaUser />, roles: ['admin', 'coach', 'member'] },
         { path: '/coach', name: 'Entrenadores', icon: <FaDumbbell />, roles: ['admin', 'coach'] },
+        { path: '/member/notifications', name: 'Notificaciones', icon: <FaBell />, roles: ['admin', 'coach', 'member'] },
       ]
     },
     {

@@ -144,3 +144,116 @@
     z-index: 101;
   }
 }
+
+/* ==========================================================================
+   Estilos de Usuario Autenticado (Premium UI)
+   ========================================================================== */
+
+/* UI de Escritorio */
+.user-area-desktop {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-greeting {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.user-name {
+  color: #ff3b3b;
+  font-weight: 600;
+}
+
+.btn-panel {
+  text-decoration: none;
+  background: #ff3b3b;
+  color: #fff;
+  border: 1px solid #ff3b3b;
+  border-radius: 25px;
+  padding: 8px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0px 4px 10px rgba(255, 59, 59, 0.2);
+}
+
+.btn-panel:hover {
+  background: transparent;
+  color: #ff3b3b;
+  box-shadow: 0px 0px 10px rgba(255, 59, 59, 0.4);
+}
+
+.btn-logout {
+  background: transparent;
+  color: #a0a0a0;
+  border: 1px solid rgba(160, 160, 160, 0.4);
+  border-radius: 25px;
+  padding: 8px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+  border-color: #fff;
+  color: #fff;
+}
+
+/* UI de Móvil (dentro del menú desplegable) */
+.nav-user-mobile-info {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.user-greeting-mobile {
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.btn-panel-nav {
+  background: #ff3b3b;
+  color: #fff;
+  border: 1px solid #ff3b3b;
+  border-radius: 25px;
+  padding: 10px 25px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  width: 200px;
+}
+
+.btn-panel-nav:hover {
+  background: transparent;
+  color: #ff3b3b;
+  box-shadow: 0px 0px 10px rgba(255, 59, 59, 0.5);
+}
+
+.btn-logout-nav {
+  background: transparent;
+  color: #a0a0a0;
+  border: 1px solid rgba(160, 160, 160, 0.4);
+  border-radius: 25px;
+  padding: 10px 25px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  width: 200px;
+}
+
+.btn-logout-nav:hover {
+  border-color: #fff;
+  color: #fff;
+}

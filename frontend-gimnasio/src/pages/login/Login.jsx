@@ -55,7 +55,7 @@ const Login = () => {
       setMessage(`${data.message || successMsg}. ¡Bienvenido${welcomeName}!`);
 
       // Redirigir y limpiar
-      login(data.user || {});
+      login(data.user || {}, data.token);
       if (!isLogin) setFormData(INITIAL_FORM_STATE);
 
     } catch (error) {

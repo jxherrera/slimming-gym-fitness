@@ -13,6 +13,8 @@ import CoachPanel from './pages/admin/coaches/CoachPanel';
 import Member from './pages/admin/members/Member';
 import AdminPlanes from './pages/admin/planes/AdminPlanes';
 import AdminPagos from './pages/admin/pagos/AdminPagos';
+import TestDesignSystem from './pages/test/TestDesignSystem';
+import Notifications from './pages/admin/notifications/Notifications';
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, role, loading } = useAuth();
@@ -52,12 +54,14 @@ function App() {
           <Route path="/sobre-nosotros" element={<SobreNosotros />} />
           <Route path="/planes" element={<Planes />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/test-design-system" element={<TestDesignSystem />} />
           
           {/* Rutas de Administrador */}
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
             <Route path="/coach" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><CoachRouteWrapper /></ProtectedRoute>} />
             <Route path="/member" element={<ProtectedRoute allowedRoles={['admin', 'coach', 'member']}><Member /></ProtectedRoute>} />
+            <Route path="/member/notifications" element={<ProtectedRoute allowedRoles={['admin', 'coach', 'member']}><Notifications /></ProtectedRoute>} />
             <Route path="/admin/planes" element={<ProtectedRoute allowedRoles={['admin']}><AdminPlanes /></ProtectedRoute>} />
             <Route path="/admin/pagos" element={<ProtectedRoute allowedRoles={['admin']}><AdminPagos /></ProtectedRoute>} />
             <Route path="/admin/horarios" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><div /></ProtectedRoute>} />

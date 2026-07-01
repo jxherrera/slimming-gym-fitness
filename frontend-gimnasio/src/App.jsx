@@ -11,11 +11,11 @@ import Home from './pages/home/Home';
 import SobreNosotros from './pages/sobrenossotros/SobreNosotros';
 import Planes from './pages/planes/Planes';
 import Login from './pages/login/Login';
-import Admin from './pages/admin/admin';
-import Coach from './pages/admin/Coach';
+import Admin from './pages/admin/dashboard/AdminDashboard';
+import Coach from './pages/admin/CoachPanel';
 import Member from './pages/admin/Member';
-import AdminPlanes from './pages/admin/AdminPlanes';
-import AdminPagos from './pages/admin/AdminPagos';
+import AdminPlanes from './pages/admin/planes/AdminPlanes';
+import AdminPagos from './pages/admin/pagos/AdminPagos';
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isAuthenticated, loading } = useAuth();

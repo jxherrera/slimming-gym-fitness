@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const DEFAULT_CLASSES = [
   { id: 1, name: 'Spinning HIIT Extreme', day: 'Lunes', time: '07:00 - 08:00', instructor: 'Coach Carlos', capacity: 15, bookedCount: 9, category: 'Cardio' },

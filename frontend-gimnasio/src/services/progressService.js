@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const DEFAULT_PROGRESS_HISTORY = [
   { date: '2026-01-15', weight: 82.5, bodyFat: 24.2, muscleMass: 33.1 },

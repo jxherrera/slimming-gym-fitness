@@ -1,6 +1,7 @@
 const { poolPromise, sql } = require('../config/db');
+const { bucket } = require('../config/gcs');
+const { sendEmailAndLog } = require('../config/mailer');
 
-// Obtener comprobantes de pago pendientes de revisión
 exports.getPendingPayments = async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -12,7 +13,7 @@ exports.getPendingPayments = async (req, res) => {
         p.PaymentDate as paymentDate,
         p.PaymentMethod as paymentMethod,
         p.ReferenceNumber as referenceNumber,
-        p.ReceiptUrl as receiptUrl,
+        p.ReceiptImageUrl as receiptImageUrl,
         p.Status as paymentStatus,
         u.UserID as userId,
         (u.FirstName + ' ' + u.LastName) as memberName,
@@ -41,51 +42,46 @@ exports.getPendingPayments = async (req, res) => {
   }
 };
 
-// Aprobar comprobante de pago (activa la suscripción del socio)
 exports.approvePayment = async (req, res) => {
   const paymentId = Number(req.params.id);
+  const { userId } = req.body;
 
   if (!paymentId) {
-    return res.status(400).json({
-      success: false,
-      message: 'ID de pago no válido.'
-    });
+    return res.status(400).json({ success: false, message: 'ID de pago no válido.' });
+  }
+
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'El ID del administrador (userId) es requerido para auditoría.' });
   }
 
   try {
     const pool = await poolPromise;
-
-    // 1. Obtener la suscripción y duración del plan asociadas a este pago
     const detailResult = await pool.request()
       .input('PaymentID', sql.Int, paymentId)
       .query(`
-        SELECT p.SubscriptionID, pl.DurationDays
+        SELECT p.SubscriptionID, pl.DurationDays, u.Email, u.UserID as targetUserId
         FROM Payments p
         INNER JOIN Subscriptions s ON p.SubscriptionID = s.SubscriptionID
         INNER JOIN Plans pl ON s.PlanID = pl.PlanID
+        INNER JOIN Users u ON s.UserID = u.UserID
         WHERE p.PaymentID = @PaymentID
       `);
 
     if (detailResult.recordset.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'No se encontraron los detalles de la suscripción vinculada a este pago.'
-      });
+      return res.status(404).json({ success: false, message: 'No se encontraron los detalles de la suscripción vinculada a este pago.' });
     }
 
-    const { SubscriptionID, DurationDays } = detailResult.recordset[0];
+    const { SubscriptionID, DurationDays, Email, targetUserId } = detailResult.recordset[0];
 
     const transaction = new sql.Transaction(pool);
     await transaction.begin();
 
     try {
-      // 2. Marcar pago como aprobado ('A')
       await transaction.request()
         .input('PaymentID', sql.Int, paymentId)
-        .query("UPDATE Payments SET Status = 'A' WHERE PaymentID = @PaymentID");
+        .input('LastModifiedBy', sql.Int, userId)
+        .query("UPDATE Payments SET Status = 'A', LastModifiedBy = @LastModifiedBy WHERE PaymentID = @PaymentID");
 
-      // 3. Activar la suscripción (PaymentStatus = 'P') y recalcular fechas
-      // La suscripción se activa a partir del día de hoy y expira en (DurationDays) días
       await transaction.request()
         .input('SubscriptionID', sql.Int, SubscriptionID)
         .input('DurationDays', sql.Int, DurationDays)
@@ -99,135 +95,136 @@ exports.approvePayment = async (req, res) => {
 
       await transaction.commit();
 
-      res.json({
-        success: true,
-        message: 'Pago aprobado y suscripción activada correctamente.'
-      });
+      await sendEmailAndLog(
+        targetUserId,
+        Email,
+        'Pago Aprobado - Slimming Gym',
+        '<p>Hola, tu comprobante de pago ha sido aprobado exitosamente. Ya puedes disfrutar de tu plan.</p>',
+        'Pago'
+      );
+
+      res.json({ success: true, message: 'Pago aprobado y suscripción activada correctamente.' });
     } catch (err) {
       await transaction.rollback();
       throw err;
     }
   } catch (error) {
     console.error('Error al aprobar el pago:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno al aprobar el pago.',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error interno al aprobar el pago.', error: error.message });
   }
 };
 
-// Rechazar comprobante de pago
 exports.rejectPayment = async (req, res) => {
   const paymentId = Number(req.params.id);
-
+  const { userId } = req.body;
   if (!paymentId) {
-    return res.status(400).json({
-      success: false,
-      message: 'ID de pago no válido.'
-    });
+    return res.status(400).json({ success: false, message: 'ID de pago no válido.' });
+  }
+
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'El ID del administrador (userId) es requerido para auditoría.' });
   }
 
   try {
     const pool = await poolPromise;
     const result = await pool.request()
       .input('PaymentID', sql.Int, paymentId)
-      .query("UPDATE Payments SET Status = 'R' WHERE PaymentID = @PaymentID");
+      .input('LastModifiedBy', sql.Int, userId)
+      .query("UPDATE Payments SET Status = 'R', LastModifiedBy = @LastModifiedBy WHERE PaymentID = @PaymentID");
 
     if (result.rowsAffected[0] === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Pago no encontrado.'
-      });
+      return res.status(404).json({ success: false, message: 'Pago no encontrado.' });
     }
 
-    res.json({
-      success: true,
-      message: 'Pago rechazado correctamente.'
-    });
+    res.json({ success: true, message: 'Pago rechazado correctamente.' });
   } catch (error) {
     console.error('Error al rechazar el pago:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno al rechazar el pago.',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error interno al rechazar el pago.', error: error.message });
   }
 };
 
-// Permite a un socio registrar un nuevo pago. Crea una suscripción temporal no pagada ('U') y el registro de pago pendiente ('P')
 exports.uploadPayment = async (req, res) => {
-  const { userId, planId, paymentMethod, referenceNumber, receiptUrl } = req.body;
+  const { userId, planId, paymentMethod, referenceNumber } = req.body;
 
-  if (!userId || !planId || !paymentMethod || !referenceNumber || !receiptUrl) {
-    return res.status(400).json({
-      success: false,
-      message: 'Todos los campos son requeridos (userId, planId, paymentMethod, referenceNumber, receiptUrl).'
-    });
+  if (!userId || !planId || !paymentMethod || !referenceNumber) {
+    return res.status(400).json({ success: false, message: 'Todos los campos son requeridos (userId, planId, paymentMethod, referenceNumber).' });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No se proporcionó la imagen del comprobante.' });
   }
 
   try {
     const pool = await poolPromise;
 
-    // Obtener precio del plan seleccionado
     const planResult = await pool.request()
       .input('PlanID', sql.Int, planId)
       .query('SELECT Price FROM Plans WHERE PlanID = @PlanID');
 
     if (planResult.recordset.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'El plan seleccionado no existe.'
-      });
+      return res.status(404).json({ success: false, message: 'El plan seleccionado no existe.' });
     }
 
     const amountPaid = planResult.recordset[0].Price;
 
-    // Ejecutar transaccionalmente para garantizar la consistencia de datos entre Subscriptions y Payments
-    const transaction = new sql.Transaction(pool);
-    await transaction.begin();
+    const blob = bucket.file(`receipts/${Date.now()}_${req.file.originalname}`);
+    const blobStream = blob.createWriteStream({
+      resumable: false,
+      contentType: req.file.mimetype,
+    });
 
-    try {
-      // Registrar la suscripción inicial no pagada ('U') que se activará al aprobar el pago
-      const subResult = await transaction.request()
-        .input('UserID', sql.Int, userId)
-        .input('PlanID', sql.Int, planId)
-        .query(`
-          INSERT INTO Subscriptions (UserID, PlanID, StartDate, EndDate, PaymentStatus)
-          OUTPUT INSERTED.SubscriptionID
-          VALUES (@UserID, @PlanID, CAST(GETDATE() AS DATE), CAST(GETDATE() AS DATE), 'U')
-        `);
+    blobStream.on('error', (err) => {
+      console.error('Error al subir a GCS:', err);
+      return res.status(500).json({ success: false, message: 'Error subiendo el archivo a la nube.' });
+    });
 
-      const subscriptionId = subResult.recordset[0].SubscriptionID;
+    blobStream.on('finish', async () => {
+      const receiptImageUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
 
-      // Registrar el pago en estado pendiente ('P') para que pueda ser aprobado por un administrador
-      await transaction.request()
-        .input('SubscriptionID', sql.Int, subscriptionId)
-        .input('AmountPaid', sql.Decimal(10, 2), amountPaid)
-        .input('PaymentMethod', sql.VarChar(50), paymentMethod)
-        .input('ReferenceNumber', sql.VarChar(100), referenceNumber)
-        .input('ReceiptUrl', sql.VarChar(500), receiptUrl)
-        .query(`
-          INSERT INTO Payments (SubscriptionID, AmountPaid, PaymentDate, PaymentMethod, ReferenceNumber, ReceiptUrl, Status)
-          VALUES (@SubscriptionID, @AmountPaid, GETDATE(), @PaymentMethod, @ReferenceNumber, @ReceiptUrl, 'P')
-        `);
+      const transaction = new sql.Transaction(pool);
+      await transaction.begin();
 
-      await transaction.commit();
+      try {
+        const subResult = await transaction.request()
+          .input('UserID', sql.Int, userId)
+          .input('PlanID', sql.Int, planId)
+          .query(`
+            INSERT INTO Subscriptions (UserID, PlanID, StartDate, EndDate, PaymentStatus)
+            OUTPUT INSERTED.SubscriptionID
+            VALUES (@UserID, @PlanID, CAST(GETDATE() AS DATE), CAST(GETDATE() AS DATE), 'U')
+          `);
 
-      res.status(201).json({
-        success: true,
-        message: 'Comprobante de pago reportado con éxito. Queda en estado pendiente de aprobación.'
-      });
-    } catch (err) {
-      await transaction.rollback();
-      throw err;
-    }
+        const subscriptionId = subResult.recordset[0].SubscriptionID;
+
+        await transaction.request()
+          .input('SubscriptionID', sql.Int, subscriptionId)
+          .input('AmountPaid', sql.Decimal(10, 2), amountPaid)
+          .input('PaymentMethod', sql.VarChar(50), paymentMethod)
+          .input('ReferenceNumber', sql.VarChar(100), referenceNumber)
+          .input('ReceiptImageUrl', sql.VarChar(500), receiptImageUrl)
+          .query(`
+            INSERT INTO Payments (SubscriptionID, AmountPaid, PaymentDate, PaymentMethod, ReferenceNumber, ReceiptImageUrl, Status)
+            VALUES (@SubscriptionID, @AmountPaid, GETDATE(), @PaymentMethod, @ReferenceNumber, @ReceiptImageUrl, 'P')
+          `);
+
+        await transaction.commit();
+
+        res.status(201).json({
+          success: true,
+          message: 'Comprobante de pago reportado con éxito. Queda en estado pendiente de aprobación.',
+          receiptImageUrl
+        });
+      } catch (err) {
+        await transaction.rollback();
+        console.error('Error guardando en BD tras subir a GCS:', err);
+        return res.status(500).json({ success: false, message: 'Error guardando en la base de datos.' });
+      }
+    });
+
+    blobStream.end(req.file.buffer);
+
   } catch (error) {
     console.error('Error al registrar el pago del socio:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno al registrar el comprobante de pago.',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error interno al registrar el comprobante de pago.', error: error.message });
   }
 };

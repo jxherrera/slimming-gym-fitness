@@ -14,7 +14,7 @@ VALUES
         '0000000000', 2, 'A', '2026-06-14 21:58:17.597'
     ),
     (
-        '1753960242', 'Ariel', 'Rueda', 'ariel.coach@slimming.com',
+        '1700000000', 'Ariel', 'Rueda', 'coach.coach@slimming.com',
         '$2b$10$lLp0rtXG6r/HL3vx1oRlJu71Jwcv/pR7ZFG/sfuDXFHifERmBmt52',
         '0999999999', 4, 'A', GETDATE()
     ),

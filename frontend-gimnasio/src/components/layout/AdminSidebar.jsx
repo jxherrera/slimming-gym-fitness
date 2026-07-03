@@ -52,7 +52,7 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
       roles: ['admin', 'coach']
     },
     {
-      path: '/admin/pagos',
+      path: '/admin/pagos/verificacion',
       name: 'Pagos',
       icon: <FaMoneyBillWave />,
       roles: ['admin']

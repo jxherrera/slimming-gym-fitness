@@ -155,3 +155,81 @@
   cursor: not-allowed;
   transform: none;
 }
+
+/* Drag & Drop File Zone */
+.drag-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 30px 20px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.drag-drop-zone.active {
+  border-color: #ff3b3b;
+  background: rgba(255, 59, 59, 0.08);
+}
+
+.drag-drop-zone:hover {
+  border-color: #ff3b3b;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.drag-drop-icon {
+  font-size: 2.5rem;
+  color: #ff3b3b;
+  margin-bottom: 12px;
+  opacity: 0.85;
+}
+
+.drag-drop-text {
+  color: #ddd;
+  font-size: 0.95rem;
+  margin: 0 0 6px 0;
+}
+
+.drag-drop-subtext {
+  color: #888;
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.thumbnail-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  width: 100%;
+}
+
+.thumbnail-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.82rem;
+  color: #bbb;
+  padding: 0 4px;
+}
+
+.remove-file-btn {
+  background: transparent;
+  border: none;
+  color: #ff3b3b;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.82rem;
+}
+
+.remove-file-btn:hover {
+  text-decoration: underline;
+}

@@ -17,8 +17,48 @@ export const memberService = {
 
   // Subir comprobante de pago
   uploadPayment: async (paymentData) => {
-    const response = await axios.post(`${API_BASE}/payments/upload`, paymentData);
+    // Si paymentData es un FormData, axios configurará automáticamente Content-Type: multipart/form-data
+    const isFormData = paymentData instanceof FormData;
+    const config = isFormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    } : {};
+    
+    const response = await axios.post(`${API_BASE}/payments/upload`, paymentData, config);
     return response.data;
+  },
+
+  // Verificar comprobante de pago (Aprobar / Rechazar)
+  verifyPayment: async (paymentId, status, notes = '') => {
+    try {
+      const response = await axios.put(`${API_BASE}/payments/${paymentId}/verify`, { status, notes });
+      return response.data;
+    } catch (e) {
+      console.warn('API error in verifyPayment, using approve/reject fallbacks', e);
+      // Fallback a los endpoints individuales si PUT /verify falla o no está implementado en el backend
+      if (status === 'A') {
+        const response = await axios.put(`${API_BASE}/payments/${paymentId}/approve`);
+        return response.data;
+      } else {
+        const response = await axios.put(`${API_BASE}/payments/${paymentId}/reject`);
+        return response.data;
+      }
+    }
+  },
+
+  // Obtener Ficha Deportiva PDF
+  getMemberPdfReport: async (memberId) => {
+    try {
+      const response = await axios.get(`${API_BASE}/reports/member-pdf/${memberId}`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (e) {
+      console.warn('API error fetching member PDF, generating local client PDF fallback', e);
+      // Retornar null o propagar para generar una descarga local desde la librería jsPDF
+      throw e;
+    }
   },
 
   // Obtener entrenadores disponibles

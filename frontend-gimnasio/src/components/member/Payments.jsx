@@ -1,52 +1,117 @@
-import React, { useState } from 'react';
-import { FaMoneyBillWave, FaCamera, FaCreditCard, FaReceipt, FaCheckCircle, FaImage } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaMoneyBillWave, FaCamera, FaCreditCard, FaReceipt, FaCheckCircle, FaImage, FaUpload } from 'react-icons/fa';
 import { memberService } from '../../services/memberService';
 import { useToast } from '../../hooks/useToast';
 import './Payments.css';
 
 const Payments = ({ userId, plans = [], onPaymentSuccess }) => {
   const toast = useToast();
+  const fileInputRef = useRef(null);
+  
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Transferencia');
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [receiptUrl, setReceiptUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  
+  // Drag & Drop / File states
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [dragActive, setDragActive] = useState(false);
 
-  const handleUrlChange = (e) => {
-    setReceiptUrl(e.target.value);
-    setImageError(false);
+  // Revocar URL del preview para evitar fugas de memoria
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const handleFileChange = (file) => {
+    if (file && file.type.startsWith('image/')) {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      toast.info(`Foto cargada: ${file.name}`);
+    } else {
+      toast.error('Por favor, selecciona un archivo de imagen válido (PNG, JPG, JPEG).');
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileChange(e.dataTransfer.files[0]);
+    }
+  };
+
+  const removeFile = (e) => {
+    e.stopPropagation();
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedPlanId || !paymentMethod || !referenceNumber || !receiptUrl) {
+    if (!selectedPlanId || !paymentMethod || !referenceNumber) {
       toast.warning('Por favor completa todos los campos requeridos.');
+      return;
+    }
+    if (!selectedFile) {
+      toast.warning('Por favor carga la foto de tu comprobante de transferencia.');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const data = await memberService.uploadPayment({
-        userId,
-        planId: Number(selectedPlanId),
-        paymentMethod,
-        referenceNumber,
-        receiptUrl
-      });
+      
+      // Construir FormData para multipart/form-data
+      const formData = new FormData();
+      formData.append('userId', userId);
+      formData.append('planId', Number(selectedPlanId));
+      formData.append('paymentMethod', paymentMethod);
+      formData.append('referenceNumber', referenceNumber);
+      formData.append('file', selectedFile);
+      
+      // Enviar como fallback también la URL local si el backend espera un string en el esquema antiguo
+      formData.append('receiptUrl', previewUrl);
+
+      const data = await memberService.uploadPayment(formData);
 
       if (data.success) {
-        toast.success(data.message || 'Comprobante reportado con éxito. En proceso de verificación.');
+        toast.success(data.message || 'Comprobante de pago subido con éxito. En proceso de verificación.');
         setSelectedPlanId('');
         setReferenceNumber('');
-        setReceiptUrl('');
+        setSelectedFile(null);
+        setPreviewUrl('');
         if (onPaymentSuccess) onPaymentSuccess();
       } else {
         toast.error(data.message || 'Error al enviar comprobante.');
       }
     } catch (error) {
       console.error('Error enviando pago:', error);
-      toast.error(error.response?.data?.message || 'Error de conexión al enviar el pago.');
+      toast.error(error.response?.data?.message || 'Error de conexión al enviar el comprobante.');
     } finally {
       setIsSubmitting(false);
     }
@@ -59,8 +124,8 @@ const Payments = ({ userId, plans = [], onPaymentSuccess }) => {
       <div className="payments-header">
         <FaMoneyBillWave className="payments-icon-title" />
         <div>
-          <h3>Reportar Comprobante de Pago</h3>
-          <p>Adjunta la foto o URL de tu transferencia bancaria para renovar o activar tu suscripción.</p>
+          <h3>Renovar Membresía</h3>
+          <p>Sube la foto de tu transferencia para verificar tu pago y reactivar tu suscripción.</p>
         </div>
       </div>
 
@@ -113,37 +178,51 @@ const Payments = ({ userId, plans = [], onPaymentSuccess }) => {
           />
         </div>
 
+        {/* Zona Interactiva de Drag & Drop para cargar el comprobante */}
         <div className="form-group">
-          <label htmlFor="receipt-url-input"><FaCamera /> URL / Enlace de la Foto del Recibo</label>
+          <label><FaCamera /> Comprobante de Transferencia (Foto / Captura)</label>
+          
           <input
-            type="url"
-            id="receipt-url-input"
+            type="file"
+            id="receipt-file-input"
+            ref={fileInputRef}
             className="payments-input"
-            placeholder="Ej: https://imgur.com/foto_comprobante.png"
-            value={receiptUrl}
-            onChange={handleUrlChange}
-            required
+            style={{ display: 'none' }}
+            accept="image/*"
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                handleFileChange(e.target.files[0]);
+              }
+            }}
           />
-        </div>
 
-        {/* Previsualización en tiempo real del comprobante */}
-        {receiptUrl && (
-          <div className="receipt-preview-container">
-            <span className="preview-label"><FaImage /> Previsualización de Comprobante:</span>
-            {!imageError ? (
-              <img
-                src={receiptUrl}
-                alt="Previsualización Recibo"
-                className="receipt-image-preview"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="receipt-image-error">
-                ⚠️ No se pudo cargar la imagen desde la URL ingresada. Verifica que el enlace sea directo y público.
+          {!selectedFile ? (
+            <div 
+              className={`drag-drop-zone ${dragActive ? 'active' : ''}`}
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+            >
+              <FaUpload className="drag-drop-icon" />
+              <p className="drag-drop-text">Arrastra y suelta tu foto aquí, o haz clic para buscar</p>
+              <p className="drag-drop-subtext">Formatos permitidos: PNG, JPG, JPEG. Tamaño máx. 5MB.</p>
+            </div>
+          ) : (
+            <div className="thumbnail-container">
+              <div className="thumbnail-header">
+                <span>Archivo listo: <strong>{selectedFile.name}</strong></span>
+                <button type="button" className="remove-file-btn" onClick={removeFile}>Eliminar</button>
               </div>
-            )}
-          </div>
-        )}
+              <img
+                src={previewUrl}
+                alt="Vista previa de comprobante"
+                className="receipt-image-preview"
+              />
+            </div>
+          )}
+        </div>
 
         {selectedPlan && (
           <div className="summary-box">

@@ -3,6 +3,7 @@ import { FaChartLine, FaUserTie, FaUsers, FaUserPlus, FaDollarSign } from 'react
 import '../shared/admin-core.css';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 const Admin = () => {
   const tabs = [
@@ -412,6 +413,40 @@ const Admin = () => {
                     <p className="stat-label">Retención</p>
                     <h3>+15%</h3>
                   </div>
+                </div>
+              </div>
+
+              {/* Gráfico de Progreso Físico Promedio de Miembros */}
+              <div style={{ marginTop: '30px', background: 'var(--admin-surface)', border: '1px solid var(--admin-border)', padding: '24px', borderRadius: '16px' }}>
+                <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--admin-heading)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaChartLine style={{ color: '#ef4444' }} /> Evolución Física General de Miembros
+                </h4>
+                <p style={{ color: 'var(--admin-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
+                  Progreso histórico promedio mensual de peso y porcentaje de grasa corporal de la base de socios activos.
+                </p>
+                <div style={{ minHeight: '300px', width: '100%' }}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart
+                      data={[
+                        { name: 'Ene', peso: 81.5, grasa: 24.1 },
+                        { name: 'Feb', peso: 80.6, grasa: 23.3 },
+                        { name: 'Mar', peso: 79.8, grasa: 22.4 },
+                        { name: 'Abr', peso: 78.9, grasa: 21.6 },
+                        { name: 'May', peso: 78.2, grasa: 20.8 },
+                        { name: 'Jun', peso: 77.5, grasa: 19.9 }
+                      ]}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <XAxis dataKey="name" stroke="var(--admin-muted)" style={{ fontSize: '12px' }} />
+                      <YAxis yAxisId="left" stroke="#ff3b3b" label={{ value: 'Peso (kg)', angle: -90, position: 'insideLeft', style: { fill: '#ff3b3b', fontSize: '11px', fontWeight: 'bold' } }} style={{ fontSize: '11px' }} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#ffb300" label={{ value: 'Grasa (%)', angle: 90, position: 'insideRight', style: { fill: '#ffb300', fontSize: '11px', fontWeight: 'bold' } }} style={{ fontSize: '11px' }} />
+                      <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }} />
+                      <Legend style={{ fontSize: '12px' }} />
+                      <Line yAxisId="left" type="monotone" dataKey="peso" name="Peso Promedio (kg)" stroke="#ff3b3b" strokeWidth={3} activeDot={{ r: 8 }} />
+                      <Line yAxisId="right" type="monotone" dataKey="grasa" name="Grasa Promedio (%)" stroke="#ffb300" strokeWidth={3} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>

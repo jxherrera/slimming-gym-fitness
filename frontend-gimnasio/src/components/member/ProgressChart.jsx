@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaChartLine, FaWeight, FaPercentage, FaDumbbell, FaPlus, FaCalendarAlt } from 'react-icons/fa';
+import { FaChartLine, FaWeight, FaPercentage, FaDumbbell, FaPlus, FaCalendarAlt, FaFilePdf } from 'react-icons/fa';
 import { progressService } from '../../services/progressService';
+import { memberService } from '../../services/memberService';
 import { useToast } from '../../hooks/useToast';
 import Modal from '../common/Modal';
+import { jsPDF } from 'jspdf';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import './ProgressChart.css';
 
 const ProgressChart = ({ userId }) => {
@@ -56,6 +59,89 @@ const ProgressChart = ({ userId }) => {
     }
   };
 
+  // Descarga de Ficha Deportiva (PDF)
+  const handleExportFichaDeportiva = async () => {
+    toast.info('Preparando la descarga de tu Ficha Deportiva...');
+    try {
+      // 1. Intentar el llamado al backend real con responseType: 'blob'
+      const blobData = await memberService.getMemberPdfReport(userId);
+      
+      const fileUrl = window.URL.createObjectURL(blobData);
+      const tempLink = document.createElement('a');
+      tempLink.href = fileUrl;
+      tempLink.setAttribute('download', `ficha_deportiva_${userId}.pdf`);
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      tempLink.remove();
+      window.URL.revokeObjectURL(fileUrl);
+      
+      toast.success('Ficha Deportiva descargada con éxito.');
+    } catch (error) {
+      console.warn('Fallo descarga desde backend, generando reporte local con jsPDF...', error);
+      
+      // 2. Fallback local con jsPDF para asegurar que el botón funcione sin dependencias del backend
+      try {
+        const doc = new jsPDF();
+        
+        // Encabezado
+        doc.setFillColor(22, 22, 28);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.text("SLIMMING GYM", 20, 25);
+        doc.setFontSize(10);
+        doc.text("CENTRO DE ALTO RENDIMIENTO & FITNESS", 20, 32);
+        
+        // Cuerpo
+        doc.setTextColor(33, 33, 33);
+        doc.setFontSize(16);
+        doc.text("FICHA DEPORTIVA Y EVOLUCIÓN FÍSICA", 20, 60);
+        
+        doc.setFontSize(11);
+        doc.text(`ID del Socio: Member-${userId}`, 20, 72);
+        doc.text(`Fecha del Reporte: ${new Date().toLocaleDateString()}`, 20, 80);
+        
+        doc.setLineWidth(0.5);
+        doc.line(20, 85, 190, 85);
+        
+        // Tabla de Progreso
+        doc.setFontSize(13);
+        doc.text("Historial de Progresiones Corporales", 20, 100);
+        
+        let startY = 110;
+        doc.setFontSize(10);
+        doc.text("Fecha", 20, startY);
+        doc.text("Peso corporal (kg)", 60, startY);
+        doc.text("Grasa corporal (%)", 110, startY);
+        doc.text("Masa muscular (kg)", 160, startY);
+        
+        doc.line(20, startY + 2, 190, startY + 2);
+        
+        startY += 10;
+        history.forEach((record, index) => {
+          doc.text(record.date || 'N/A', 20, startY);
+          doc.text(`${record.weight} kg`, 60, startY);
+          doc.text(`${record.bodyFat}%`, 110, startY);
+          doc.text(`${record.muscleMass} kg`, 160, startY);
+          
+          doc.line(20, startY + 2, 190, startY + 2);
+          startY += 10;
+        });
+
+        // Nota al pie
+        doc.setFontSize(9);
+        doc.setTextColor(120, 120, 120);
+        doc.text("Documento oficial generado por la aplicación Slimming Gym. Todos los derechos reservados.", 20, 275);
+        
+        doc.save(`ficha_deportiva_${userId}.pdf`);
+        toast.success('Ficha Deportiva (Generación Local) descargada correctamente.');
+      } catch (pdfError) {
+        console.error('Error al generar PDF local:', pdfError);
+        toast.error('No se pudo exportar la ficha deportiva.');
+      }
+    }
+  };
+
   // Configuración de la métrica activa
   const metricConfig = {
     weight: { label: 'Peso Corporal (kg)', key: 'weight', color: '#ff3b3b', unit: 'kg', icon: <FaWeight /> },
@@ -65,35 +151,18 @@ const ProgressChart = ({ userId }) => {
 
   const currentConfig = metricConfig[metric];
 
-  // Cálculos para el gráfico SVG
-  const values = history.map(h => h[currentConfig.key] || 0);
-  const minVal = values.length ? Math.min(...values) * 0.95 : 0;
-  const maxVal = values.length ? Math.max(...values) * 1.05 : 100;
-  const range = maxVal - minVal || 1;
-
-  const chartHeight = 220;
-  const chartWidth = 600;
-  const padding = 40;
-
-  const points = history.map((item, index) => {
-    const x = padding + (index / (Math.max(1, history.length - 1))) * (chartWidth - padding * 2);
-    const val = item[currentConfig.key] || 0;
-    const y = chartHeight - padding - ((val - minVal) / range) * (chartHeight - padding * 2);
-    return { x, y, val, date: item.date };
-  });
-
-  const pathD = points.reduce((acc, pt, i) => {
-    return i === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`;
-  }, '');
-
-  const areaD = points.length
-    ? `${pathD} L ${points[points.length - 1].x} ${chartHeight - padding} L ${points[0].x} ${chartHeight - padding} Z`
-    : '';
-
   // Cálculo de evolución total
+  const values = history.map(h => h[currentConfig.key] || 0);
   const firstVal = values[0] || 0;
   const lastVal = values[values.length - 1] || 0;
   const diff = (lastVal - firstVal).toFixed(1);
+
+  // Formatear datos para el gráfico de Recharts
+  const chartData = history.map(item => ({
+    name: item.date.split('-').slice(1).join('/'),
+    valor: item[currentConfig.key],
+    ...item
+  }));
 
   return (
     <div className="progress-card-container">
@@ -106,9 +175,15 @@ const ProgressChart = ({ userId }) => {
           </div>
         </div>
 
-        <button className="btn-add-progress" onClick={() => setShowAddModal(true)}>
-          <FaPlus /> Registrar Medidas
-        </button>
+        <div className="progress-actions" style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn-export-pdf" onClick={handleExportFichaDeportiva} style={{ background: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', border: 'none', borderRadius: '10px', fontSize: '0.88rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.25s ease' }}>
+            <FaFilePdf /> Exportar Ficha Deportiva
+          </button>
+          
+          <button className="btn-add-progress" onClick={() => setShowAddModal(true)}>
+            <FaPlus /> Registrar Medidas
+          </button>
+        </div>
       </div>
 
       {/* Botones de Selección de Métrica */}
@@ -125,78 +200,34 @@ const ProgressChart = ({ userId }) => {
         ))}
       </div>
 
-      {/* Gráfico Vectorial Interactivo SVG */}
-      <div className="chart-wrapper">
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="svg-chart">
-          {/* Fondo degradado */}
-          <defs>
-            <linearGradient id={`grad-${metric}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={currentConfig.color} stopOpacity="0.4" />
-              <stop offset="100%" stopColor={currentConfig.color} stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
-
-          {/* Líneas de cuadrícula */}
-          {[0.2, 0.5, 0.8].map((ratio, idx) => (
-            <line
-              key={idx}
-              x1={padding}
-              y1={(chartHeight - padding * 2) * ratio + padding}
-              x2={chartWidth - padding}
-              y2={(chartHeight - padding * 2) * ratio + padding}
-              stroke="rgba(255,255,255,0.06)"
-              strokeDasharray="4"
+      {/* Gráfico Recharts Interactivo y Responsivo */}
+      <div className="chart-wrapper" style={{ minHeight: '260px', width: '100%', marginTop: '10px' }}>
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`colorMetric-${metric}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={currentConfig.color} stopOpacity={0.4} />
+                <stop offset="95%" stopColor={currentConfig.color} stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <XAxis dataKey="name" stroke="#888" tickLine={false} style={{ fontSize: '11px' }} />
+            <YAxis stroke="#888" tickLine={false} domain={['auto', 'auto']} style={{ fontSize: '11px' }} />
+            <Tooltip
+              contentStyle={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+              labelStyle={{ fontWeight: 'bold', color: '#ff3b3b' }}
             />
-          ))}
-
-          {/* Área sombreada bajo la curva */}
-          {areaD && <path d={areaD} fill={`url(#grad-${metric})`} />}
-
-          {/* Línea principal del gráfico */}
-          {pathD && (
-            <path
-              d={pathD}
-              fill="none"
+            <Area
+              type="monotone"
+              dataKey="valor"
+              name={currentConfig.label}
               stroke={currentConfig.color}
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              fillOpacity={1}
+              fill={`url(#colorMetric-${metric})`}
+              strokeWidth={3}
             />
-          )}
-
-          {/* Puntos de datos interactivos */}
-          {points.map((pt, i) => (
-            <g key={i} className="chart-point-group">
-              <circle
-                cx={pt.x}
-                cy={pt.y}
-                r="6"
-                fill="#16161c"
-                stroke={currentConfig.color}
-                strokeWidth="3"
-              />
-              <text
-                x={pt.x}
-                y={pt.y - 12}
-                fill="#ffffff"
-                fontSize="11"
-                textAnchor="middle"
-                fontWeight="bold"
-              >
-                {pt.val}{currentConfig.unit}
-              </text>
-              <text
-                x={pt.x}
-                y={chartHeight - 15}
-                fill="#888888"
-                fontSize="10"
-                textAnchor="middle"
-              >
-                {pt.date.split('-').slice(1).join('/')}
-              </text>
-            </g>
-          ))}
-        </svg>
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Resumen de Métrica */}
@@ -213,8 +244,8 @@ const ProgressChart = ({ userId }) => {
         </div>
         <div className="summary-stat">
           <span className="stat-label">Variación Total</span>
-          <span className={`stat-value ${diff <= 0 ? 'diff-negative' : 'diff-positive'}`}>
-            {diff > 0 ? `+${diff}` : diff} {currentConfig.unit}
+          <span className={`stat-value ${Number(diff) <= 0 ? 'diff-negative' : 'diff-positive'}`}>
+            {Number(diff) > 0 ? `+${diff}` : diff} {currentConfig.unit}
           </span>
         </div>
       </div>

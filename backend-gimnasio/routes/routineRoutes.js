@@ -6,6 +6,7 @@ router.get('/coach/:coachId/clients', routineController.getClientsByCoach);
 router.get('/coach/:coachId/clients', routineController.getClientsByCoach);
 router.post('/assign', routineController.assignRoutine);
 router.get('/user/:userId', routineController.getUserRoutines);
+router.get('/user/:userId/current', routineController.getCurrentRoutine);
 router.get('/coach/:coachId/schedule', routineController.getCoachSchedule);
 
 module.exports = router;

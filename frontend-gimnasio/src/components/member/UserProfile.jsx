@@ -42,8 +42,23 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
         const list = Array.isArray(data) ? data : (data.coaches || []);
         setCoaches(list);
 
-        // Buscar si hay un entrenador asignado en el objeto user
-        if (user?.coachId || user?.assignedCoach) {
+        // Buscar si hay un entrenador asignado en la base de datos
+        try {
+          const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+          const assignRes = await fetch(`${apiBase}/coaches/assignments`);
+          if (assignRes.ok) {
+            const assignData = await assignRes.json();
+            const myAssignment = Array.isArray(assignData) ? assignData.find(a => String(a.MemberID) === String(userId)) : null;
+            if (myAssignment) {
+              const current = list.find(c => String(c.UserID || c.id) === String(myAssignment.CoachID));
+              if (current) setAssignedCoach(current);
+            }
+          }
+        } catch (err) {
+          console.error("Error obteniendo asignaciones", err);
+        }
+
+        if (!assignedCoach && (user?.coachId || user?.assignedCoach)) {
           const current = list.find(c => c.UserID === user.coachId || c.id === user.coachId);
           if (current) setAssignedCoach(current);
         }

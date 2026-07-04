@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const { sql, poolPromise } = require('../config/db');
+const emailService = require('../services/emailService');
 
 const startCronJobs = () => {
     // Check every day at 00:00 (midnight)
@@ -8,26 +9,22 @@ const startCronJobs = () => {
         try {
             const pool = await poolPromise;
             
-            // Get all active subscriptions that end within 5 days
-            // and where we haven't already sent a notification for this specific expiration
+            // Get all active subscriptions that end in exactly 3 days
+            // (Where CAST(EndDate AS DATE) = CAST(DATEADD(day, 3, GETDATE()) AS DATE))
             const result = await pool.request().query(`
-                SELECT s.SubscriptionID, s.UserID, s.EndDate, u.Name
+                SELECT s.SubscriptionID, s.UserID, s.EndDate, u.FirstName, u.LastName, u.Email
                 FROM Subscriptions s
                 JOIN Users u ON s.UserID = u.UserID
                 WHERE s.PaymentStatus = 'Paid'
-                  AND s.EndDate > GETDATE()
-                  AND s.EndDate <= DATEADD(day, 5, GETDATE())
+                  AND CAST(s.EndDate AS DATE) = CAST(DATEADD(day, 3, GETDATE()) AS DATE)
             `);
 
             const subscriptions = result.recordset;
             let notificationsCreated = 0;
 
             for (const sub of subscriptions) {
-                const daysLeft = Math.ceil((new Date(sub.EndDate) - new Date()) / (1000 * 60 * 60 * 24));
-                const message = `Tu membresía vence en ${daysLeft} día(s) (el ${new Date(sub.EndDate).toLocaleDateString()}). ¡Renueva pronto!`;
+                const message = `Tu membresía vence en 3 días (el ${new Date(sub.EndDate).toLocaleDateString()}). ¡Renueva pronto!`;
 
-                // Check if we already notified them today or recently to avoid spamming every day
-                // For simplicity, we just insert. A more robust way is checking if a similar unread message exists.
                 const checkNotif = await pool.request()
                     .input('UserID', sql.Int, sub.UserID)
                     .input('Message', sql.NVarChar, message)
@@ -41,10 +38,19 @@ const startCronJobs = () => {
                         .input('Type', sql.NVarChar, 'Vencimiento')
                         .query('INSERT INTO Notifications (UserID, Title, Message, Type) VALUES (@UserID, @Title, @Message, @Type)');
                     notificationsCreated++;
+
+                    // Disparar correo con la nueva utilidad EmailService
+                    await emailService.sendEmailAndLog(
+                        sub.UserID,
+                        sub.Email,
+                        'Aviso de Vencimiento de Membresía',
+                        `<p>Hola ${sub.FirstName || ''}, ${message}</p>`,
+                        'Vencimiento'
+                    );
                 }
             }
 
-            console.log(`Expiration check finished. ${notificationsCreated} new notifications created.`);
+            console.log(`Expiration check finished. ${notificationsCreated} new notifications & emails created.`);
         } catch (error) {
             console.error('Error during expiration check cron job:', error);
         }

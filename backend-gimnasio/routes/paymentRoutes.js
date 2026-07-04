@@ -17,5 +17,6 @@ router.patch('/:id/reject', paymentController.rejectPayment);
 
 // Endpoint que permite a los socios subir sus comprobantes de pago de forma transaccional con multer
 router.post('/upload', upload.single('receipt'), paymentController.uploadPayment);
+router.post('/webhook', paymentController.webhookPayment);
 
 module.exports = router;

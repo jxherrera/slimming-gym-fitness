@@ -31,19 +31,12 @@ export const memberService = {
 
   // Verificar comprobante de pago (Aprobar / Rechazar)
   verifyPayment: async (paymentId, status, notes = '') => {
-    try {
-      const response = await axios.put(`${API_BASE}/payments/${paymentId}/verify`, { status, notes });
+    if (status === 'A') {
+      const response = await axios.patch(`${API_BASE}/payments/${paymentId}/approve`, { userId: 1 });
       return response.data;
-    } catch (e) {
-      console.warn('API error in verifyPayment, using approve/reject fallbacks', e);
-      // Fallback a los endpoints individuales si PUT /verify falla o no está implementado en el backend
-      if (status === 'A') {
-        const response = await axios.put(`${API_BASE}/payments/${paymentId}/approve`);
-        return response.data;
-      } else {
-        const response = await axios.put(`${API_BASE}/payments/${paymentId}/reject`);
-        return response.data;
-      }
+    } else {
+      const response = await axios.patch(`${API_BASE}/payments/${paymentId}/reject`, { userId: 1 });
+      return response.data;
     }
   },
 

@@ -18,18 +18,38 @@ exports.getAllClasses = async (req, res) => {
 };
 
 exports.createClass = async (req, res) => {
-    const { ClassName, Description, CoachID, MaxCapacity, StartTime, EndTime } = req.body;
+    const { ClassName, CoachID, DayOfWeek, StartTime, EndTime, MaxCapacity } = req.body;
     try {
         const pool = await poolPromise;
+
+        // 1. Validar que el coach esté dentro de su horario de trabajo (DayOfWeek, StartTime, EndTime)
+        const scheduleResult = await pool.request()
+            .input('CoachID', sql.Int, CoachID)
+            .input('DayOfWeek', sql.VarChar(20), DayOfWeek)
+            .input('StartTime', sql.Time, StartTime)
+            .input('EndTime', sql.Time, EndTime)
+            .query(`
+                SELECT ID FROM CoachWorkHours 
+                WHERE CoachID = @CoachID 
+                  AND DayOfWeek = @DayOfWeek
+                  AND StartTime <= @StartTime
+                  AND EndTime >= @EndTime
+            `);
+
+        if (scheduleResult.recordset.length === 0) {
+            return res.status(400).json({ success: false, message: 'El entrenador está fuera de su horario de trabajo o no trabaja ese día.' });
+        }
         
-        // Validate overlapping schedule for the coach
+        // 2. Validar solapamiento de clases para ese coach
         const conflictResult = await pool.request()
             .input('CoachID', sql.Int, CoachID)
-            .input('StartTime', sql.DateTime, StartTime)
-            .input('EndTime', sql.DateTime, EndTime)
+            .input('DayOfWeek', sql.VarChar(20), DayOfWeek)
+            .input('StartTime', sql.Time, StartTime)
+            .input('EndTime', sql.Time, EndTime)
             .query(`
                 SELECT ClassID FROM Classes 
                 WHERE CoachID = @CoachID 
+                  AND DayOfWeek = @DayOfWeek
                   AND (
                     (StartTime < @EndTime AND EndTime > @StartTime)
                   )
@@ -40,15 +60,15 @@ exports.createClass = async (req, res) => {
         }
 
         await pool.request()
-            .input('ClassName', sql.NVarChar, ClassName)
-            .input('Description', sql.NVarChar, Description)
+            .input('ClassName', sql.VarChar(100), ClassName)
             .input('CoachID', sql.Int, CoachID)
+            .input('DayOfWeek', sql.VarChar(20), DayOfWeek)
+            .input('StartTime', sql.Time, StartTime)
+            .input('EndTime', sql.Time, EndTime)
             .input('MaxCapacity', sql.Int, MaxCapacity)
-            .input('StartTime', sql.DateTime, StartTime)
-            .input('EndTime', sql.DateTime, EndTime)
             .query(`
-                INSERT INTO Classes (ClassName, Description, CoachID, MaxCapacity, StartTime, EndTime)
-                VALUES (@ClassName, @Description, @CoachID, @MaxCapacity, @StartTime, @EndTime)
+                INSERT INTO Classes (ClassName, CoachID, DayOfWeek, StartTime, EndTime, MaxCapacity)
+                VALUES (@ClassName, @CoachID, @DayOfWeek, @StartTime, @EndTime, @MaxCapacity)
             `);
 
         res.json({ success: true, message: 'Clase creada exitosamente' });

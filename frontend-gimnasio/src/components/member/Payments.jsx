@@ -92,7 +92,7 @@ const Payments = ({ userId, plans = [], onPaymentSuccess }) => {
       formData.append('planId', Number(selectedPlanId));
       formData.append('paymentMethod', paymentMethod);
       formData.append('referenceNumber', referenceNumber);
-      formData.append('file', selectedFile);
+      formData.append('receipt', selectedFile);
       
       // Enviar como fallback también la URL local si el backend espera un string en el esquema antiguo
       formData.append('receiptUrl', previewUrl);

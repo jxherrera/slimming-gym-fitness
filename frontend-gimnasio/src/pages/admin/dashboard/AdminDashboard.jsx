@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaChartLine, FaUserTie, FaUsers, FaUserPlus, FaDollarSign } from 'react-icons/fa';
+import { FaChartLine, FaUserTie, FaUsers, FaUserPlus, FaDollarSign, FaUserShield } from 'react-icons/fa';
 import '../shared/admin-core.css';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
@@ -10,6 +10,7 @@ const Admin = () => {
     { id: 'dashboard', label: 'Dashboard', icon: <FaChartLine /> },
     { id: 'coaches', label: 'Entrenadores', icon: <FaUserTie /> },
     { id: 'members', label: 'Miembros', icon: <FaUsers /> },
+    { id: 'admins', label: 'Admins', icon: <FaUserShield /> },
     { id: 'register', label: 'Registrar usuario', icon: <FaUserPlus /> }
   ];
 
@@ -17,7 +18,8 @@ const Admin = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const [entities, setEntities] = useState({
     coaches: [],
-    members: []
+    members: [],
+    admins: []
   });
   const [dashboardSummary, setDashboardSummary] = useState({ members: 0, coaches: 0, estimatedRevenue: 0 });
   const [apiError, setApiError] = useState('');
@@ -55,15 +57,17 @@ const Admin = () => {
 
   const loadAdminEntities = async () => {
     try {
-      const [coachesRes, membersRes, allMembersRes, summaryRes] = await Promise.all([
+      const [coachesRes, membersRes, adminsRes, allMembersRes, summaryRes] = await Promise.all([
         api.get('/users/role/coach'),
         api.get('/users/role/member'),
+        api.get('/users/role/admin'),
         api.get('/coaches/members').catch(() => ({ data: { success: false } })),
         api.get('/users/summary').catch(() => ({ data: { success: false, summary: { members: 0, coaches: 0, estimatedRevenue: 0 } } }))
       ]);
 
       const coachesData = coachesRes.data;
       const membersData = membersRes.data;
+      const adminsData = adminsRes.data;
       const allMembersData = allMembersRes.data;
 
       setEntities({
@@ -86,6 +90,16 @@ const Admin = () => {
           email: user.email,
           phone: user.phone || '',
           plan: user.plan || 'Sin plan'
+        })),
+        admins: adminsData.users.map((user) => ({
+          id: user.id,
+          idNumber: user.idNumber || '',
+          firstName: user.firstName,
+          lastName: user.lastName,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || '',
+          role: 'Administrador'
         }))
       });
       
@@ -106,7 +120,8 @@ const Admin = () => {
         members: [
           { id: 1, name: 'Carlos Ruiz', email: 'carlos@email.com', plan: 'Premium' },
           { id: 2, name: 'Ana García', email: 'ana@email.com', plan: 'Básico' }
-        ]
+        ],
+        admins: []
       });
       setDashboardSummary({ members: 2, coaches: 2, estimatedRevenue: 100 });
       setApiError('No se pudieron cargar los datos del servidor. Mostrando datos de ejemplo.');
@@ -118,7 +133,7 @@ const Admin = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'coaches' || activeTab === 'members') {
+    if (activeTab === 'coaches' || activeTab === 'members' || activeTab === 'admins') {
       loadAdminEntities();
     }
   }, [activeTab]);
@@ -142,6 +157,14 @@ const Admin = () => {
         { key: 'name', label: 'Nombre' },
         { key: 'email', label: 'Email' },
         { key: 'plan', label: 'Plan', badge: true }
+      ]
+    },
+    admins: {
+      title: 'Administradores',
+      columns: [
+        { key: 'name', label: 'Nombre' },
+        { key: 'email', label: 'Email' },
+        { key: 'role', label: 'Rol', badge: true }
       ]
     }
   };
@@ -328,6 +351,8 @@ const Admin = () => {
         setActiveTab('coaches');
       } else if (payload.RoleID === 1) {
         setActiveTab('members');
+      } else if (payload.RoleID === 3) {
+        setActiveTab('admins');
       }
     } catch (error) {
       console.error('Error al registrar usuario:', error);
@@ -530,14 +555,14 @@ const Admin = () => {
                   filteredItems.map(item => (
                     <div className="setting-row" key={item.id}>
                       <div className="setting-icon">
-                        {activeTab === 'coaches' ? <FaUserTie /> : <FaUsers />}
+                        {activeTab === 'coaches' ? <FaUserTie /> : activeTab === 'admins' ? <FaUserShield /> : <FaUsers />}
                       </div>
                       <div className="setting-content">
                         <div className="setting-title">{item.name}</div>
                         <div className="setting-desc">
                           Email: {item.email} • Tel: {item.phone || 'N/A'} • 
                           <strong style={{ color: '#0ea5e9', marginLeft: '4px' }}>
-                            {activeTab === 'coaches' ? item.specialty : item.plan}
+                            {activeTab === 'coaches' ? item.specialty : activeTab === 'admins' ? item.role : item.plan}
                           </strong>
                         </div>
                       </div>
@@ -650,6 +675,12 @@ const Admin = () => {
             </div>
             {editMessage && <div style={{ background: editMessage.includes('Error') ? '#fee2e2' : '#dcfce7', color: editMessage.includes('Error') ? '#991b1b' : '#166534', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>{editMessage}</div>}
             <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>ID / Cédula</label>
+                  <input type="text" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={editForm.idNumber} onChange={(e) => handleEditChange('idNumber', e.target.value)} required />
+                </div>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Nombre</label>

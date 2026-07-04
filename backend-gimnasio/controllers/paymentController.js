@@ -1,6 +1,6 @@
 const { poolPromise, sql } = require('../config/db');
 const { bucket } = require('../config/gcs');
-const { sendEmailAndLog } = require('../config/mailer');
+const emailService = require('../services/emailService');
 
 exports.getPendingPayments = async (req, res) => {
   try {
@@ -95,7 +95,7 @@ exports.approvePayment = async (req, res) => {
 
       await transaction.commit();
 
-      await sendEmailAndLog(
+      await emailService.sendEmailAndLog(
         targetUserId,
         Email,
         'Pago Aprobado - Slimming Gym',
@@ -226,5 +226,72 @@ exports.uploadPayment = async (req, res) => {
   } catch (error) {
     console.error('Error al registrar el pago del socio:', error);
     res.status(500).json({ success: false, message: 'Error interno al registrar el comprobante de pago.', error: error.message });
+  }
+};
+
+exports.webhookPayment = async (req, res) => {
+  const { ReferenceNumber, Status } = req.body;
+  
+  if (!ReferenceNumber || Status !== 'Approved') {
+    return res.status(400).json({ success: false, message: 'Payload inválido o pago no aprobado.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const detailResult = await pool.request()
+      .input('ReferenceNumber', sql.VarChar(100), ReferenceNumber)
+      .query(`
+        SELECT p.PaymentID, p.SubscriptionID, pl.DurationDays, u.Email, u.UserID as targetUserId
+        FROM Payments p
+        INNER JOIN Subscriptions s ON p.SubscriptionID = s.SubscriptionID
+        INNER JOIN Plans pl ON s.PlanID = pl.PlanID
+        INNER JOIN Users u ON s.UserID = u.UserID
+        WHERE p.ReferenceNumber = @ReferenceNumber AND p.Status = 'P'
+      `);
+
+    if (detailResult.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'Pago pendiente no encontrado para esa referencia.' });
+    }
+
+    const { PaymentID, SubscriptionID, DurationDays, Email, targetUserId } = detailResult.recordset[0];
+
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    try {
+      // LastModifiedBy = NULL for automated system
+      await transaction.request()
+        .input('PaymentID', sql.Int, PaymentID)
+        .query("UPDATE Payments SET Status = 'A', LastModifiedBy = NULL WHERE PaymentID = @PaymentID");
+
+      await transaction.request()
+        .input('SubscriptionID', sql.Int, SubscriptionID)
+        .input('DurationDays', sql.Int, DurationDays)
+        .query(`
+          UPDATE Subscriptions 
+          SET PaymentStatus = 'P',
+              StartDate = CAST(GETDATE() AS DATE),
+              EndDate = CAST(DATEADD(day, @DurationDays, GETDATE()) AS DATE)
+          WHERE SubscriptionID = @SubscriptionID
+        `);
+
+      await transaction.commit();
+
+      await emailService.sendEmailAndLog(
+        targetUserId,
+        Email,
+        'Pago Aprobado (Automático) - Slimming Gym',
+        '<p>Hola, hemos recibido confirmación automática de tu pago. Ya puedes disfrutar de tu plan.</p>',
+        'Pago'
+      );
+
+      res.json({ success: true, message: 'Webhook procesado y suscripción activada automáticamente.' });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  } catch (error) {
+    console.error('Error procesando webhook de pago:', error);
+    res.status(500).json({ success: false, message: 'Error interno procesando webhook.', error: error.message });
   }
 };

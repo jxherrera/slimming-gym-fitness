@@ -20,52 +20,59 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
   if (role === '2') role = 'coach';
   if (role === '3') role = 'admin';
 
-  const menuItems = [
-    {
-      path: '/admin',
-      name: 'Admin Dashboard',
-      icon: <FaHome />,
-      roles: ['admin']
-    },
-    {
-      path: '/coach',
-      name: 'Coaches',
-      icon: <FaDumbbell />,
-      roles: ['admin', 'coach']
-    },
-    {
-      path: '/member',
-      name: 'Members',
-      icon: <FaUser />,
-      roles: ['admin', 'coach', 'member']
-    },
-    {
-      path: '/admin/planes',
-      name: 'Planes',
-      icon: <FaClipboardList />,
-      roles: ['admin']
-    },
-    {
-      path: '/admin/horarios',
-      name: 'Horarios',
-      icon: <FaCalendarAlt />,
-      roles: ['admin', 'coach']
-    },
-    {
-      path: '/admin/pagos/verificacion',
-      name: 'Pagos',
-      icon: <FaMoneyBillWave />,
-      roles: ['admin']
-    },
-    {
-      path: '/admin/configuracion',
-      name: 'Configuración',
-      icon: <FaCog />,
-      roles: ['admin']
-    }
-  ];
+  const menuConfig = {
+    admin: [
+      {
+        category: 'Gestión Principal',
+        items: [
+          { path: '/admin', name: 'Dashboard Admin', icon: <FaHome /> }
+        ]
+      },
+      {
+        category: 'Finanzas',
+        items: [
+          { path: '/admin/planes', name: 'Planes', icon: <FaClipboardList /> },
+          { path: '/admin/pagos/verificacion', name: 'Pagos', icon: <FaMoneyBillWave /> }
+        ]
+      },
+      {
+        category: 'Personal',
+        items: [
+          { path: '/admin/horarios', name: 'Horarios', icon: <FaCalendarAlt /> }
+        ]
+      },
+      {
+        category: 'Ajustes',
+        items: [
+          { path: '/admin/configuracion', name: 'Configuración', icon: <FaCog /> }
+        ]
+      }
+    ],
+    coach: [
+      {
+        category: 'Mi Panel',
+        items: [
+          { path: '/coach', name: 'Panel Coach', icon: <FaDumbbell /> }
+        ]
+      },
+      {
+        category: 'Organización',
+        items: [
+          { path: '/admin/horarios', name: 'Mis Horarios', icon: <FaCalendarAlt /> }
+        ]
+      }
+    ],
+    member: [
+      {
+        category: 'Mi Perfil',
+        items: [
+          { path: '/member', name: 'Panel Socio', icon: <FaUser /> }
+        ]
+      }
+    ]
+  };
 
-  const filteredItems = menuItems.filter(item => item.roles.includes(role) || role === 'admin');
+  const currentMenu = menuConfig[role] || menuConfig['member'];
 
   return (
     <>
@@ -79,20 +86,25 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         onMouseLeave={() => !isCollapsed && toggleCollapse()}
       >
         <div className="sidebar-header">
-          <h2 className="logo">{isCollapsed ? 'G' : 'GYM ADMIN'}</h2>
+          <h2 className="logo">{isCollapsed ? 'G' : role === 'admin' ? 'GYM ADMIN' : role === 'coach' ? 'PANEL COACH' : 'MI PERFIL'}</h2>
         </div>
         
         <div className="sidebar-menu">
-          {filteredItems.map((item, index) => (
-            <NavLink
-              to={item.path}
-              key={index}
-              className={({ isActive }) => isActive ? 'menu-item active' : 'menu-item'}
-              onClick={() => setIsOpen(false)}
-            >
-              <div className="icon">{item.icon}</div>
-              <div className="link-text">{item.name}</div>
-            </NavLink>
+          {currentMenu.map((group, groupIndex) => (
+            <div key={groupIndex} className="sidebar-group">
+              {!isCollapsed && <div className="sidebar-category">{group.category}</div>}
+              {group.items.map((item, index) => (
+                <NavLink
+                  to={item.path}
+                  key={index}
+                  className={({ isActive }) => isActive ? 'menu-item active' : 'menu-item'}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <div className="icon">{item.icon}</div>
+                  <div className="link-text">{item.name}</div>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </div>
         

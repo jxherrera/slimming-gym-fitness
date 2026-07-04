@@ -53,12 +53,14 @@ const Member = () => {
         setShowAlertModal(true);
       }
 
-      // Cargar rutinas del socio
+      // Cargar rutina actual del socio
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/routines/user/${userId}`);
-        const routinesData = await res.json();
-        if (routinesData.success) {
-          setRoutines(routinesData.routines || []);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/routines/user/${userId}/current`);
+        const routineData = await res.json();
+        if (routineData.success && routineData.routine) {
+          setRoutines([routineData.routine]);
+        } else {
+          setRoutines([]);
         }
       } catch (e) {
         console.error('Error al cargar rutinas:', e);

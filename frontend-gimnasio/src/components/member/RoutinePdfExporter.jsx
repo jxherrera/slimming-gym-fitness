@@ -53,10 +53,9 @@ const RoutinePdfExporter = ({ routines = [], user }) => {
         </div>
 
         <div className="pdf-routine-banner">
-          <h2><FaDumbbell /> {activeRoutine.RoutineName || activeRoutine.name || 'Rutina Slimming Gym'}</h2>
+          <h2><FaDumbbell /> Rutina de {activeRoutine.Goal || activeRoutine.RoutineName || activeRoutine.name || 'Entrenamiento'}</h2>
           <div className="pdf-banner-details">
             <span><FaUser /> Entrenador: <strong>{activeRoutine.CoachName || 'Coach Asignado'}</strong></span>
-            <span><FaBullseye /> Objetivo: <strong>{activeRoutine.Goal || 'Acondicionamiento'}</strong></span>
           </div>
         </div>
 
@@ -66,9 +65,9 @@ const RoutinePdfExporter = ({ routines = [], user }) => {
               <tr>
                 <th>#</th>
                 <th>Ejercicio / Movimiento</th>
-                <th>Dosificación (Series x Reps)</th>
-                <th>Descanso</th>
-                <th>Indicaciones del Coach</th>
+                <th>Series</th>
+                <th>Repeticiones</th>
+                <th>Peso Ideal</th>
               </tr>
             </thead>
             <tbody>
@@ -77,8 +76,8 @@ const RoutinePdfExporter = ({ routines = [], user }) => {
                   <td className="center-cell"><FaCheckSquare className="check-box-icon" /></td>
                   <td className="exercise-name-cell">{ex.name}</td>
                   <td><strong>{ex.sets}</strong></td>
-                  <td>{ex.rest}</td>
-                  <td className="notes-cell">{ex.notes}</td>
+                  <td><strong>{ex.reps}</strong></td>
+                  <td className="notes-cell">{ex.weight ? `${ex.weight} kg` : '-'}</td>
                 </tr>
               ))}
             </tbody>

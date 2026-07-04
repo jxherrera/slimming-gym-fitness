@@ -11,6 +11,8 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const classRoutes = require('./routes/classRoutes');
 const evaluationRoutes = require('./routes/evaluationRoutes');
+const scheduleRoutes = require('./routes/scheduleRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 const { startCronJobs } = require('./cron/expirationChecker');
 
 const app = express();
@@ -33,6 +35,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/evaluations', evaluationRoutes);
+app.use('/api/coaches/schedules', scheduleRoutes);
+app.use('/api/reports', reportRoutes);
 
 const PORT = process.env.PORT || 5001;
 

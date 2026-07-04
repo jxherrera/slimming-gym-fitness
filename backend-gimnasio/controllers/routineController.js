@@ -41,7 +41,7 @@ const getClientsByCoach = async (req, res) => {
 
 const assignRoutine = async (req, res) => {
     try {
-        const { userId, coachId, goal } = req.body;
+        const { userId, coachId, goal, exercises } = req.body;
 
         if (!userId || !coachId || !goal) {
             return res.status(400).json({ 
@@ -51,21 +51,52 @@ const assignRoutine = async (req, res) => {
         }
 
         const pool = await poolPromise;
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
         
-        const result = await pool.request()
-            .input('UserID', sql.Int, userId)
-            .input('CoachID', sql.Int, coachId)
-            .input('Goal', sql.NVarChar(255), goal) 
-            .query(`
-                INSERT INTO Routines (UserID, CoachID, Goal)
-                OUTPUT INSERTED.RoutineID, INSERTED.UserID, INSERTED.CoachID, INSERTED.Goal
-                VALUES (@UserID, @CoachID, @Goal)
-            `);
+        let routineResult;
+        try {
+            const request = new sql.Request(transaction);
+            routineResult = await request
+                .input('UserID', sql.Int, userId)
+                .input('CoachID', sql.Int, coachId)
+                .input('Goal', sql.NVarChar(255), goal) 
+                .query(`
+                    INSERT INTO Routines (UserID, CoachID, Goal)
+                    OUTPUT INSERTED.RoutineID, INSERTED.UserID, INSERTED.CoachID, INSERTED.Goal
+                    VALUES (@UserID, @CoachID, @Goal)
+                `);
+
+            const routineId = routineResult.recordset[0].RoutineID;
+
+            if (exercises && Array.isArray(exercises) && exercises.length > 0) {
+                for (const ex of exercises) {
+                    if (ex.name && ex.sets && ex.reps) {
+                        const exRequest = new sql.Request(transaction);
+                        await exRequest
+                            .input('RoutineID', sql.Int, routineId)
+                            .input('ExerciseName', sql.NVarChar(100), ex.name)
+                            .input('Sets', sql.Int, ex.sets)
+                            .input('Reps', sql.Int, ex.reps)
+                            .input('Weight', sql.Decimal(5,2), ex.weight ? parseFloat(ex.weight) : null)
+                            .query(`
+                                INSERT INTO RoutineExercises (RoutineID, ExerciseName, Sets, Reps, Weight)
+                                VALUES (@RoutineID, @ExerciseName, @Sets, @Reps, @Weight)
+                            `);
+                    }
+                }
+            }
+
+            await transaction.commit();
+        } catch (innerError) {
+            await transaction.rollback();
+            throw innerError;
+        }
 
         res.status(201).json({
             success: true,
             message: 'Rutina asignada exitosamente.',
-            routine: result.recordset[0] 
+            routine: routineResult.recordset[0] 
         });
 
     } catch (error) {
@@ -144,9 +175,49 @@ const getCoachSchedule = async (req, res) => {
     }
 };
 
+const getCurrentRoutine = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const pool = await poolPromise;
+        
+        // 1. Get the latest routine
+        const routineResult = await pool.request()
+            .input('UserID', sql.Int, userId)
+            .query(`
+                SELECT TOP 1 R.RoutineID, R.Goal, R.AssignedAt
+                FROM Routines R
+                WHERE R.UserID = @UserID AND R.Status = 'A'
+                ORDER BY R.AssignedAt DESC
+            `);
+            
+        if (routineResult.recordset.length === 0) {
+            return res.status(200).json({ success: true, routine: null });
+        }
+        
+        const routine = routineResult.recordset[0];
+        
+        // 2. Get exercises for this routine
+        const exercisesResult = await pool.request()
+            .input('RoutineID', sql.Int, routine.RoutineID)
+            .query(`
+                SELECT ExerciseID, ExerciseName as name, Sets as sets, Reps as reps, Weight as weight
+                FROM RoutineExercises
+                WHERE RoutineID = @RoutineID
+            `);
+            
+        routine.exercises = exercisesResult.recordset;
+        
+        res.status(200).json({ success: true, routine });
+    } catch (error) {
+        console.error('Error getting current routine:', error);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+};
+
 module.exports = {
     getClientsByCoach,
     assignRoutine,
     getCoachSchedule,
-    getUserRoutines 
+    getUserRoutines,
+    getCurrentRoutine
 };

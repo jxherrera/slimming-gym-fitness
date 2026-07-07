@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FaChartLine, FaUserTie, FaUsers, FaUserPlus, FaDollarSign, FaUserShield } from 'react-icons/fa';
 import '../shared/admin-core.css';
 import { useTheme } from '../../../context/ThemeContext';
@@ -14,7 +15,24 @@ const Admin = () => {
     { id: 'register', label: 'Registrar usuario', icon: <FaUserPlus /> }
   ];
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modeParam = searchParams.get('mode');
+  const validTabs = tabs.map(t => t.id);
+  
+  const [activeTab, setActiveTab] = useState(validTabs.includes(modeParam) ? modeParam : 'dashboard');
+
+  useEffect(() => {
+    if (modeParam && validTabs.includes(modeParam)) {
+      if (activeTab !== modeParam) {
+        setActiveTab(modeParam);
+      }
+    }
+  }, [modeParam]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSearchParams({ mode: tabId });
+  };
   const { isDarkMode, toggleTheme } = useTheme();
   const [entities, setEntities] = useState({
     coaches: [],
@@ -413,11 +431,11 @@ const Admin = () => {
       setIsRegisterLoading(false);
       loadAdminEntities();
       if (payload.RoleID === 2) {
-        setActiveTab('coaches');
+        handleTabChange('coaches');
       } else if (payload.RoleID === 1) {
-        setActiveTab('members');
+        handleTabChange('members');
       } else if (payload.RoleID === 3) {
-        setActiveTab('admins');
+        handleTabChange('admins');
       }
     } catch (error) {
       console.error('Error al registrar usuario:', error);
@@ -473,7 +491,7 @@ const Admin = () => {
           {tabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               style={{ background: 'transparent', border: 'none', borderBottom: activeTab === tab.id ? '2px solid #3b82f6' : '2px solid transparent', color: activeTab === tab.id ? '#3b82f6' : '#6b7280', fontWeight: '600', padding: '10px 16px', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}
             >
               <span className="nav-icon" style={{ fontSize: '16px' }}>{tab.icon}</span>

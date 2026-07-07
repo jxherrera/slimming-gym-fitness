@@ -34,6 +34,14 @@
 /* Logo Section */
 .sidebar-header {
   padding: 24px 20px 16px;
+  text-align: center;
+}
+
+.logo {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
 
 .logo-container {
@@ -242,6 +250,45 @@
 
 .admin-sidebar.collapsed .menu-item .link-text {
   display: none;
+}
+
+/* Submenu */
+.submenu-arrow {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  color: #a098ab;
+}
+
+.submenu {
+  display: flex;
+  flex-direction: column;
+  padding-left: 48px;
+  margin-top: 4px;
+  gap: 4px;
+}
+
+.submenu-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  color: #a098ab;
+  text-decoration: none;
+  font-size: 13px;
+  border-radius: 99px;
+  transition: all 0.2s ease;
+  margin-right: 16px;
+}
+
+.submenu-item:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.submenu-item.active {
+  color: #ff7e32;
+  font-weight: 600;
+  background-color: rgba(255, 126, 50, 0.1);
 }
 
 /* Footer */

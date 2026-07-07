@@ -161,10 +161,17 @@ exports.uploadPayment = async (req, res) => {
 
     const amountPaid = planResult.recordset[0].Price;
 
-    const blob = bucket.file(`receipts/${Date.now()}_${req.file.originalname}`);
+    let safeOriginalName = req.file.originalname || 'comprobante.jpg';
+    safeOriginalName = safeOriginalName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    if (safeOriginalName.startsWith('.')) {
+      safeOriginalName = 'comprobante' + safeOriginalName;
+    }
+
+    const blob = bucket.file(`receipts/${Date.now()}_${safeOriginalName}`);
     const blobStream = blob.createWriteStream({
       resumable: false,
-      contentType: req.file.mimetype,
+      validation: false,
+      contentType: req.file.mimetype || 'image/jpeg',
     });
 
     blobStream.on('error', (err) => {

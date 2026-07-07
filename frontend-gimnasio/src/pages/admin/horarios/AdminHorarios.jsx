@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/es';
@@ -46,6 +47,8 @@ const CustomToolbar = ({ label, onView, onNavigate, views, view, localizer: tLoc
 
 const AdminHorarios = () => {
   const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modeParam = searchParams.get('mode');
   
   // Datos principales
   const [classes, setClasses] = useState([]);
@@ -55,8 +58,23 @@ const AdminHorarios = () => {
   
   // Estado de carga y mensajes
   const [loading, setLoading] = useState(true);
-  const [formMode, setFormMode] = useState('class'); // 'class' | 'schedule'
+  const [formMode, setFormMode] = useState(modeParam === 'schedule' ? 'schedule' : 'class'); // 'class' | 'schedule'
   
+  useEffect(() => {
+    if (modeParam === 'class' || modeParam === 'schedule') {
+      if (formMode !== modeParam) {
+        setFormMode(modeParam);
+        resetForms();
+      }
+    }
+  }, [modeParam]);
+
+  const handleFormModeChange = (mode) => {
+    setFormMode(mode);
+    setSearchParams({ mode });
+    resetForms();
+  };
+
   // Edit mode
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -489,13 +507,13 @@ const AdminHorarios = () => {
               <div className="form-toggle-buttons">
                 <button 
                   className={`toggle-btn ${formMode === 'class' ? 'active' : ''}`}
-                  onClick={() => { setFormMode('class'); resetForms(); }}
+                  onClick={() => handleFormModeChange('class')}
                 >
                   <FiUsers /> Clases Grupales
                 </button>
                 <button 
                   className={`toggle-btn ${formMode === 'schedule' ? 'active' : ''}`}
-                  onClick={() => { setFormMode('schedule'); resetForms(); }}
+                  onClick={() => handleFormModeChange('schedule')}
                 >
                   <FiBriefcase /> Horas de Trabajo
                 </button>

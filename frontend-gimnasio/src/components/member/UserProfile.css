@@ -135,8 +135,49 @@
   border-radius: 14px;
   padding: 18px;
   display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.coach-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.schedule-list h5, .classes-list h5 {
+  margin: 0 0 10px 0;
+  display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  color: #00e676;
+  font-size: 1rem;
+}
+
+.schedule-list ul, .classes-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schedule-list li, .classes-list li {
+  font-size: 0.9rem;
+  color: #eee;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.no-data-text {
+  font-size: 0.85rem;
+  color: #888;
+  margin: 0;
 }
 
 .coach-info {

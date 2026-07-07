@@ -19,7 +19,8 @@ const ClassSchedule = ({ userId }) => {
       const data = await scheduleService.getClasses();
       setClasses(data);
       if (userId) {
-        const bookedIds = scheduleService.getUserReservations(userId);
+        const reservations = await scheduleService.getUserReservations(userId);
+        const bookedIds = reservations.map(r => r.classId);
         setUserReservations(bookedIds);
       }
     } catch (e) {
@@ -39,6 +40,7 @@ const ClassSchedule = ({ userId }) => {
       await scheduleService.bookClass(classId, userId);
       toast.success(`¡Cupo reservado exitosamente para ${className}!`);
       setUserReservations(prev => [...prev, classId]);
+      setClasses(prev => prev.map(c => c.id === classId ? { ...c, bookedCount: c.bookedCount + 1 } : c));
     } catch (e) {
       toast.error('Ocurrió un problema al procesar tu reserva.');
     }
@@ -49,6 +51,7 @@ const ClassSchedule = ({ userId }) => {
       await scheduleService.cancelBooking(classId, userId);
       toast.info(`Reserva cancelada para ${className}.`);
       setUserReservations(prev => prev.filter(id => id !== classId));
+      setClasses(prev => prev.map(c => c.id === classId ? { ...c, bookedCount: c.bookedCount - 1 } : c));
     } catch (e) {
       toast.error('Error al cancelar la reserva.');
     }

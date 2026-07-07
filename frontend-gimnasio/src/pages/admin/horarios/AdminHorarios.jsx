@@ -4,7 +4,7 @@ import moment from 'moment';
 import 'moment/locale/es';
 import { scheduleService } from '../../../services/scheduleService';
 import api from '../../../services/api';
-import { FiCalendar, FiClock, FiPlus, FiTrash2, FiUser, FiUsers, FiBriefcase } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiPlus, FiTrash2, FiUser, FiUsers, FiBriefcase, FiEdit2 } from 'react-icons/fi';
 import { useToast } from '../../../hooks/useToast';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../shared/admin-core.css';
@@ -13,6 +13,36 @@ import './AdminHorarios.css';
 // Configurar localizador en español
 moment.locale('es');
 const localizer = momentLocalizer(moment);
+
+const CustomToolbar = ({ label, onView, onNavigate, views, view, localizer: tLocalizer }) => {
+  const goToBack = () => onNavigate('PREV');
+  const goToNext = () => onNavigate('NEXT');
+  const goToCurrent = () => onNavigate('TODAY');
+
+  return (
+    <div className="custom-calendar-toolbar">
+      <div className="toolbar-nav">
+        <button className="toolbar-btn" onClick={goToCurrent}>Hoy</button>
+        <button className="toolbar-btn" onClick={goToBack}>Ant</button>
+        <button className="toolbar-btn" onClick={goToNext}>Sig</button>
+      </div>
+      <div className="toolbar-label">
+        {label}
+      </div>
+      <div className="toolbar-views">
+        {views.map(v => (
+          <button 
+            key={v} 
+            className={`toolbar-btn ${view === v ? 'active' : ''}`}
+            onClick={() => onView(v)}
+          >
+            {tLocalizer.messages[v]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const AdminHorarios = () => {
   const toast = useToast();
@@ -26,6 +56,17 @@ const AdminHorarios = () => {
   // Estado de carga y mensajes
   const [loading, setLoading] = useState(true);
   const [formMode, setFormMode] = useState('class'); // 'class' | 'schedule'
+  
+  // Edit mode
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  
+  // Modal state
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  
+  // Calendar controlled state
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [calendarView, setCalendarView] = useState('week');
   
   // Formularios
   const [classForm, setClassForm] = useState({
@@ -60,10 +101,7 @@ const AdminHorarios = () => {
       setClasses(classesData || []);
       setSchedules(schedulesData || []);
       
-      const coachesList = coachesRes.data?.users || [
-        { id: 1, name: 'Juan Pérez', firstName: 'Juan', lastName: 'Pérez' },
-        { id: 2, name: 'María López', firstName: 'María', lastName: 'López' }
-      ];
+      const coachesList = coachesRes.data?.users || [];
       setCoaches(coachesList);
 
       // Mapear eventos para react-big-calendar
@@ -107,18 +145,14 @@ const AdminHorarios = () => {
     setEvents([...formattedClasses, ...formattedSchedules]);
   };
 
-  // Comprobar si un entrenador tiene conflicto de horario en un rango de fecha/hora
   const isCoachAvailable = (coachId, start, end, classIdToExclude = null) => {
     const checkStart = new Date(start);
     const checkEnd = new Date(end);
 
     if (isNaN(checkStart.getTime()) || isNaN(checkEnd.getTime())) return true;
 
-    // Verificar colisión con otras clases grupales
     const classConflict = classes.some(c => {
-      // Excluir la clase que se está editando
       if (classIdToExclude && Number(c.ClassID || c.id) === Number(classIdToExclude)) return false;
-      
       if (Number(c.CoachID) !== Number(coachId)) return false;
       const classStart = new Date(c.StartTime);
       const classEnd = new Date(c.EndTime);
@@ -127,35 +161,32 @@ const AdminHorarios = () => {
 
     if (classConflict) return false;
 
-    // También podemos validar si colisiona con otros turnos asignados a este coach
     const scheduleConflict = schedules.some(s => {
+      if (formMode === 'schedule' && isEditing && Number(s.id) === Number(editingId)) return false;
+      
       if (Number(s.coachId || s.CoachID) !== Number(coachId)) return false;
       const schedStart = new Date(s.startTime);
       const schedEnd = new Date(s.endTime);
       return (checkStart < schedEnd && checkEnd > schedStart);
     });
 
-    // Nota: Para la creación de clases, a veces es aceptable que coincida con su horario de trabajo.
-    // Pero si es para asignar otro turno de trabajo, validamos conflicto de turno.
     if (formMode === 'schedule' && scheduleConflict) return false;
 
     return true;
   };
 
-  // Reaccionar dinámicamente ante cambios en las horas de inicio/fin
   useEffect(() => {
     const start = formMode === 'class' ? classForm.StartTime : scheduleForm.StartTime;
     const end = formMode === 'class' ? classForm.EndTime : scheduleForm.EndTime;
 
     if (start && end) {
-      // Filtrar entrenadores disponibles
       const available = coaches.filter(coach => {
         const coachId = coach.UserID || coach.id;
-        return isCoachAvailable(coachId, start, end);
+        const excludeId = isEditing && formMode === 'class' ? editingId : null;
+        return isCoachAvailable(coachId, start, end, excludeId);
       });
       setAvailableCoaches(available);
 
-      // Si el entrenador seleccionado actualmente ya no está disponible, limpiar la selección
       const currentSelected = formMode === 'class' ? classForm.CoachID : scheduleForm.CoachID;
       if (currentSelected && !available.some(c => String(c.UserID || c.id) === String(currentSelected))) {
         if (formMode === 'class') {
@@ -168,11 +199,16 @@ const AdminHorarios = () => {
     } else {
       setAvailableCoaches(coaches);
     }
-  }, [classForm.StartTime, classForm.EndTime, scheduleForm.StartTime, scheduleForm.EndTime, formMode, classes, schedules, coaches]);
+  }, [classForm.StartTime, classForm.EndTime, scheduleForm.StartTime, scheduleForm.EndTime, formMode, classes, schedules, coaches, isEditing, editingId]);
 
-  // Manejar click en slot vacío del calendario para pre-llenar horas
+  const resetForms = () => {
+    setClassForm({ ClassName: '', Description: '', CoachID: '', MaxCapacity: 20, StartTime: '', EndTime: '' });
+    setScheduleForm({ CoachID: '', StartTime: '', EndTime: '', Title: 'Turno de Trabajo' });
+    setIsEditing(false);
+    setEditingId(null);
+  };
+
   const handleSelectSlot = ({ start, end }) => {
-    // Convertir a formato datetime-local
     const formatDateTimeLocal = (date) => {
       const offset = date.getTimezoneOffset();
       const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
@@ -190,7 +226,6 @@ const AdminHorarios = () => {
     toast.info(`Horario seleccionado: ${moment(start).format('LLL')} a ${moment(end).format('LT')}`);
   };
 
-  // Manejar envío de formulario de clase grupal
   const handleClassSubmit = async (e) => {
     e.preventDefault();
     const { ClassName, CoachID, StartTime, EndTime, MaxCapacity, Description } = classForm;
@@ -205,8 +240,7 @@ const AdminHorarios = () => {
       return;
     }
 
-    // Verificar disponibilidad por seguridad
-    if (!isCoachAvailable(CoachID, StartTime, EndTime)) {
+    if (!isCoachAvailable(CoachID, StartTime, EndTime, isEditing ? editingId : null)) {
       toast.error('Conflicto: El entrenador seleccionado ya está ocupado en este horario.');
       return;
     }
@@ -224,20 +258,19 @@ const AdminHorarios = () => {
     };
 
     try {
-      const res = await scheduleService.createClass(payload);
+      let res;
+      if (isEditing) {
+        res = await scheduleService.updateClass(editingId, payload);
+      } else {
+        res = await scheduleService.createClass(payload);
+      }
+
       if (res.success) {
-        toast.success(res.message || 'Clase grupal programada con éxito.');
-        setClassForm({
-          ClassName: '',
-          Description: '',
-          CoachID: '',
-          MaxCapacity: 20,
-          StartTime: '',
-          EndTime: ''
-        });
+        toast.success(res.message || `Clase grupal ${isEditing ? 'actualizada' : 'programada'} con éxito.`);
+        resetForms();
         loadData();
       } else {
-        toast.error(res.message || 'Error al programar clase.');
+        toast.error(res.message || `Error al ${isEditing ? 'actualizar' : 'programar'} clase.`);
       }
     } catch (err) {
       console.error(err);
@@ -245,7 +278,6 @@ const AdminHorarios = () => {
     }
   };
 
-  // Manejar envío de formulario de asignación de horario de trabajo
   const handleScheduleSubmit = async (e) => {
     e.preventDefault();
     const { CoachID, StartTime, EndTime, Title } = scheduleForm;
@@ -275,15 +307,16 @@ const AdminHorarios = () => {
     };
 
     try {
-      const res = await scheduleService.createCoachSchedule(payload);
+      let res;
+      if (isEditing) {
+        res = await scheduleService.updateCoachSchedule(editingId, payload);
+      } else {
+        res = await scheduleService.createCoachSchedule(payload);
+      }
+
       if (res.success) {
-        toast.success(res.message || 'Horario de trabajo asignado con éxito.');
-        setScheduleForm({
-          CoachID: '',
-          StartTime: '',
-          EndTime: '',
-          Title: 'Turno de Trabajo'
-        });
+        toast.success(res.message || `Horario de trabajo ${isEditing ? 'actualizado' : 'asignado'} con éxito.`);
+        resetForms();
         loadData();
       } else {
         toast.error(res.message || 'Error al guardar el horario.');
@@ -294,8 +327,50 @@ const AdminHorarios = () => {
     }
   };
 
-  // Eliminar un evento al seleccionarlo
-  const handleSelectEvent = async (event) => {
+  const handleSelectEvent = (event) => {
+    setSelectedEvent(event);
+  };
+
+  const handleEditEvent = (event) => {
+    setIsEditing(true);
+    setEditingId(event.rawId);
+    
+    const formatDateTimeLocal = (dateString) => {
+      const date = new Date(dateString);
+      const offset = date.getTimezoneOffset();
+      const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
+      return adjustedDate.toISOString().substring(0, 16);
+    };
+
+    if (event.type === 'class') {
+      setFormMode('class');
+      setClassForm({
+        ClassName: event.original.ClassName,
+        Description: event.original.Description || '',
+        CoachID: event.original.CoachID,
+        MaxCapacity: event.original.MaxCapacity || 20,
+        StartTime: formatDateTimeLocal(event.original.StartTime),
+        EndTime: formatDateTimeLocal(event.original.EndTime)
+      });
+    } else {
+      setFormMode('schedule');
+      let titleOnly = event.original.title || '';
+      if (titleOnly.includes(' - ')) {
+        titleOnly = titleOnly.split(' - ')[0];
+      }
+      setScheduleForm({
+        CoachID: event.original.coachId || event.original.CoachID,
+        StartTime: formatDateTimeLocal(event.original.startTime),
+        EndTime: formatDateTimeLocal(event.original.endTime),
+        Title: titleOnly
+      });
+    }
+    
+    setSelectedEvent(null);
+    toast.info('Modo edición activado.');
+  };
+
+  const handleDeleteEvent = async (event) => {
     const typeLabel = event.type === 'class' ? 'Clase Grupal' : 'Horario de Trabajo';
     const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar este evento?\n\n[${typeLabel}] ${event.title}`);
     
@@ -310,6 +385,7 @@ const AdminHorarios = () => {
 
         if (res.success) {
           toast.success('Evento eliminado correctamente.');
+          setSelectedEvent(null);
           loadData();
         } else {
           toast.error(res.message || 'No se pudo eliminar el evento.');
@@ -321,22 +397,79 @@ const AdminHorarios = () => {
     }
   };
 
-  // Personalización del estilo de los eventos
+  // Improved Event Style Getter for preventing solid block overlaps and compact month view
   const eventStyleGetter = (event) => {
-    return {
-      style: {
-        backgroundColor: event.color,
-        borderRadius: '8px',
-        opacity: 0.9,
-        color: 'white',
-        border: '0px',
-        display: 'block',
-        fontSize: '12px',
-        fontWeight: '600',
-        padding: '2px 6px',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+    const isMonthView = calendarView === 'month';
+
+    if (event.type === 'schedule') {
+      if (isMonthView) {
+        // Diseño ultra compacto para vista de MES (Turnos de trabajo)
+        return {
+          style: {
+            backgroundColor: 'transparent',
+            borderLeft: '3px solid #10b981',
+            color: '#10b981',
+            borderRadius: '2px',
+            display: 'block',
+            fontSize: '10px',
+            fontWeight: '600',
+            padding: '1px 4px',
+            margin: '1px 0',
+            boxShadow: 'none',
+            zIndex: 1
+          }
+        };
       }
-    };
+      // Horarios de trabajo en SEMANA / DIA: Translucidos, como un fondo
+      return {
+        style: {
+          backgroundColor: 'rgba(16, 185, 129, 0.15)', // Verde muy transparente
+          borderLeft: '4px solid #10b981', // Borde solido izquierdo
+          color: '#059669', // Texto más oscuro para contrastar con el fondo
+          borderRadius: '4px',
+          display: 'block',
+          fontSize: '12px',
+          fontWeight: '600',
+          padding: '2px 6px',
+          boxShadow: 'none',
+          zIndex: 1
+        }
+      };
+    } else {
+      if (isMonthView) {
+        // Diseño compacto para vista de MES (Clases Grupales)
+        return {
+          style: {
+            backgroundColor: '#3b82f6',
+            borderRadius: '4px',
+            color: 'white',
+            border: 'none',
+            display: 'block',
+            fontSize: '10px',
+            fontWeight: '600',
+            padding: '2px 4px',
+            margin: '1px 0',
+            boxShadow: 'none',
+            zIndex: 5
+          }
+        };
+      }
+      // Clases Grupales en SEMANA / DIA: Bloques sólidos superpuestos
+      return {
+        style: {
+          backgroundColor: '#3b82f6', // Azul solido
+          borderRadius: '6px',
+          color: 'white',
+          border: '1px solid rgba(255,255,255,0.2)',
+          display: 'block',
+          fontSize: '12px',
+          fontWeight: '700',
+          padding: '4px 6px',
+          boxShadow: '0 4px 10px rgba(59, 130, 246, 0.4)',
+          zIndex: 5
+        }
+      };
+    }
   };
 
   return (
@@ -352,27 +485,27 @@ const AdminHorarios = () => {
         ) : (
           <div className="horarios-grid">
             
-            {/* PANEL FORMULARIOS */}
             <div className="horarios-form-card">
               <div className="form-toggle-buttons">
                 <button 
                   className={`toggle-btn ${formMode === 'class' ? 'active' : ''}`}
-                  onClick={() => setFormMode('class')}
+                  onClick={() => { setFormMode('class'); resetForms(); }}
                 >
                   <FiUsers /> Clases Grupales
                 </button>
                 <button 
                   className={`toggle-btn ${formMode === 'schedule' ? 'active' : ''}`}
-                  onClick={() => setFormMode('schedule')}
+                  onClick={() => { setFormMode('schedule'); resetForms(); }}
                 >
                   <FiBriefcase /> Horas de Trabajo
                 </button>
               </div>
 
               {formMode === 'class' ? (
-                /* FORMULARIO CLASE GRUPAL */
                 <form onSubmit={handleClassSubmit} className="horarios-styled-form">
-                  <div className="form-title-badge">Crear Clase Grupal</div>
+                  <div className="form-title-badge">
+                    {isEditing ? 'Editar Clase Grupal' : 'Crear Clase Grupal'}
+                  </div>
                   
                   <div className="form-group">
                     <label>Nombre de la Clase</label>
@@ -448,13 +581,20 @@ const AdminHorarios = () => {
                   </div>
 
                   <button type="submit" className="horarios-submit-btn class-btn">
-                    <FiPlus /> Crear Clase Grupal
+                    {isEditing ? <FiEdit2 /> : <FiPlus />}
+                    {isEditing ? ' Guardar Cambios' : ' Crear Clase Grupal'}
                   </button>
+                  {isEditing && (
+                    <button type="button" className="horarios-submit-btn" style={{background: 'rgba(255,255,255,0.1)', marginTop: '8px'}} onClick={resetForms}>
+                      Cancelar Edición
+                    </button>
+                  )}
                 </form>
               ) : (
-                /* FORMULARIO HORAS TRABAJO ENTRENADORES */
                 <form onSubmit={handleScheduleSubmit} className="horarios-styled-form">
-                  <div className="form-title-badge schedule-badge">Asignar Horas de Trabajo</div>
+                  <div className="form-title-badge schedule-badge">
+                    {isEditing ? 'Editar Horas de Trabajo' : 'Asignar Horas de Trabajo'}
+                  </div>
                   
                   <div className="form-group">
                     <label>Etiqueta / Título del Turno</label>
@@ -507,13 +647,18 @@ const AdminHorarios = () => {
                   </div>
 
                   <button type="submit" className="horarios-submit-btn schedule-btn">
-                    <FiPlus /> Guardar Horas de Trabajo
+                    {isEditing ? <FiEdit2 /> : <FiPlus />}
+                    {isEditing ? ' Guardar Cambios' : ' Guardar Horas de Trabajo'}
                   </button>
+                  {isEditing && (
+                    <button type="button" className="horarios-submit-btn" style={{background: 'rgba(255,255,255,0.1)', marginTop: '8px'}} onClick={resetForms}>
+                      Cancelar Edición
+                    </button>
+                  )}
                 </form>
               )}
             </div>
 
-            {/* AREA DEL CALENDARIO */}
             <div className="horarios-calendar-card">
               <div className="calendar-legend">
                 <span className="legend-item"><span className="color-dot class-dot"></span> Clase Grupal</span>
@@ -523,15 +668,22 @@ const AdminHorarios = () => {
                 <Calendar
                   localizer={localizer}
                   events={events}
+                  date={calendarDate}
+                  view={calendarView}
+                  onNavigate={(newDate) => setCalendarDate(newDate)}
+                  onView={(newView) => setCalendarView(newView)}
                   startAccessor="start"
                   endAccessor="end"
                   style={{ height: '620px' }}
                   selectable
+                  popup={true}
                   onSelectSlot={handleSelectSlot}
                   onSelectEvent={handleSelectEvent}
                   eventPropGetter={eventStyleGetter}
                   views={['month', 'week', 'day', 'agenda']}
-                  defaultView="week"
+                  components={{
+                    toolbar: CustomToolbar
+                  }}
                   messages={{
                     next: 'Sig',
                     previous: 'Ant',
@@ -549,6 +701,33 @@ const AdminHorarios = () => {
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* Modal para Editar/Eliminar Evento */}
+        {selectedEvent && (
+          <div className="event-modal-overlay" onClick={() => setSelectedEvent(null)}>
+            <div className="event-modal" onClick={e => e.stopPropagation()}>
+              <div className="event-modal-header">
+                <h3>{selectedEvent.type === 'class' ? 'Clase Grupal' : 'Horario de Trabajo'}</h3>
+                <button className="close-btn" onClick={() => setSelectedEvent(null)}>&times;</button>
+              </div>
+              <div className="event-modal-body">
+                <p><strong>{selectedEvent.title}</strong></p>
+                <p><FiClock /> {moment(selectedEvent.start).format('LLL')} - {moment(selectedEvent.end).format('LT')}</p>
+                {selectedEvent.type === 'class' && (
+                  <p><FiUsers /> Capacidad: {selectedEvent.original.MaxCapacity || selectedEvent.original.maxCapacity}</p>
+                )}
+              </div>
+              <div className="event-modal-actions">
+                <button className="edit-btn" onClick={() => handleEditEvent(selectedEvent)}>
+                  <FiEdit2 /> Editar
+                </button>
+                <button className="delete-btn" onClick={() => handleDeleteEvent(selectedEvent)}>
+                  <FiTrash2 /> Eliminar
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

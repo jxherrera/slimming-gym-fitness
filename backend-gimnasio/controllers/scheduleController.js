@@ -20,6 +20,29 @@ exports.getSchedules = async (req, res) => {
     }
 };
 
+exports.getAllSchedules = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT cwh.ID as id, cwh.CoachID as coachId, cwh.DayOfWeek as dayOfWeek, 
+                   CONVERT(varchar(5), cwh.StartTime, 108) as startTime, 
+                   CONVERT(varchar(5), cwh.EndTime, 108) as endTime,
+                   u.FirstName + ' ' + u.LastName as coachName
+            FROM CoachWorkHours cwh
+            INNER JOIN Users u ON cwh.CoachID = u.UserID
+        `);
+        // Map to include 'title'
+        const schedules = result.recordset.map(s => ({
+            ...s,
+            title: `Horario - ${s.coachName}`
+        }));
+        res.json({ success: true, schedules });
+    } catch (error) {
+        console.error('Error fetching all schedules:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener horarios' });
+    }
+};
+
 exports.createSchedule = async (req, res) => {
     const { coachId, dayOfWeek, startTime, endTime } = req.body;
     try {
@@ -27,8 +50,8 @@ exports.createSchedule = async (req, res) => {
         await pool.request()
             .input('CoachID', sql.Int, coachId)
             .input('DayOfWeek', sql.VarChar(20), dayOfWeek)
-            .input('StartTime', sql.Time, startTime)
-            .input('EndTime', sql.Time, endTime)
+            .input('StartTime', sql.VarChar(5), startTime)
+            .input('EndTime', sql.VarChar(5), endTime)
             .query(`
                 INSERT INTO CoachWorkHours (CoachID, DayOfWeek, StartTime, EndTime)
                 VALUES (@CoachID, @DayOfWeek, @StartTime, @EndTime)
@@ -48,8 +71,8 @@ exports.updateSchedule = async (req, res) => {
         const result = await pool.request()
             .input('ID', sql.Int, scheduleId)
             .input('DayOfWeek', sql.VarChar(20), dayOfWeek)
-            .input('StartTime', sql.Time, startTime)
-            .input('EndTime', sql.Time, endTime)
+            .input('StartTime', sql.VarChar(5), startTime)
+            .input('EndTime', sql.VarChar(5), endTime)
             .query(`
                 UPDATE CoachWorkHours 
                 SET DayOfWeek = @DayOfWeek, StartTime = @StartTime, EndTime = @EndTime

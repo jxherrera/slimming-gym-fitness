@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 const CoachPanel = () => {
     const [activeTab, setActiveTab] = useState('alumnos');
+    const [clientTab, setClientTab] = useState('asignados');
     const [clients, setClients] = useState([]);
+    const [unassignedClients, setUnassignedClients] = useState([]);
     const [schedule, setSchedule] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -23,16 +27,19 @@ const CoachPanel = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [clientsRes, scheduleRes] = await Promise.all([
-                fetch(`http://localhost:3000/api/routines/coach/${coachId}/clients`),
-                fetch(`http://localhost:3000/api/routines/coach/${coachId}/schedule`)
+            const [clientsRes, unassignedRes, scheduleRes] = await Promise.all([
+                fetch(`${API_BASE}/routines/coach/${coachId}/clients`),
+                fetch(`${API_BASE}/coaches/unassigned-members`),
+                fetch(`${API_BASE}/routines/coach/${coachId}/schedule`)
             ]);
-            if (!clientsRes.ok || !scheduleRes.ok) throw new Error('Error de conexión');
+            if (!clientsRes.ok || !unassignedRes.ok || !scheduleRes.ok) throw new Error('Error de conexión');
             
             const clientsData = await clientsRes.json();
+            const unassignedData = await unassignedRes.json();
             const scheduleData = await scheduleRes.json();
 
             if (clientsData.success) setClients(clientsData.clients);
+            if (unassignedData.success) setUnassignedClients(unassignedData.members);
             if (scheduleData.success) setSchedule(scheduleData.schedule);
         } catch (err) {
             console.error("Error al cargar datos del panel:", err);
@@ -72,7 +79,7 @@ const CoachPanel = () => {
         setIsSubmittingRoutine(true);
         const payload = { userId: selectedClient.UserID, coachId, goal: routineGoal, exercises };
         try {
-            const response = await fetch('http://localhost:3000/api/routines/assign', {
+            const response = await fetch(`${API_BASE}/routines/assign`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -91,9 +98,49 @@ const CoachPanel = () => {
         }
     };
 
+    const handleAssignMe = async (memberId) => {
+        if (!window.confirm("¿Confirmas que deseas asignar este alumno a tu cargo?")) return;
+        try {
+            const response = await fetch(`${API_BASE}/coaches/${coachId}/assign`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ MemberID: memberId })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert('Alumno asignado correctamente.');
+                fetchData(); // Reload both lists
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        } catch (error) {
+            console.error("Error asignando alumno:", error);
+            alert("Error de conexión al asignar alumno.");
+        }
+    };
+
+    const handleRemoveClient = async (memberId) => {
+        if (!window.confirm("¿Estás seguro de que deseas quitar a este alumno de tu lista?")) return;
+        try {
+            const response = await fetch(`${API_BASE}/coaches/assign/${memberId}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert('Alumno removido correctamente.');
+                fetchData();
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        } catch (error) {
+            console.error("Error removiendo alumno:", error);
+            alert("Error de conexión al remover alumno.");
+        }
+    };
+
     const fetchEvalHistory = async (userId) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/evaluations/user/${userId}`);
+            const response = await fetch(`${API_BASE}/evaluations/user/${userId}`);
             const data = await response.json();
             if (data.success) setEvalHistory(data.history);
         } catch (error) {
@@ -120,7 +167,7 @@ const CoachPanel = () => {
         const payload = { ...evalForm, userId: selectedClient.UserID, coachId };
         
         try {
-            const response = await fetch('http://localhost:3000/api/evaluations', {
+            const response = await fetch(`${API_BASE}/evaluations`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -164,6 +211,16 @@ const CoachPanel = () => {
             </div>
             {activeTab === 'alumnos' && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden fade-in">
+                    
+                    <div className="flex border-b border-gray-100 bg-gray-50/50 px-6 pt-4">
+                        <button onClick={() => setClientTab('asignados')} className={`pb-3 px-4 text-sm font-bold transition-all ${clientTab === 'asignados' ? 'border-b-2 border-emerald-500 text-emerald-700' : 'text-gray-400 hover:text-gray-600'}`}>
+                            Mis Alumnos ({clients.length})
+                        </button>
+                        <button onClick={() => setClientTab('disponibles')} className={`pb-3 px-4 text-sm font-bold transition-all ${clientTab === 'disponibles' ? 'border-b-2 border-emerald-500 text-emerald-700' : 'text-gray-400 hover:text-gray-600'}`}>
+                            Nuevos Alumnos Disponibles ({unassignedClients.length})
+                        </button>
+                    </div>
+
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
@@ -173,20 +230,45 @@ const CoachPanel = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-100">
-                            {clients.map((client) => (
-                                <tr key={client.UserID} className="hover:bg-blue-50/50 transition-colors duration-200">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.Email}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.Goal || 'No definido'}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                                        <button onClick={() => openRoutineModal(client)} className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg text-xs font-bold border border-blue-200 transition-all">
-                                            🏋️ Rutina
-                                        </button>
-                                        <button onClick={() => openEvalModal(client)} className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg text-xs font-bold border border-emerald-200 transition-all">
-                                            📏 Medidas
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {clientTab === 'asignados' ? (
+                                clients.map((client) => (
+                                    <tr key={client.UserID} className="hover:bg-blue-50/50 transition-colors duration-200">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.Email}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.Goal || 'No definido'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                                            <button onClick={() => openRoutineModal(client)} className="text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg text-xs font-bold border border-blue-200 transition-all">
+                                                🏋️ Rutina
+                                            </button>
+                                            <button onClick={() => openEvalModal(client)} className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg text-xs font-bold border border-emerald-200 transition-all">
+                                                📏 Medidas
+                                            </button>
+                                            <button onClick={() => handleRemoveClient(client.UserID)} className="text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg text-xs font-bold border border-red-200 transition-all">
+                                                🗑️ Quitar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                unassignedClients.length > 0 ? (
+                                    unassignedClients.map((client) => (
+                                        <tr key={client.UserID} className="hover:bg-orange-50/50 transition-colors duration-200">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.FirstName} {client.LastName} <br/><span className="text-xs text-gray-400">{client.Email}</span></td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.Goal || 'No definido'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                                                <button onClick={() => handleAssignMe(client.UserID)} className="text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg text-xs font-bold shadow-md transition-all">
+                                                    👋 Reclutar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="3" className="px-6 py-8 text-center text-sm text-gray-500">
+                                            Todos los alumnos activos tienen entrenador asignado en este momento.
+                                        </td>
+                                    </tr>
+                                )
+                            )}
                         </tbody>
                     </table>
                 </div>

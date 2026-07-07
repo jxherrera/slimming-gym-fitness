@@ -129,6 +129,8 @@
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-shadow);
+  min-width: 0; /* Fixes grid blowout */
+  overflow: hidden;
 }
 
 .calendar-legend {
@@ -166,6 +168,13 @@
   border-radius: 12px;
   padding: 12px;
   border: 1px solid var(--admin-border);
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* Ensure the calendar itself doesn't shrink so much that it becomes unusable */
+.rbc-calendar {
+  min-width: 650px;
 }
 
 /* Estilos para react-big-calendar adaptados a tema oscuro/claro */
@@ -215,4 +224,155 @@
 }
 .admin-page.theme-light .rbc-off-range-bg {
   background: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Event Modal Styles */
+.event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.event-modal {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  padding: 24px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.event-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--admin-border);
+  padding-bottom: 12px;
+}
+
+.event-modal-header h3 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 1.1rem;
+}
+
+.event-modal-header .close-btn {
+  background: none;
+  border: none;
+  color: var(--admin-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.event-modal-header .close-btn:hover {
+  color: var(--admin-text);
+}
+
+.event-modal-body p {
+  color: var(--admin-text);
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.event-modal-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.edit-btn {
+  background: var(--admin-primary);
+  color: white;
+}
+.edit-btn:hover {
+  background: var(--admin-accent);
+}
+
+.delete-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+.delete-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Custom Toolbar Styles */
+.custom-calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.toolbar-nav, .toolbar-views {
+  display: flex;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 4px;
+  border: 1px solid var(--admin-border);
+}
+
+.toolbar-btn {
+  background: transparent;
+  border: none;
+  color: var(--admin-muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  color: var(--admin-text);
+  background: rgba(255,255,255,0.05);
+}
+
+.toolbar-btn.active {
+  background: var(--admin-primary);
+  color: white;
+}
+
+.toolbar-label {
+  font-size: 1.2rem;
+  color: var(--admin-text);
+  font-weight: 500;
 }

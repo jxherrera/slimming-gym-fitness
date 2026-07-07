@@ -1,10 +1,12 @@
 const { sql, poolPromise } = require('../config/db');
+const emailService = require('../services/emailService');
 
 exports.getAllClasses = async (req, res) => {
     try {
         const pool = await poolPromise;
         const result = await pool.request().query(`
-            SELECT c.ClassID, c.ClassName, c.Description, c.MaxCapacity, c.StartTime, c.EndTime,
+            SELECT c.ClassID, c.ClassName, c.Description, c.MaxCapacity, 
+                   c.StartTime, c.EndTime,
                    c.CoachID, u.FirstName + ' ' + u.LastName AS CoachName,
                    (SELECT COUNT(*) FROM ClassReservations cr WHERE cr.ClassID = c.ClassID) as CurrentEnrollment
             FROM Classes c
@@ -18,16 +20,24 @@ exports.getAllClasses = async (req, res) => {
 };
 
 exports.createClass = async (req, res) => {
-    const { ClassName, CoachID, DayOfWeek, StartTime, EndTime, MaxCapacity } = req.body;
+    const { ClassName, CoachID, StartTime, EndTime, MaxCapacity, Description } = req.body;
     try {
         const pool = await poolPromise;
+        
+        // Extract DayOfWeek and Time strings for CoachWorkHours validation
+        const startDate = new Date(StartTime);
+        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const dayOfWeekStr = days[startDate.getDay()];
+        const timeStartStr = startDate.toTimeString().substring(0, 5);
+        const endDate = new Date(EndTime);
+        const timeEndStr = endDate.toTimeString().substring(0, 5);
 
         // 1. Validar que el coach esté dentro de su horario de trabajo (DayOfWeek, StartTime, EndTime)
         const scheduleResult = await pool.request()
             .input('CoachID', sql.Int, CoachID)
-            .input('DayOfWeek', sql.VarChar(20), DayOfWeek)
-            .input('StartTime', sql.Time, StartTime)
-            .input('EndTime', sql.Time, EndTime)
+            .input('DayOfWeek', sql.VarChar(20), dayOfWeekStr)
+            .input('StartTime', sql.VarChar(5), timeStartStr)
+            .input('EndTime', sql.VarChar(5), timeEndStr)
             .query(`
                 SELECT ID FROM CoachWorkHours 
                 WHERE CoachID = @CoachID 
@@ -43,13 +53,11 @@ exports.createClass = async (req, res) => {
         // 2. Validar solapamiento de clases para ese coach
         const conflictResult = await pool.request()
             .input('CoachID', sql.Int, CoachID)
-            .input('DayOfWeek', sql.VarChar(20), DayOfWeek)
-            .input('StartTime', sql.Time, StartTime)
-            .input('EndTime', sql.Time, EndTime)
+            .input('StartTime', sql.DateTime, StartTime)
+            .input('EndTime', sql.DateTime, EndTime)
             .query(`
                 SELECT ClassID FROM Classes 
                 WHERE CoachID = @CoachID 
-                  AND DayOfWeek = @DayOfWeek
                   AND (
                     (StartTime < @EndTime AND EndTime > @StartTime)
                   )
@@ -62,13 +70,13 @@ exports.createClass = async (req, res) => {
         await pool.request()
             .input('ClassName', sql.VarChar(100), ClassName)
             .input('CoachID', sql.Int, CoachID)
-            .input('DayOfWeek', sql.VarChar(20), DayOfWeek)
-            .input('StartTime', sql.Time, StartTime)
-            .input('EndTime', sql.Time, EndTime)
+            .input('StartTime', sql.DateTime, StartTime)
+            .input('EndTime', sql.DateTime, EndTime)
             .input('MaxCapacity', sql.Int, MaxCapacity)
+            .input('Description', sql.VarChar(500), Description || null)
             .query(`
-                INSERT INTO Classes (ClassName, CoachID, DayOfWeek, StartTime, EndTime, MaxCapacity)
-                VALUES (@ClassName, @CoachID, @DayOfWeek, @StartTime, @EndTime, @MaxCapacity)
+                INSERT INTO Classes (ClassName, CoachID, StartTime, EndTime, MaxCapacity, Description)
+                VALUES (@ClassName, @CoachID, @StartTime, @EndTime, @MaxCapacity, @Description)
             `);
 
         res.json({ success: true, message: 'Clase creada exitosamente' });
@@ -86,14 +94,16 @@ exports.reserveClass = async (req, res) => {
         await transaction.begin();
 
         try {
-            // Check capacity
+            // Check capacity and get class details
             const classReq = new sql.Request(transaction);
             const classRes = await classReq
                 .input('ClassID', sql.Int, ClassID)
                 .query(`
-                    SELECT c.MaxCapacity, 
+                    SELECT c.MaxCapacity, c.ClassName, c.StartTime,
+                           u.FirstName + ' ' + u.LastName AS CoachName,
                            (SELECT COUNT(*) FROM ClassReservations cr WHERE cr.ClassID = c.ClassID) as CurrentEnrollment
                     FROM Classes c
+                    LEFT JOIN Users u ON c.CoachID = u.UserID
                     WHERE c.ClassID = @ClassID
                 `);
             
@@ -103,6 +113,15 @@ exports.reserveClass = async (req, res) => {
             if (classInfo.CurrentEnrollment >= classInfo.MaxCapacity) {
                 throw new Error('La clase ha alcanzado su aforo máximo');
             }
+
+            // Get user details for email
+            const userReq = new sql.Request(transaction);
+            const userRes = await userReq
+                .input('UserID', sql.Int, UserID)
+                .query(`SELECT Email, FirstName FROM Users WHERE UserID = @UserID`);
+            
+            if (userRes.recordset.length === 0) throw new Error('Usuario no encontrado');
+            const userInfo = userRes.recordset[0];
 
             // Check if user already reserved
             const checkReq = new sql.Request(transaction);
@@ -123,6 +142,17 @@ exports.reserveClass = async (req, res) => {
                 .query(`INSERT INTO ClassReservations (ClassID, UserID) VALUES (@ClassID, @UserID)`);
 
             await transaction.commit();
+            
+            // Send email
+            await emailService.sendClassJoinedEmail(
+                UserID,
+                userInfo.Email,
+                userInfo.FirstName,
+                classInfo.ClassName,
+                classInfo.StartTime,
+                classInfo.CoachName || 'No asignado'
+            ).catch(e => console.error("Error enviando email de reserva:", e));
+
             res.json({ success: true, message: 'Reserva confirmada exitosamente' });
         } catch (err) {
             await transaction.rollback();
@@ -159,13 +189,13 @@ exports.getUserReservations = async (req, res) => {
 };
 
 exports.cancelReservation = async (req, res) => {
-    const { ReservationID, UserID } = req.body;
+    const { ClassID, UserID } = req.body;
     try {
         const pool = await poolPromise;
         const result = await pool.request()
-            .input('ReservationID', sql.Int, ReservationID)
+            .input('ClassID', sql.Int, ClassID)
             .input('UserID', sql.Int, UserID)
-            .query('DELETE FROM ClassReservations WHERE ReservationID = @ReservationID AND UserID = @UserID');
+            .query('DELETE FROM ClassReservations WHERE ClassID = @ClassID AND UserID = @UserID');
 
         if (result.rowsAffected[0] === 0) {
             return res.status(404).json({ success: false, message: 'Reserva no encontrada o no pertenece al usuario' });

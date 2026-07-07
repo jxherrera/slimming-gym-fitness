@@ -1,6 +1,7 @@
 const { poolPromise, sql } = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const emailService = require('../services/emailService');
 
 exports.register = async (req, res) => {
     const { IDNumber, FirstName, LastName, Email, Password, PhoneNumber, RoleID } = req.body;
@@ -40,19 +41,81 @@ exports.register = async (req, res) => {
                 roleId = insertRoleResult.recordset[0].RoleID;
             }
         }
+        
+        // CHECK IF USER ALREADY EXISTS
+        const emailStr = Email ? String(Email).trim() : '';
+        const idStr = IDNumber ? String(IDNumber).trim() : '';
+        
+        const existingUserResult = await pool.request()
+            .input('EmailCheck', sql.VarChar(255), emailStr)
+            .input('IDCheck', sql.VarChar(50), idStr)
+            .query(`SELECT UserID, Status, Email, IDNumber FROM Users WHERE Email = @EmailCheck OR IDNumber = @IDCheck`);
+            
+        if (existingUserResult.recordset.length > 0) {
+            const existingUser = existingUserResult.recordset[0];
+            if (existingUser.Status === 'I') {
+                // RESTORE AND UPDATE INACTIVE USER
+                await pool.request()
+                    .input('IDNumber', sql.VarChar(50), idStr)
+                    .input('FirstName', sql.VarChar(100), FirstName)
+                    .input('LastName', sql.VarChar(100), LastName)
+                    .input('Email', sql.VarChar(255), emailStr)
+                    .input('PasswordHash', sql.VarChar(255), passwordHash) 
+                    .input('PhoneNumber', sql.VarChar(20), PhoneNumber || '')
+                    .input('RoleID', sql.Int, roleId)
+                    .input('UserID', sql.Int, existingUser.UserID)
+                    .query(`
+                        UPDATE Users 
+                        SET IDNumber = @IDNumber, FirstName = @FirstName, LastName = @LastName, 
+                            Email = @Email, PasswordHash = @PasswordHash, PhoneNumber = @PhoneNumber, 
+                            RoleID = @RoleID, Status = 'A'
+                        WHERE UserID = @UserID
+                    `);
+                    
+                if (emailStr) {
+                    emailService.sendWelcomeEmail(existingUser.UserID, emailStr, FirstName).catch(err => {
+                        console.error('Error al enviar correo de bienvenida (restauración):', err);
+                    });
+                }
 
-        await pool.request()
-            .input('IDNumber', sql.VarChar, IDNumber)
-            .input('FirstName', sql.VarChar, FirstName)
-            .input('LastName', sql.VarChar, LastName)
-            .input('Email', sql.VarChar, Email)
-            .input('PasswordHash', sql.VarChar, passwordHash) 
-            .input('PhoneNumber', sql.VarChar, PhoneNumber)
+                return res.status(201).json({ 
+                    success: true, 
+                    message: "Usuario restaurado y actualizado con éxito en la base de datos.",
+                    user: {
+                        firstName: FirstName,
+                        role: roleName
+                    }
+                });
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    message: "El correo electrónico o el número de identificación ya está en uso por un usuario activo."
+                });
+            }
+        }
+
+        const insertResult = await pool.request()
+            .input('IDNumber', sql.VarChar(50), idStr)
+            .input('FirstName', sql.VarChar(100), FirstName)
+            .input('LastName', sql.VarChar(100), LastName)
+            .input('Email', sql.VarChar(255), emailStr)
+            .input('PasswordHash', sql.VarChar(255), passwordHash) 
+            .input('PhoneNumber', sql.VarChar(20), PhoneNumber || '')
             .input('RoleID', sql.Int, roleId)
             .query(`
                 INSERT INTO Users (IDNumber, FirstName, LastName, Email, PasswordHash, PhoneNumber, RoleID, Status)
+                OUTPUT INSERTED.UserID
                 VALUES (@IDNumber, @FirstName, @LastName, @Email, @PasswordHash, @PhoneNumber, @RoleID, 'A')
             `);
+            
+        const newUserId = insertResult.recordset[0].UserID;
+
+        // Send welcome email asynchronously
+        if (emailStr) {
+            emailService.sendWelcomeEmail(newUserId, emailStr, FirstName).catch(err => {
+                console.error('Error al enviar correo de bienvenida:', err);
+            });
+        }
 
         res.status(201).json({ 
             success: true, 

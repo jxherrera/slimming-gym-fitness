@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const { poolPromise, sql } = require('../config/db');
 require('dotenv').config();
+const { getWelcomeTemplate, getPaymentApprovedTemplate, getClassJoinedTemplate } = require('./emailTemplates');
 
 class EmailService {
     constructor() {
@@ -18,15 +19,22 @@ class EmailService {
      * @param {string} to 
      * @param {string} subject 
      * @param {string} html 
+     * @param {Array} attachments
      */
-    async sendEmail(to, subject, html) {
+    async sendEmail(to, subject, html, attachments = []) {
         try {
-            const info = await this.transporter.sendMail({
+            const mailOptions = {
                 from: `"Slimming Gym" <${process.env.SMTP_EMAIL}>`,
                 to,
                 subject,
                 html
-            });
+            };
+            
+            if (attachments && attachments.length > 0) {
+                mailOptions.attachments = attachments;
+            }
+
+            const info = await this.transporter.sendMail(mailOptions);
             console.log(`Correo enviado a ${to}: ${info.messageId}`);
             return true;
         } catch (error) {
@@ -42,11 +50,12 @@ class EmailService {
      * @param {string} subject 
      * @param {string} html 
      * @param {string} emailType 
+     * @param {Array} attachments
      */
-    async sendEmailAndLog(userId, to, subject, html, emailType) {
+    async sendEmailAndLog(userId, to, subject, html, emailType, attachments = []) {
         let status = 'Pendiente';
         try {
-            const success = await this.sendEmail(to, subject, html);
+            const success = await this.sendEmail(to, subject, html, attachments);
             status = success ? 'Éxito' : 'Fallo';
             return success;
         } finally {
@@ -66,6 +75,42 @@ class EmailService {
                 }
             }
         }
+    }
+
+    /**
+     * Enviar correo de bienvenida a nuevo usuario
+     */
+    async sendWelcomeEmail(userId, email, firstName) {
+        const subject = '¡Bienvenido a Slimming Gym!';
+        const html = getWelcomeTemplate(firstName);
+        return this.sendEmailAndLog(userId, email, subject, html, 'Bienvenida');
+    }
+
+    /**
+     * Enviar correo de pago aprobado
+     */
+    async sendPaymentApprovedEmail(userId, email, firstName, isAutomatic = false, receiptImageUrl = null) {
+        const subject = isAutomatic ? 'Pago Aprobado (Automático) - Slimming Gym' : 'Pago Aprobado - Slimming Gym';
+        const html = getPaymentApprovedTemplate(firstName, isAutomatic);
+        
+        const attachments = [];
+        if (receiptImageUrl) {
+            attachments.push({
+                filename: 'Comprobante_de_Pago.jpg',
+                path: receiptImageUrl
+            });
+        }
+        
+        return this.sendEmailAndLog(userId, email, subject, html, 'Pago', attachments);
+    }
+
+    /**
+     * Enviar correo de reserva de clase
+     */
+    async sendClassJoinedEmail(userId, email, firstName, className, startTime, coachName) {
+        const subject = `Reserva confirmada: ${className}`;
+        const html = getClassJoinedTemplate(firstName, className, startTime, coachName);
+        return this.sendEmailAndLog(userId, email, subject, html, 'Clase');
     }
 }
 

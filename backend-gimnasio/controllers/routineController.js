@@ -79,9 +79,10 @@ const assignRoutine = async (req, res) => {
                             .input('Sets', sql.Int, ex.sets)
                             .input('Reps', sql.Int, ex.reps)
                             .input('Weight', sql.Decimal(5,2), ex.weight ? parseFloat(ex.weight) : null)
+                            .input('DayOfWeek', sql.NVarChar(20), ex.day || null)
                             .query(`
-                                INSERT INTO RoutineExercises (RoutineID, ExerciseName, Sets, Reps, Weight)
-                                VALUES (@RoutineID, @ExerciseName, @Sets, @Reps, @Weight)
+                                INSERT INTO RoutineExercises (RoutineID, ExerciseName, Sets, Reps, Weight, DayOfWeek)
+                                VALUES (@RoutineID, @ExerciseName, @Sets, @Reps, @Weight, @DayOfWeek)
                             `);
                     }
                 }
@@ -200,7 +201,7 @@ const getCurrentRoutine = async (req, res) => {
         const exercisesResult = await pool.request()
             .input('RoutineID', sql.Int, routine.RoutineID)
             .query(`
-                SELECT ExerciseID, ExerciseName as name, Sets as sets, Reps as reps, Weight as weight
+                SELECT ExerciseID, ExerciseName as name, Sets as sets, Reps as reps, Weight as weight, DayOfWeek as day
                 FROM RoutineExercises
                 WHERE RoutineID = @RoutineID
             `);
@@ -214,10 +215,28 @@ const getCurrentRoutine = async (req, res) => {
     }
 };
 
+const getUniqueExercises = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT DISTINCT ExerciseName as name
+            FROM RoutineExercises
+            WHERE ExerciseName IS NOT NULL AND LTRIM(RTRIM(ExerciseName)) <> ''
+            ORDER BY ExerciseName ASC
+        `);
+        
+        res.status(200).json({ success: true, exercises: result.recordset.map(e => e.name) });
+    } catch (error) {
+        console.error('Error getting unique exercises:', error);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+};
+
 module.exports = {
     getClientsByCoach,
     assignRoutine,
     getCoachSchedule,
     getUserRoutines,
-    getCurrentRoutine
+    getCurrentRoutine,
+    getUniqueExercises
 };

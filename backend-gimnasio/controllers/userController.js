@@ -1,6 +1,5 @@
 const { poolPromise, sql } = require('../config/db');
-
-const roleNames = {
+const bcrypt = require('bcrypt');const roleNames = {
   admin: 'Admin',
   coach: 'Coach',
   member: 'Member'
@@ -33,15 +32,19 @@ exports.getUsersByRole = async (req, res) => {
         u.LastName,
         u.Email,
         u.PhoneNumber,
-        p.PlanName
+        u.Status,
+        (
+          SELECT TOP 1 p.PlanName
+          FROM Subscriptions s
+          INNER JOIN Plans p ON s.PlanID = p.PlanID
+          WHERE s.UserID = u.UserID
+            AND s.PaymentStatus = 'P'
+            AND s.StartDate <= GETDATE()
+            AND s.EndDate >= GETDATE()
+          ORDER BY s.SubscriptionID DESC
+        ) AS PlanName
       FROM Users u
-      LEFT JOIN Subscriptions s ON u.UserID = s.UserID
-        AND s.PaymentStatus = 'P'
-        AND s.StartDate <= GETDATE()
-        AND s.EndDate >= GETDATE()
-      LEFT JOIN Plans p ON s.PlanID = p.PlanID
       WHERE u.RoleID = @RoleID
-        AND u.Status = 'A'
     `;
 
     const result = await pool.request()
@@ -56,7 +59,8 @@ exports.getUsersByRole = async (req, res) => {
       email: user.Email,
       phone: user.PhoneNumber || '',
       specialty: roleName === 'Coach' ? 'N/A' : undefined,
-      plan: roleName === 'Member' ? (user.PlanName || 'Sin plan') : undefined
+      plan: roleName === 'Member' ? (user.PlanName || 'Sin plan') : undefined,
+      status: user.Status
     }));
 
     res.json({
@@ -194,15 +198,91 @@ exports.deleteUser = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Usuario eliminado correctamente.'
+      message: 'Usuario inhabilitado correctamente.'
     });
   } catch (error) {
-    console.error('Error al eliminar el usuario:', error);
+    console.error('Error al inhabilitar el usuario:', error);
     res.status(500).json({
       success: false,
-      message: 'Error interno al eliminar el usuario.',
+      message: 'Error interno al inhabilitar el usuario.',
       error: error.message
     });
+  }
+};
+
+exports.activateUser = async (req, res) => {
+  const userId = Number(req.params.id);
+
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'ID de usuario inválido.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('UserID', sql.Int, userId)
+      .query(`UPDATE Users SET Status = 'A' WHERE UserID = @UserID`);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+    }
+
+    res.json({ success: true, message: 'Usuario activado correctamente.' });
+  } catch (error) {
+    console.error('Error al activar el usuario:', error);
+    res.status(500).json({ success: false, message: 'Error interno al activar el usuario.', error: error.message });
+  }
+};
+
+exports.hardDeleteUser = async (req, res) => {
+  const userId = Number(req.params.id);
+
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'ID de usuario inválido.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    try {
+      const request = new sql.Request(transaction);
+      request.input('UserID', sql.Int, userId);
+
+      // Eliminar historial y referencias primero para evitar errores de llave foránea
+      await request.query(`DELETE FROM Payments WHERE SubscriptionID IN (SELECT SubscriptionID FROM Subscriptions WHERE UserID = @UserID)`);
+      await request.query(`DELETE FROM Subscriptions WHERE UserID = @UserID`);
+      await request.query(`DELETE FROM RoutineExercises WHERE RoutineID IN (SELECT RoutineID FROM Routines WHERE UserID = @UserID)`);
+      await request.query(`DELETE FROM Routines WHERE UserID = @UserID`);
+      await request.query(`DELETE FROM ClassReservations WHERE UserID = @UserID`);
+      await request.query(`DELETE FROM Attendance WHERE UserID = @UserID`);
+      await request.query(`DELETE FROM Notifications WHERE UserID = @UserID`);
+      await request.query(`DELETE FROM PhysicalEvaluations WHERE UserID = @UserID OR CoachID = @UserID`);
+      await request.query(`DELETE FROM AuditLogs WHERE ChangedByUserID = @UserID`);
+      await request.query(`DELETE FROM EmailLogs WHERE UserID = @UserID`);
+      await request.query(`DELETE FROM ClassReservations WHERE ClassID IN (SELECT ClassID FROM Classes WHERE CoachID = @UserID)`);
+      await request.query(`DELETE FROM Classes WHERE CoachID = @UserID`);
+      await request.query(`DELETE FROM CoachPermissions WHERE CoachID = @UserID`);
+      await request.query(`DELETE FROM CoachAssignments WHERE CoachID = @UserID OR MemberID = @UserID`);
+      await request.query(`DELETE FROM CoachWorkHours WHERE CoachID = @UserID`);
+      
+      const result = await request.query(`DELETE FROM Users WHERE UserID = @UserID`);
+
+      if (result.rowsAffected[0] === 0) {
+        await transaction.rollback();
+        return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+      }
+
+      await transaction.commit();
+      res.json({ success: true, message: 'Usuario eliminado de forma permanente.' });
+    } catch (innerError) {
+      await transaction.rollback();
+      throw innerError;
+    }
+  } catch (error) {
+    console.error('Error al eliminar definitivamente el usuario:', error);
+    res.status(500).json({ success: false, message: 'No se pudo eliminar de forma permanente. Puede que tenga otros registros dependientes.', error: error.message });
   }
 };
 
@@ -359,5 +439,82 @@ exports.getUserPayments = async (req, res) => {
       message: 'Error al obtener el historial de pagos.',
       error: error.message
     });
+  }
+};
+
+exports.changePasswordByAdmin = async (req, res) => {
+  const userId = Number(req.params.id);
+  const { newPassword } = req.body;
+
+  if (!userId || !newPassword) {
+    return res.status(400).json({ success: false, message: 'ID de usuario o nueva contraseña no válidos.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    const result = await pool.request()
+      .input('UserID', sql.Int, userId)
+      .input('PasswordHash', sql.VarChar, passwordHash)
+      .query(`
+        UPDATE Users
+        SET PasswordHash = @PasswordHash
+        WHERE UserID = @UserID
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+    }
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente.' });
+  } catch (error) {
+    console.error('Error al cambiar contraseña:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al cambiar la contraseña.',
+      error: error.message
+    });
+  }
+};
+
+exports.changeUserPassword = async (req, res) => {
+  const userId = Number(req.params.id);
+  const { currentPassword, newPassword } = req.body;
+
+  if (!userId || !currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Faltan datos.' });
+  }
+
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('UserID', sql.Int, userId)
+      .query('SELECT PasswordHash FROM Users WHERE UserID = @UserID');
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+    }
+
+    const user = result.recordset[0];
+    const isMatch = await bcrypt.compare(currentPassword, user.PasswordHash);
+
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'La contraseña actual es incorrecta.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+    await pool.request()
+      .input('UserID', sql.Int, userId)
+      .input('PasswordHash', sql.VarChar, newPasswordHash)
+      .query('UPDATE Users SET PasswordHash = @PasswordHash WHERE UserID = @UserID');
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente.' });
+  } catch (error) {
+    console.error('Error al cambiar contraseña:', error);
+    res.status(500).json({ success: false, message: 'Error interno al cambiar contraseña.' });
   }
 };

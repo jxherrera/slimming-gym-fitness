@@ -16,9 +16,14 @@ const PROGRESS_KEY = 'member_progress_history';
 export const progressService = {
   getProgressHistory: async (userId) => {
     try {
-      const response = await axios.get(`${API_BASE}/progress/user/${userId}`);
+      const response = await axios.get(`${API_BASE}/evaluations/user/${userId}`);
       if (response.data && response.data.success) {
-        return response.data.history;
+        return response.data.history.map(ev => ({
+          date: ev.EvaluationDate ? ev.EvaluationDate.split('T')[0] : '',
+          weight: ev.WeightKg,
+          bodyFat: ev.BodyFatPercentage,
+          muscleMass: ev.MuscleMassPercentage
+        })).reverse(); // Assuming frontend wants oldest first like the default data
       }
     } catch (e) {
       // Fallback a almacenamiento local
@@ -29,7 +34,13 @@ export const progressService = {
 
   addProgressRecord: async (userId, record) => {
     try {
-      await axios.post(`${API_BASE}/progress`, { userId, ...record });
+      await axios.post(`${API_BASE}/evaluations`, { 
+        userId, 
+        coachId: 1, // Default coachId if not provided (or we can extract from context if needed)
+        weightKg: record.weight, 
+        bodyFatPercentage: record.bodyFat, 
+        muscleMassPercentage: record.muscleMass 
+      });
     } catch (e) {
       // Fallback local
     }

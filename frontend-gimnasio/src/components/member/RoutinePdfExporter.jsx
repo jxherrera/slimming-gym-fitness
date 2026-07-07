@@ -19,13 +19,31 @@ const RoutinePdfExporter = ({ routines = [], user }) => {
     CoachName: 'Coach Carlos Rodriguez',
     Goal: 'Desarrollo de fuerza muscular, definición corporal y acondicionamiento aeróbico.',
     exercises: [
-      { name: 'Sentadilla Libre con Barra (Squat)', sets: '4 series x 10-12 reps', rest: '90 seg', notes: 'Mantener espalda recta y bajar a 90 grados.' },
-      { name: 'Press de Banca Plano (Bench Press)', sets: '4 series x 8-10 reps', rest: '90 seg', notes: 'Controlar el descenso y empujar con fuerza explosiva.' },
-      { name: 'Peso Muerto Rumano (Romanian Deadlift)', sets: '3 series x 12 reps', rest: '60 seg', notes: 'Enfocarse en mantener isquiotibiales tensionados.' },
-      { name: 'Dominadas Asistidas / Jalón al Pecho', sets: '4 series x 10 reps', rest: '60 seg', notes: 'Retracción escapular completa en cada repetición.' },
-      { name: 'Press Militar con Mancuernas', sets: '3 series x 12 reps', rest: '60 seg', notes: 'Evitar hiperextender la zona lumbar.' }
+      { name: 'Sentadilla Libre con Barra (Squat)', sets: '4', reps: '10-12', weight: '', day: 'Lunes' },
+      { name: 'Press de Banca Plano (Bench Press)', sets: '4', reps: '8-10', weight: '', day: 'Lunes' },
+      { name: 'Peso Muerto Rumano (Romanian Deadlift)', sets: '3', reps: '12', weight: '', day: 'Miércoles' },
+      { name: 'Dominadas Asistidas / Jalón al Pecho', sets: '4', reps: '10', weight: '', day: 'Miércoles' },
+      { name: 'Press Militar con Mancuernas', sets: '3', reps: '12', weight: '', day: 'Viernes' }
     ]
   };
+
+  const daysOrder = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  
+  const groupedExercises = (activeRoutine.exercises || []).reduce((acc, ex) => {
+    const day = ex.day || 'Sin asignar';
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(ex);
+    return acc;
+  }, {});
+
+  const sortedDays = Object.keys(groupedExercises).sort((a, b) => {
+    const aIdx = daysOrder.indexOf(a);
+    const bIdx = daysOrder.indexOf(b);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return a.localeCompare(b);
+  });
 
   return (
     <div className="pdf-exporter-container">
@@ -71,14 +89,21 @@ const RoutinePdfExporter = ({ routines = [], user }) => {
               </tr>
             </thead>
             <tbody>
-              {(activeRoutine.exercises || []).map((ex, idx) => (
-                <tr key={idx}>
-                  <td className="center-cell"><FaCheckSquare className="check-box-icon" /></td>
-                  <td className="exercise-name-cell">{ex.name}</td>
-                  <td><strong>{ex.sets}</strong></td>
-                  <td><strong>{ex.reps}</strong></td>
-                  <td className="notes-cell">{ex.weight ? `${ex.weight} kg` : '-'}</td>
-                </tr>
+              {sortedDays.map(day => (
+                <React.Fragment key={day}>
+                  <tr className="day-header-row">
+                    <td colSpan="5"><strong>{day.toUpperCase()}</strong></td>
+                  </tr>
+                  {groupedExercises[day].map((ex, idx) => (
+                    <tr key={`${day}-${idx}`}>
+                      <td className="center-cell"><FaCheckSquare className="check-box-icon" /></td>
+                      <td className="exercise-name-cell">{ex.name}</td>
+                      <td><strong>{ex.sets}</strong></td>
+                      <td><strong>{ex.reps}</strong></td>
+                      <td className="notes-cell">{ex.weight ? `${ex.weight} kg` : '-'}</td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
             </tbody>
           </table>

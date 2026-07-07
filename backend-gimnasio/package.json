@@ -17,11 +17,17 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "gaxios": "^7.1.6",
+    "google-auth-library": "^10.9.0",
     "jsonwebtoken": "^9.0.3",
     "mssql": "^12.5.2",
     "multer": "^2.2.0",
     "node-cron": "^4.5.0",
     "nodemailer": "^9.0.3",
     "pdfkit": "^0.19.1"
+  },
+  "overrides": {
+    "gaxios": "^7.1.6",
+    "google-auth-library": "^10.9.0"
   }
 }

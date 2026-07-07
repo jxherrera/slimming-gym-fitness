@@ -14,18 +14,16 @@ const RoutinePdfExporter = ({ routines = [], user }) => {
     }, 400);
   };
 
-  const activeRoutine = routines[0] || {
-    RoutineName: 'Rutina de Hipertrofia & Fuerza General',
-    CoachName: 'Coach Carlos Rodriguez',
-    Goal: 'Desarrollo de fuerza muscular, definición corporal y acondicionamiento aeróbico.',
-    exercises: [
-      { name: 'Sentadilla Libre con Barra (Squat)', sets: '4', reps: '10-12', weight: '', day: 'Lunes' },
-      { name: 'Press de Banca Plano (Bench Press)', sets: '4', reps: '8-10', weight: '', day: 'Lunes' },
-      { name: 'Peso Muerto Rumano (Romanian Deadlift)', sets: '3', reps: '12', weight: '', day: 'Miércoles' },
-      { name: 'Dominadas Asistidas / Jalón al Pecho', sets: '4', reps: '10', weight: '', day: 'Miércoles' },
-      { name: 'Press Militar con Mancuernas', sets: '3', reps: '12', weight: '', day: 'Viernes' }
-    ]
-  };
+  const activeRoutine = routines[0];
+
+  if (!activeRoutine) {
+    return (
+      <div className="pdf-exporter-container" style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '16px', border: '1px dashed rgba(255, 255, 255, 0.1)', color: 'rgba(255,255,255,0.5)' }}>
+        <h3 style={{ color: '#fff', marginBottom: '10px' }}>Sin rutinas asignadas</h3>
+        <p>Aún no tienes una rutina de entrenamiento. Pide a tu entrenador que te asigne una para poder verla y exportarla en PDF.</p>
+      </div>
+    );
+  }
 
   const daysOrder = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   

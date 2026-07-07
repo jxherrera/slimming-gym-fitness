@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FaCalendarAlt, FaMoneyBillWave, FaUser, FaDumbbell, FaClock, FaChartLine, FaFilePdf } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
@@ -19,7 +20,24 @@ const Member = () => {
   const toast = useToast();
   const userId = user?.userId || user?.id;
 
-  const [activeTab, setActiveTab] = useState('subscription');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modeParam = searchParams.get('mode');
+  const validTabs = ['subscription', 'schedule', 'progress', 'pdf', 'payments', 'profile'];
+
+  const [activeTab, setActiveTab] = useState(validTabs.includes(modeParam) ? modeParam : 'subscription');
+
+  useEffect(() => {
+    if (modeParam && validTabs.includes(modeParam)) {
+      if (activeTab !== modeParam) {
+        setActiveTab(modeParam);
+      }
+    }
+  }, [modeParam]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSearchParams({ mode: tabId });
+  };
   const [plans, setPlans] = useState([]);
   const [subscription, setSubscription] = useState(null);
   const [routines, setRoutines] = useState([]);
@@ -79,7 +97,7 @@ const Member = () => {
   }, [userId]);
 
   const handleSelectPlanFromCatalog = (planId) => {
-    setActiveTab('payments');
+    handleTabChange('payments');
   };
 
   if (loading) {
@@ -92,7 +110,7 @@ const Member = () => {
         isOpen={showAlertModal} 
         onClose={() => setShowAlertModal(false)}
         reason={alertReason}
-        onGoToPayment={() => setActiveTab('payments')}
+        onGoToPayment={() => handleTabChange('payments')}
       />
 
       <div className="member-header">
@@ -105,44 +123,44 @@ const Member = () => {
       {/* Componente Notifications */}
       <Notifications 
         subscription={subscription} 
-        onRenovarClick={() => setActiveTab('payments')} 
+        onRenovarClick={() => handleTabChange('payments')} 
       />
 
       {/* Navegación por Pestañas */}
       <div className="member-tabs-bar">
         <button 
           className={`tab-btn ${activeTab === 'subscription' ? 'active' : ''}`}
-          onClick={() => setActiveTab('subscription')}
+          onClick={() => handleTabChange('subscription')}
         >
           <FaCalendarAlt /> Estado y Planes
         </button>
         <button 
           className={`tab-btn ${activeTab === 'schedule' ? 'active' : ''}`}
-          onClick={() => setActiveTab('schedule')}
+          onClick={() => handleTabChange('schedule')}
         >
           <FaClock /> Reserva de Clases
         </button>
         <button 
           className={`tab-btn ${activeTab === 'progress' ? 'active' : ''}`}
-          onClick={() => setActiveTab('progress')}
+          onClick={() => handleTabChange('progress')}
         >
           <FaChartLine /> Mi Progreso Físico
         </button>
         <button 
           className={`tab-btn ${activeTab === 'pdf' ? 'active' : ''}`}
-          onClick={() => setActiveTab('pdf')}
+          onClick={() => handleTabChange('pdf')}
         >
           <FaFilePdf /> Rutina en PDF
         </button>
         <button 
           className={`tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('payments')}
+          onClick={() => handleTabChange('payments')}
         >
           <FaMoneyBillWave /> Reportar Pago
         </button>
         <button 
           className={`tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-          onClick={() => setActiveTab('profile')}
+          onClick={() => handleTabChange('profile')}
         >
           <FaUser /> Mi Perfil y Entrenador
         </button>

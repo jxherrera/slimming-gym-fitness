@@ -1,9 +1,27 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const CoachPanel = () => {
-    const [activeTab, setActiveTab] = useState('alumnos');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const modeParam = searchParams.get('mode');
+    const validTabs = ['alumnos', 'agenda'];
+
+    const [activeTab, setActiveTab] = useState(validTabs.includes(modeParam) ? modeParam : 'alumnos');
+
+    useEffect(() => {
+        if (modeParam && validTabs.includes(modeParam)) {
+            if (activeTab !== modeParam) {
+                setActiveTab(modeParam);
+            }
+        }
+    }, [modeParam]);
+
+    const handleTabChange = (tabId) => {
+        setActiveTab(tabId);
+        setSearchParams({ mode: tabId });
+    };
     const [clientTab, setClientTab] = useState('asignados');
     const [clients, setClients] = useState([]);
     const [unassignedClients, setUnassignedClients] = useState([]);
@@ -202,10 +220,10 @@ const CoachPanel = () => {
             </div>
 
             <div className="flex border-b border-gray-200 mb-6">
-                <button onClick={() => setActiveTab('alumnos')} className={`py-3 px-6 font-semibold text-sm transition-colors ${activeTab === 'alumnos' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                <button onClick={() => handleTabChange('alumnos')} className={`py-3 px-6 font-semibold text-sm transition-colors ${activeTab === 'alumnos' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
                     Mis Alumnos Asignados
                 </button>
-                <button onClick={() => setActiveTab('agenda')} className={`py-3 px-6 font-semibold text-sm transition-colors ${activeTab === 'agenda' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                <button onClick={() => handleTabChange('agenda')} className={`py-3 px-6 font-semibold text-sm transition-colors ${activeTab === 'agenda' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
                     Mi Agenda Semanal
                 </button>
             </div>

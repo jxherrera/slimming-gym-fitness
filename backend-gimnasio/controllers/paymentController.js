@@ -59,7 +59,7 @@ exports.approvePayment = async (req, res) => {
     const detailResult = await pool.request()
       .input('PaymentID', sql.Int, paymentId)
       .query(`
-        SELECT p.SubscriptionID, pl.DurationDays, u.Email, u.UserID as targetUserId
+        SELECT p.SubscriptionID, p.ReceiptImageUrl, pl.DurationDays, u.Email, u.FirstName, u.UserID as targetUserId
         FROM Payments p
         INNER JOIN Subscriptions s ON p.SubscriptionID = s.SubscriptionID
         INNER JOIN Plans pl ON s.PlanID = pl.PlanID
@@ -71,7 +71,7 @@ exports.approvePayment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'No se encontraron los detalles de la suscripción vinculada a este pago.' });
     }
 
-    const { SubscriptionID, DurationDays, Email, targetUserId } = detailResult.recordset[0];
+    const { SubscriptionID, ReceiptImageUrl, DurationDays, Email, FirstName, targetUserId } = detailResult.recordset[0];
 
     const transaction = new sql.Transaction(pool);
     await transaction.begin();
@@ -95,13 +95,7 @@ exports.approvePayment = async (req, res) => {
 
       await transaction.commit();
 
-      await emailService.sendEmailAndLog(
-        targetUserId,
-        Email,
-        'Pago Aprobado - Slimming Gym',
-        '<p>Hola, tu comprobante de pago ha sido aprobado exitosamente. Ya puedes disfrutar de tu plan.</p>',
-        'Pago'
-      );
+      await emailService.sendPaymentApprovedEmail(targetUserId, Email, FirstName, false, ReceiptImageUrl);
 
       res.json({ success: true, message: 'Pago aprobado y suscripción activada correctamente.' });
     } catch (err) {
@@ -241,7 +235,7 @@ exports.webhookPayment = async (req, res) => {
     const detailResult = await pool.request()
       .input('ReferenceNumber', sql.VarChar(100), ReferenceNumber)
       .query(`
-        SELECT p.PaymentID, p.SubscriptionID, pl.DurationDays, u.Email, u.UserID as targetUserId
+        SELECT p.PaymentID, p.SubscriptionID, p.ReceiptImageUrl, pl.DurationDays, u.Email, u.FirstName, u.UserID as targetUserId
         FROM Payments p
         INNER JOIN Subscriptions s ON p.SubscriptionID = s.SubscriptionID
         INNER JOIN Plans pl ON s.PlanID = pl.PlanID
@@ -253,7 +247,7 @@ exports.webhookPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Pago pendiente no encontrado para esa referencia.' });
     }
 
-    const { PaymentID, SubscriptionID, DurationDays, Email, targetUserId } = detailResult.recordset[0];
+    const { PaymentID, SubscriptionID, ReceiptImageUrl, DurationDays, Email, FirstName, targetUserId } = detailResult.recordset[0];
 
     const transaction = new sql.Transaction(pool);
     await transaction.begin();
@@ -277,13 +271,7 @@ exports.webhookPayment = async (req, res) => {
 
       await transaction.commit();
 
-      await emailService.sendEmailAndLog(
-        targetUserId,
-        Email,
-        'Pago Aprobado (Automático) - Slimming Gym',
-        '<p>Hola, hemos recibido confirmación automática de tu pago. Ya puedes disfrutar de tu plan.</p>',
-        'Pago'
-      );
+      await emailService.sendPaymentApprovedEmail(targetUserId, Email, FirstName, true, ReceiptImageUrl);
 
       res.json({ success: true, message: 'Webhook procesado y suscripción activada automáticamente.' });
     } catch (err) {

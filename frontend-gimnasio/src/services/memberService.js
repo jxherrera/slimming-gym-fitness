@@ -68,13 +68,19 @@ export const memberService = {
 
   // Asignar o solicitar Entrenador
   assignCoach: async (coachId, memberId) => {
-    const response = await axios.post(`${API_BASE}/coaches/${coachId}/assign`, { memberId });
+    const response = await axios.post(`${API_BASE}/coaches/${coachId}/assign`, { MemberID: memberId });
     return response.data;
   },
 
   // Actualizar perfil de usuario
   updateProfile: async (userId, userData) => {
     const response = await axios.patch(`${API_BASE}/users/${userId}`, userData);
+    return response.data;
+  },
+
+  // Cambiar contraseña
+  changePassword: async (userId, currentPassword, newPassword) => {
+    const response = await axios.patch(`${API_BASE}/users/${userId}/password`, { currentPassword, newPassword });
     return response.data;
   }
 };

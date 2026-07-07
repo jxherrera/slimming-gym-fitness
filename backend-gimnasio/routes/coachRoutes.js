@@ -6,6 +6,7 @@ router.get('/', coachController.getAllCoaches);
 router.put('/:id/permissions', coachController.updatePermissions);
 
 router.get('/assignments', coachController.getAssignments);
+router.get('/unassigned-members', coachController.getUnassignedMembers);
 router.post('/:id/assign', coachController.assignMember);
 router.delete('/assign/:memberId', coachController.removeAssignment);
 

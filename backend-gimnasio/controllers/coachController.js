@@ -121,6 +121,34 @@ exports.assignMember = async (req, res) => {
     }
 };
 
+// GET /api/coaches/unassigned-members
+// Fetch all active members (RoleID = 1) who do not have a coach assigned
+exports.getUnassignedMembers = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT 
+                u.UserID, 
+                u.FirstName, 
+                u.LastName, 
+                u.Email,
+                (
+                    SELECT TOP 1 r.Goal 
+                    FROM Routines r 
+                    WHERE r.UserID = u.UserID 
+                    ORDER BY r.RoutineID DESC
+                ) AS Goal
+            FROM Users u
+            LEFT JOIN CoachAssignments ca ON u.UserID = ca.MemberID
+            WHERE u.RoleID = 1 AND u.Status = 'A' AND ca.CoachID IS NULL
+        `);
+        res.status(200).json({ success: true, members: result.recordset });
+    } catch (err) {
+        console.error('Error fetching unassigned members:', err);
+        res.status(500).json({ success: false, message: 'Error fetching unassigned members' });
+    }
+};
+
 // DELETE /api/coaches/assign/:memberId
 exports.removeAssignment = async (req, res) => {
     try {

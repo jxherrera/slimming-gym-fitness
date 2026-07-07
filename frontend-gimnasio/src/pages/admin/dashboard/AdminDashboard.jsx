@@ -36,10 +36,17 @@ const Admin = () => {
   const [registerMessage, setRegisterMessage] = useState('');
   const [isRegisterLoading, setIsRegisterLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [memberFilter, setMemberFilter] = useState('activos');
   const [editForm, setEditForm] = useState({ id: '', idNumber: '', firstName: '', lastName: '', email: '', phone: '' });
   const [showEditModal, setShowEditModal] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [editMessage, setEditMessage] = useState('');
+  
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ userId: '', newPassword: '' });
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState('');
+
   const [permissionForm, setPermissionForm] = useState({
     coachId: '',
     coachName: '',
@@ -89,7 +96,8 @@ const Admin = () => {
           name: user.name,
           email: user.email,
           phone: user.phone || '',
-          plan: user.plan || 'Sin plan'
+          plan: user.plan || 'Sin plan',
+          status: user.status
         })),
         admins: adminsData.users.map((user) => ({
           id: user.id,
@@ -309,6 +317,40 @@ const Admin = () => {
     }
   };
 
+  const openPasswordModal = (id) => {
+    setPasswordForm({ userId: id, newPassword: '' });
+    setPasswordMessage('');
+    setShowPasswordModal(true);
+  };
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordMessage('');
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordMessage('');
+    setIsPasswordLoading(true);
+
+    try {
+      const response = await api.patch(`/users/${passwordForm.userId}/password/admin`, {
+        newPassword: passwordForm.newPassword
+      });
+
+      setPasswordMessage(response.data.message || 'Contraseña actualizada correctamente.');
+      setPasswordForm({ userId: '', newPassword: '' });
+      setTimeout(() => {
+        closePasswordModal();
+      }, 1500);
+    } catch (error) {
+      console.error('Error al cambiar contraseña:', error);
+      setPasswordMessage(error.response?.data?.message || 'Error de conexión con el servidor.');
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
   const handleDeleteUser = async (id) => {
     const shouldDelete = window.confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción desactivará al usuario.');
     if (!shouldDelete) return;
@@ -319,6 +361,29 @@ const Admin = () => {
     } catch (error) {
       console.error('Error al eliminar usuario:', error);
       setApiError(error.response?.data?.message || 'Error al eliminar usuario.');
+    }
+  };
+
+  const handleActivateUser = async (id) => {
+    try {
+      await api.put(`/users/${id}/activate`);
+      loadAdminEntities();
+    } catch (error) {
+      console.error('Error al activar usuario:', error);
+      setApiError(error.response?.data?.message || 'Error al activar usuario.');
+    }
+  };
+
+  const handleHardDeleteUser = async (id) => {
+    const shouldDelete = window.confirm('¿Estás seguro de que deseas eliminar a este usuario de forma DEFINITIVA? Se borrarán todos sus datos, pagos y rutinas asociadas. Esta acción no se puede deshacer.');
+    if (!shouldDelete) return;
+
+    try {
+      await api.delete(`/users/${id}/hard`);
+      loadAdminEntities();
+    } catch (error) {
+      console.error('Error al eliminar usuario permanentemente:', error);
+      setApiError(error.response?.data?.message || 'Error al eliminar usuario permanentemente.');
     }
   };
 
@@ -362,7 +427,18 @@ const Admin = () => {
   };
 
   const currentConfig = entityConfig[activeTab] || {};
-  const currentItems = entities[activeTab] || [];
+  let currentItems = entities[activeTab] || [];
+  
+  if (activeTab === 'members') {
+    if (memberFilter === 'activos') {
+      currentItems = currentItems.filter(item => item.status === 'A');
+    } else if (memberFilter === 'inactivos') {
+      currentItems = currentItems.filter(item => item.status === 'I');
+    } else if (memberFilter === 'sin_plan') {
+      currentItems = currentItems.filter(item => item.status === 'A' && (item.plan === 'Sin plan' || !item.plan));
+    }
+  }
+
   const lowerSearchQuery = searchQuery.trim().toLowerCase();
   const filteredItems = currentItems.filter(item => {
     if (!lowerSearchQuery) return true;
@@ -535,6 +611,33 @@ const Admin = () => {
           ) : (
             <div className="tab-content">
               <div className="settings-sub-header">{currentConfig.title} registrados</div>
+              
+              {activeTab === 'members' && (
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                  <button 
+                    onClick={() => setMemberFilter('activos')} 
+                    style={{ background: memberFilter === 'activos' ? '#3b82f6' : 'transparent', color: memberFilter === 'activos' ? '#fff' : '#6b7280', border: memberFilter === 'activos' ? 'none' : '1px solid #e5e7eb', padding: '8px 16px', borderRadius: '99px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: '0.2s' }}
+                    className={memberFilter !== 'activos' ? 'theme-dark-fix-border theme-dark-fix-text' : ''}
+                  >
+                    Activos
+                  </button>
+                  <button 
+                    onClick={() => setMemberFilter('inactivos')} 
+                    style={{ background: memberFilter === 'inactivos' ? '#3b82f6' : 'transparent', color: memberFilter === 'inactivos' ? '#fff' : '#6b7280', border: memberFilter === 'inactivos' ? 'none' : '1px solid #e5e7eb', padding: '8px 16px', borderRadius: '99px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: '0.2s' }}
+                    className={memberFilter !== 'inactivos' ? 'theme-dark-fix-border theme-dark-fix-text' : ''}
+                  >
+                    Inactivos
+                  </button>
+                  <button 
+                    onClick={() => setMemberFilter('sin_plan')} 
+                    style={{ background: memberFilter === 'sin_plan' ? '#3b82f6' : 'transparent', color: memberFilter === 'sin_plan' ? '#fff' : '#6b7280', border: memberFilter === 'sin_plan' ? 'none' : '1px solid #e5e7eb', padding: '8px 16px', borderRadius: '99px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: '0.2s' }}
+                    className={memberFilter !== 'sin_plan' ? 'theme-dark-fix-border theme-dark-fix-text' : ''}
+                  >
+                    Sin plan
+                  </button>
+                </div>
+              )}
+
               <div style={{ marginBottom: '20px' }}>
                 <input
                   type="search"
@@ -567,12 +670,28 @@ const Admin = () => {
                         </div>
                       </div>
                       <div className="setting-action">
-                        <button type="button" className="btn-pill-blue" onClick={() => openEditModal(item)} style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}>
-                          Editar
-                        </button>
-                        <button type="button" className="btn-pill-red" onClick={() => handleDeleteUser(item.id)} style={{ padding: '6px 12px', fontSize: '13px' }}>
-                          Eliminar
-                        </button>
+                        {activeTab === 'members' && memberFilter === 'inactivos' ? (
+                          <>
+                            <button type="button" onClick={() => handleActivateUser(item.id)} style={{ background: '#10b981', color: '#fff', border: 'none', borderRadius: '99px', marginRight: '8px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>
+                              Activar
+                            </button>
+                            <button type="button" onClick={() => handleHardDeleteUser(item.id)} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '99px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>
+                              Eliminar Definitivo
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button type="button" onClick={() => openPasswordModal(item.id)} style={{ background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '99px', marginRight: '8px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer', fontWeight: '600' }}>
+                              Contraseña
+                            </button>
+                            <button type="button" className="btn-pill-blue" onClick={() => openEditModal(item)} style={{ marginRight: '8px', padding: '6px 12px', fontSize: '13px' }}>
+                              Editar
+                            </button>
+                            <button type="button" className="btn-pill-red" onClick={() => handleDeleteUser(item.id)} style={{ padding: '6px 12px', fontSize: '13px' }}>
+                              Eliminar
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))
@@ -707,6 +826,39 @@ const Admin = () => {
                 </button>
                 <button type="submit" className="btn-pill-blue" disabled={isEditLoading} style={{ padding: '10px 24px' }}>
                   {isEditLoading ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showPasswordModal && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card scale-in" style={{ maxWidth: '400px', background: '#fff', borderRadius: '24px', padding: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: 0 }}>Cambiar Contraseña</h3>
+              <button type="button" onClick={closePasswordModal} style={{ background: 'transparent', border: 'none', fontSize: '24px', color: '#9ca3af', cursor: 'pointer' }}>×</button>
+            </div>
+            {passwordMessage && <div style={{ background: passwordMessage.includes('Error') ? '#fee2e2' : '#dcfce7', color: passwordMessage.includes('Error') ? '#991b1b' : '#166534', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>{passwordMessage}</div>}
+            <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Nueva Contraseña</label>
+                <input 
+                  type="password" 
+                  style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} 
+                  value={passwordForm.newPassword} 
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} 
+                  required 
+                  minLength="6"
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
+                <button type="button" onClick={closePasswordModal} style={{ background: 'transparent', border: '1px solid #d1d5db', borderRadius: '99px', padding: '10px 24px', fontSize: '14px', fontWeight: '600', color: '#4b5563', cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-pill-blue" disabled={isPasswordLoading} style={{ padding: '10px 24px' }}>
+                  {isPasswordLoading ? 'Guardando...' : 'Guardar contraseña'}
                 </button>
               </div>
             </form>

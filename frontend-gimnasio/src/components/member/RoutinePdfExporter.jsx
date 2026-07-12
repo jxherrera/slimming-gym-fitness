@@ -1,11 +1,13 @@
-import React, { useRef } from 'react';
-import { FaFilePdf, FaDumbbell, FaUser, FaBullseye, FaPrint, FaCheckSquare } from 'react-icons/fa';
+import React, { useRef, useState } from 'react';
+import { FaFilePdf, FaDumbbell, FaUser, FaBullseye, FaPrint, FaCheckSquare, FaPlay } from 'react-icons/fa';
 import { useToast } from '../../hooks/useToast';
+import WorkoutMode from './WorkoutMode';
 import './RoutinePdfExporter.css';
 
 const RoutinePdfExporter = ({ routines = [], user }) => {
   const toast = useToast();
   const printRef = useRef(null);
+  const [isWorkoutMode, setIsWorkoutMode] = useState(false);
 
   const handleExportPDF = () => {
     toast.info('Generando documento PDF de tu rutina...');
@@ -50,10 +52,27 @@ const RoutinePdfExporter = ({ routines = [], user }) => {
           <h3>Exportación de Rutina de Entrenamiento</h3>
           <p>Descarga o imprime tu plan de ejercicios en formato PDF oficial de Slimming Gym.</p>
         </div>
-        <button className="btn-export-pdf" onClick={handleExportPDF}>
-          <FaFilePdf /> Exportar Rutina a PDF / Imprimir
-        </button>
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <button 
+            className="btn-export-pdf" 
+            onClick={() => setIsWorkoutMode(true)}
+            style={{ background: '#e53e3e', color: 'white', border: 'none' }}
+          >
+            <FaPlay /> Comenzar Rutina
+          </button>
+          <button className="btn-export-pdf" onClick={handleExportPDF}>
+            <FaFilePdf /> Exportar a PDF
+          </button>
+        </div>
       </div>
+
+      {isWorkoutMode && (
+        <WorkoutMode 
+          routine={activeRoutine} 
+          user={user} 
+          onClose={() => setIsWorkoutMode(false)} 
+        />
+      )}
 
       {/* ÁREA DE IMPRESIÓN DOCUMENTO PDF */}
       <div className="printable-pdf-document" ref={printRef}>

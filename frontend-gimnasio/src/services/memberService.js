@@ -67,8 +67,8 @@ export const memberService = {
   },
 
   // Asignar o solicitar Entrenador
-  assignCoach: async (coachId, memberId) => {
-    const response = await axios.post(`${API_BASE}/coaches/${coachId}/assign`, { MemberID: memberId });
+  assignCoach: async (coachId, memberId, userInitiated = false) => {
+    const response = await axios.post(`${API_BASE}/coaches/${coachId}/assign`, { MemberID: memberId, userInitiated });
     return response.data;
   },
 

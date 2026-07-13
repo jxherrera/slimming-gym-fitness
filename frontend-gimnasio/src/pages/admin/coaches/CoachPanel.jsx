@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import RoutineManager from './RoutineManager';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const CoachPanel = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const modeParam = searchParams.get('mode');
-    const validTabs = ['alumnos', 'agenda'];
+    const validTabs = ['alumnos', 'agenda', 'rutinas'];
 
     const [activeTab, setActiveTab] = useState(validTabs.includes(modeParam) ? modeParam : 'alumnos');
 
@@ -39,26 +40,33 @@ const CoachPanel = () => {
     const [evalForm, setEvalForm] = useState({
         weightKg: '', bodyFatPercentage: '', chestPerimeter: '', waistPerimeter: '', notes: ''
     });
+    
+    // For template loading
+    const [templates, setTemplates] = useState([]);
+    const [selectedTemplate, setSelectedTemplate] = useState('');
 
     const coachId = 2; 
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [clientsRes, unassignedRes, scheduleRes] = await Promise.all([
+            const [clientsRes, unassignedRes, scheduleRes, templatesRes] = await Promise.all([
                 fetch(`${API_BASE}/routines/coach/${coachId}/clients`),
                 fetch(`${API_BASE}/coaches/unassigned-members`),
-                fetch(`${API_BASE}/routines/coach/${coachId}/schedule`)
+                fetch(`${API_BASE}/routines/coach/${coachId}/schedule`),
+                fetch(`${API_BASE}/routines/templates/coach/${coachId}`)
             ]);
             if (!clientsRes.ok || !unassignedRes.ok || !scheduleRes.ok) throw new Error('Error de conexión');
             
             const clientsData = await clientsRes.json();
             const unassignedData = await unassignedRes.json();
             const scheduleData = await scheduleRes.json();
+            const templatesData = templatesRes.ok ? await templatesRes.json() : { success: false };
 
             if (clientsData.success) setClients(clientsData.clients);
             if (unassignedData.success) setUnassignedClients(unassignedData.members);
             if (scheduleData.success) setSchedule(scheduleData.schedule);
+            if (templatesData.success) setTemplates(templatesData.templates);
         } catch (err) {
             console.error("Error al cargar datos del panel:", err);
             setError("No se pudo cargar la información del panel.");
@@ -74,7 +82,8 @@ const CoachPanel = () => {
     const openRoutineModal = (client) => {
         setSelectedClient(client);
         setRoutineGoal(client.Goal || '');
-        setExercises([{ name: '', sets: '', reps: '', weight: '' }]);
+        setExercises([{ name: '', sets: '', reps: '', weight: '', day: 'Lunes' }]);
+        setSelectedTemplate('');
         setIsRoutineModalOpen(true);
     };
 
@@ -89,7 +98,30 @@ const CoachPanel = () => {
         setExercises(newExercises);
     };
 
-    const addExerciseRow = () => setExercises([...exercises, { name: '', sets: '', reps: '', weight: '' }]);
+    const handleTemplateSelect = (e) => {
+        const templateId = e.target.value;
+        setSelectedTemplate(templateId);
+        
+        if (templateId) {
+            const template = templates.find(t => t.TemplateID == templateId);
+            if (template) {
+                setRoutineGoal(template.Goal || '');
+                if (template.exercises && template.exercises.length > 0) {
+                    setExercises(template.exercises.map(ex => ({
+                        name: ex.name,
+                        sets: ex.sets,
+                        reps: ex.reps,
+                        weight: ex.weight || '',
+                        day: ex.day || 'Lunes'
+                    })));
+                } else {
+                    setExercises([{ name: '', sets: '', reps: '', weight: '', day: 'Lunes' }]);
+                }
+            }
+        }
+    };
+
+    const addExerciseRow = () => setExercises([...exercises, { name: '', sets: '', reps: '', weight: '', day: 'Lunes' }]);
     const removeExerciseRow = (index) => setExercises(exercises.filter((_, i) => i !== index));
 
     const handleAssignRoutine = async (e) => {
@@ -226,7 +258,17 @@ const CoachPanel = () => {
                 <button onClick={() => handleTabChange('agenda')} className={`py-3 px-6 font-semibold text-sm transition-colors ${activeTab === 'agenda' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
                     Mi Agenda Semanal
                 </button>
+                <button onClick={() => handleTabChange('rutinas')} className={`py-3 px-6 font-semibold text-sm transition-colors ${activeTab === 'rutinas' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                    Gestor de Rutinas
+                </button>
             </div>
+            
+            {activeTab === 'rutinas' && (
+                <div className="fade-in">
+                    <RoutineManager coachId={coachId} />
+                </div>
+            )}
+            
             {activeTab === 'alumnos' && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden fade-in">
                     
@@ -326,13 +368,25 @@ const CoachPanel = () => {
                             <button onClick={closeRoutineModal} className="text-gray-400 hover:text-red-500 transition-colors">✖</button>
                         </div>
                         <form onSubmit={handleAssignRoutine}>
+                            <div className="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Cargar desde Plantilla (Opcional)</label>
+                                <select className="w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500" value={selectedTemplate} onChange={handleTemplateSelect}>
+                                    <option value="">-- Seleccionar Plantilla --</option>
+                                    {templates.map(tpl => (
+                                        <option key={tpl.TemplateID} value={tpl.TemplateID}>{tpl.TemplateName}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="mb-6 bg-blue-50 p-4 rounded-lg">
                                 <label className="block text-sm font-semibold text-blue-900 mb-2">Objetivo del Mes</label>
                                 <input type="text" required className="w-full border-0 bg-white rounded-md px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" value={routineGoal} onChange={(e) => setRoutineGoal(e.target.value)} />
                             </div>
                             <div className="space-y-4 mb-6">
                                 {exercises.map((exercise, index) => (
-                                    <div key={index} className="flex gap-3 items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                    <div key={index} className="flex gap-2 items-center bg-gray-50 p-3 rounded-lg border border-gray-200 flex-wrap md:flex-nowrap">
+                                        <select className="w-full md:w-32 rounded-md border-gray-300 px-2 py-2 text-sm shadow-sm" value={exercise.day} onChange={(e) => handleExerciseChange(index, 'day', e.target.value)}>
+                                            {['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].map(d => <option key={d} value={d}>{d}</option>)}
+                                        </select>
                                         <input type="text" placeholder="Ejercicio" required className="flex-1 rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm" value={exercise.name} onChange={(e) => handleExerciseChange(index, 'name', e.target.value)} />
                                         <input type="number" placeholder="Series" required min="1" className="w-20 rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm" value={exercise.sets} onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)} />
                                         <input type="number" placeholder="Reps" required min="1" className="w-20 rounded-md border-gray-300 px-3 py-2 text-sm shadow-sm" value={exercise.reps} onChange={(e) => handleExerciseChange(index, 'reps', e.target.value)} />

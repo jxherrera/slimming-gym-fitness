@@ -15,6 +15,7 @@ exports.getAllCoaches = async (req, res) => {
                 ISNULL(cp.CanEditOthersRoutines, 0) AS CanEditOthersRoutines
             FROM Users u
             LEFT JOIN CoachPermissions cp ON u.UserID = cp.CoachID
+            WHERE u.RoleID = 2 AND u.Status = 'A'
         `);
         res.status(200).json(result.recordset);
     } catch (err) {
@@ -87,7 +88,7 @@ exports.getAssignments = async (req, res) => {
 exports.assignMember = async (req, res) => {
     try {
         const coachId = req.params.id;
-        const { MemberID } = req.body;
+        const { MemberID, userInitiated } = req.body;
         
         if (!MemberID) {
             return res.status(400).json({ message: 'MemberID is required' });
@@ -101,11 +102,21 @@ exports.assignMember = async (req, res) => {
             .query('SELECT * FROM CoachAssignments WHERE MemberID = @MemberID');
             
         if (existing.recordset.length > 0) {
+            if (userInitiated) {
+                const assignedAt = new Date(existing.recordset[0].AssignedAt);
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                
+                if (assignedAt > oneMonthAgo) {
+                    return res.status(403).json({ message: 'Solo puedes cambiar de entrenador una vez al mes.' });
+                }
+            }
+
             // Update existing assignment
             await pool.request()
                 .input('CoachID', sql.Int, coachId)
                 .input('MemberID', sql.Int, MemberID)
-                .query('UPDATE CoachAssignments SET CoachID = @CoachID WHERE MemberID = @MemberID');
+                .query('UPDATE CoachAssignments SET CoachID = @CoachID, AssignedAt = GETDATE() WHERE MemberID = @MemberID');
         } else {
             // Insert new assignment
             await pool.request()

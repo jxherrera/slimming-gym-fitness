@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   FaBars, FaTimes, FaHome, FaUser, FaDumbbell, 
   FaCalendarAlt, FaMoneyBillWave, FaCog, FaClipboardList,
-  FaChevronDown, FaChevronUp
+  FaChevronDown, FaChevronUp, FaEnvelope
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import './AdminSidebar.css';
@@ -75,6 +75,12 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         ]
       },
       {
+        category: 'Comunicaciones',
+        items: [
+          { path: '/admin/correos', name: 'Correos', icon: <FaEnvelope /> }
+        ]
+      },
+      {
         category: 'Ajustes',
         items: [
           { path: '/admin/configuracion', name: 'Configuración', icon: <FaCog /> }
@@ -91,7 +97,8 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
             icon: <FaDumbbell />,
             subItems: [
               { path: '/coach?mode=alumnos', name: 'Mis Alumnos' },
-              { path: '/coach?mode=agenda', name: 'Mi Agenda' }
+              { path: '/coach?mode=agenda', name: 'Mi Agenda' },
+              { path: '/coach/rutinas', name: 'Gestor de Rutinas' }
             ]
           }
         ]

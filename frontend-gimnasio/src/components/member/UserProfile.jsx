@@ -26,6 +26,8 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
   const [coachSchedules, setCoachSchedules] = useState([]);
   const [coachClasses, setCoachClasses] = useState([]);
   const [isChangingCoach, setIsChangingCoach] = useState(false);
+  const [previewSchedules, setPreviewSchedules] = useState([]);
+  const [previewClasses, setPreviewClasses] = useState([]);
   
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
@@ -106,6 +108,37 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
     }
   }, [assignedCoach, isChangingCoach]);
 
+  useEffect(() => {
+    if (selectedCoachId) {
+      const fetchPreviewData = async () => {
+        try {
+           const [schedules, classes] = await Promise.all([
+             scheduleService.getCoachSchedules(),
+             scheduleService.getClasses()
+           ]);
+           
+           const coachObj = coaches.find(c => String(c.UserID || c.id) === String(selectedCoachId));
+           if (!coachObj) return;
+
+           const coachIdStr = String(coachObj.UserID || coachObj.id);
+           const coachNameStr = `${coachObj.FirstName || coachObj.firstName} ${coachObj.LastName || coachObj.lastName}`;
+           
+           const mySchedules = schedules.filter(s => String(s.coachId) === coachIdStr);
+           const myClasses = classes.filter(c => c.instructor === coachNameStr);
+           
+           setPreviewSchedules(mySchedules);
+           setPreviewClasses(myClasses);
+        } catch (e) {
+          console.error('Error fetching preview coach schedules and classes', e);
+        }
+      };
+      fetchPreviewData();
+    } else {
+      setPreviewSchedules([]);
+      setPreviewClasses([]);
+    }
+  }, [selectedCoachId, coaches]);
+
   const handleInputChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -135,7 +168,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
       return;
     }
     try {
-      await memberService.assignCoach(selectedCoachId, userId);
+      await memberService.assignCoach(selectedCoachId, userId, true);
       toast.success('Solicitud de entrenador enviada exitosamente.');
       const coachObj = coaches.find(c => String(c.UserID || c.id) === String(selectedCoachId));
       if (coachObj) {
@@ -144,7 +177,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
       }
     } catch (e) {
       console.error('Error asignando entrenador:', e);
-      toast.error('Ocurrió un error al vincular entrenador.');
+      toast.error(e.response?.data?.message || 'Ocurrió un error al vincular entrenador.');
     }
   };
 
@@ -333,6 +366,40 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
                   ))}
                 </select>
               </div>
+
+              {selectedCoachId && (
+                <div className="coach-details-section" style={{ marginTop: '15px', marginBottom: '15px', padding: '15px', backgroundColor: '#222', borderRadius: '8px' }}>
+                  <h4 style={{ marginBottom: '10px' }}><FaUserCheck style={{ marginRight: '8px' }} />Vista previa del Entrenador</h4>
+                  <div className="schedule-list">
+                    <h5><FaClock /> Horario de Trabajo</h5>
+                    {previewSchedules.length > 0 ? (
+                      <ul>
+                        {previewSchedules.map((s, idx) => {
+                          const st = s.startTime.split('T')[1]?.substring(0, 5) || s.startTime;
+                          const et = s.endTime.split('T')[1]?.substring(0, 5) || s.endTime;
+                          return <li key={idx}><strong>{s.dayOfWeek}:</strong> {st} - {et}</li>
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="no-data-text">Sin horarios definidos.</p>
+                    )}
+                  </div>
+                  <div className="classes-list" style={{ marginTop: '10px' }}>
+                    <h5><FaCalendarAlt /> Clases a Cargo</h5>
+                    {previewClasses.length > 0 ? (
+                      <ul>
+                        {previewClasses.map(c => (
+                          <li key={c.id}>
+                            <strong>{c.name}</strong> - {c.day} {c.time}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="no-data-text">Sin clases asignadas.</p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button

@@ -1,4 +1,4 @@
-USE [GymDatabase]; 
+USE [SlimmingGymDB]; 
 GO
 
 CREATE TABLE WorkoutSessions (

@@ -5,7 +5,9 @@ import moment from 'moment';
 import 'moment/locale/es';
 import { scheduleService } from '../../../services/scheduleService';
 import api from '../../../services/api';
-import { FiCalendar, FiClock, FiPlus, FiTrash2, FiUser, FiUsers, FiBriefcase, FiEdit2 } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiPlus, FiTrash2, FiUser, FiUsers, FiBriefcase, FiEdit2, FiDownload } from 'react-icons/fi';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useToast } from '../../../hooks/useToast';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../shared/admin-core.css';
@@ -415,6 +417,82 @@ const AdminHorarios = () => {
     }
   };
 
+  const handleDownloadPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.text("Horarios del Gimnasio", 14, 20);
+      
+      const diasSemana = {
+        'Monday': 'Lunes',
+        'Tuesday': 'Martes',
+        'Wednesday': 'Miércoles',
+        'Thursday': 'Jueves',
+        'Friday': 'Viernes',
+        'Saturday': 'Sábado',
+        'Sunday': 'Domingo'
+      };
+      
+      const classRows = classes.map(c => {
+        const start = moment(c.StartTime);
+        const end = moment(c.EndTime);
+        const engDay = start.locale('en').format('dddd');
+        const dia = diasSemana[engDay] || engDay;
+        
+        return [
+          c.ClassName,
+          c.CoachName || 'N/A',
+          dia,
+          start.format('DD/MM/YYYY'),
+          start.format('HH:mm'),
+          end.format('HH:mm'),
+          c.MaxCapacity || '20'
+        ];
+      });
+
+      autoTable(doc, {
+        startY: 30,
+        head: [['Clase', 'Coach', 'Día', 'Fecha', 'Inicio', 'Fin', 'Aforo']],
+        body: classRows,
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246] }
+      });
+
+      let finalY = doc.lastAutoTable.finalY || 30;
+
+      const scheduleRows = schedules.map(s => {
+        const start = moment(s.startTime);
+        const end = moment(s.endTime);
+        const engDay = start.locale('en').format('dddd');
+        const dia = diasSemana[engDay] || engDay;
+
+        return [
+          s.coachName || 'N/A',
+          s.title || 'Turno',
+          dia,
+          start.format('DD/MM/YYYY'),
+          start.format('HH:mm'),
+          end.format('HH:mm')
+        ];
+      });
+
+      doc.text("Horas de Trabajo (Coaches):", 14, finalY + 15);
+
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [['Coach', 'Título', 'Día', 'Fecha', 'Inicio', 'Fin']],
+        body: scheduleRows,
+        theme: 'grid',
+        headStyles: { fillColor: [16, 185, 129] }
+      });
+      
+      doc.save("horarios_gimnasio_cuadricula.pdf");
+      toast.success("PDF descargado en cuadrículas correctamente.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al generar PDF.");
+    }
+  };
+
   // Improved Event Style Getter for preventing solid block overlaps and compact month view
   const eventStyleGetter = (event) => {
     const isMonthView = calendarView === 'month';
@@ -493,7 +571,12 @@ const AdminHorarios = () => {
   return (
     <div className="admin-page fade-in">
       <div className="settings-main-card">
-        <h2 className="settings-title">Gestión de Horarios y Calendarios</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h2 className="settings-title" style={{ margin: 0 }}>Gestión de Horarios y Calendarios</h2>
+          <button onClick={handleDownloadPDF} className="download-btn">
+            <FiDownload /> Descargar Horarios
+          </button>
+        </div>
         <p style={{ color: '#8b8593', marginBottom: '30px' }}>
           Asigna horas de trabajo a entrenadores y crea clases grupales interactivas. Haz click en el calendario para seleccionar un rango horario.
         </p>

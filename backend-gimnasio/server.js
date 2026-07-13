@@ -14,7 +14,9 @@ const evaluationRoutes = require('./routes/evaluationRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
+const emailRoutes = require('./routes/emailRoutes');
 const { startCronJobs } = require('./cron/expirationChecker');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -39,6 +41,10 @@ app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/coaches/schedules', scheduleRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/workouts', workoutRoutes);
+app.use('/api/emails', emailRoutes);
+
+// Global Error Handler Middleware
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 

@@ -24,6 +24,8 @@ const CoachPanel = () => {
     const [exercisesByDay, setExercisesByDay] = useState(defaultDays);
     const [activeDay, setActiveDay] = useState('Lunes');
     const [uniqueExercises, setUniqueExercises] = useState([]);
+    const [templates, setTemplates] = useState([]);
+    const [selectedTemplate, setSelectedTemplate] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { user } = useAuth();
@@ -56,7 +58,19 @@ const CoachPanel = () => {
     useEffect(() => {
         fetchClients();
         fetchUniqueExercises();
+        fetchTemplates();
     }, []);
+
+    const fetchTemplates = async () => {
+        try {
+            const response = await api.get(`/routines/templates/coach/${coachId}`);
+            if (response.data.success) {
+                setTemplates(response.data.templates);
+            }
+        } catch (error) {
+            console.error("Error al cargar plantillas:", error);
+        }
+    };
 
     const fetchUniqueExercises = async () => {
         try {
@@ -107,6 +121,7 @@ const CoachPanel = () => {
         setRoutineGoal(client.Goal || '');
         setExercisesByDay(defaultDays);
         setActiveDay('Lunes');
+        setSelectedTemplate('');
         setIsModalOpen(true);
 
         try {
@@ -136,6 +151,29 @@ const CoachPanel = () => {
     const closeModal = () => {
         setIsModalOpen(false);
         setSelectedClient(null);
+    };
+
+    const handleTemplateSelect = (e) => {
+        const templateId = e.target.value;
+        setSelectedTemplate(templateId);
+        
+        if (templateId) {
+            const template = templates.find(t => t.TemplateID == templateId);
+            if (template) {
+                setRoutineGoal(template.Goal || '');
+                const mapped = { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [], Sábado: [], Domingo: [] };
+                if (template.exercises && template.exercises.length > 0) {
+                    template.exercises.forEach(ex => {
+                        const day = ex.day || 'Lunes';
+                        if (mapped[day]) {
+                            mapped[day].push({ name: ex.name, sets: ex.sets, reps: ex.reps, weight: ex.weight || '' });
+                        }
+                    });
+                }
+                setExercisesByDay(mapped);
+                setActiveDay('Lunes');
+            }
+        }
     };
 
     // Manejo dinámico de campos de ejercicios
@@ -326,6 +364,19 @@ const CoachPanel = () => {
                         
                         <form onSubmit={handleAssignRoutine} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             <div style={{ background: '#f0f9ff', padding: '16px', borderRadius: '12px', border: '1px solid #bae6fd' }} className="theme-dark-fix-bg theme-dark-fix-border">
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0369a1', marginBottom: '8px' }}>Cargar desde Plantilla (Opcional)</label>
+                                <select 
+                                    className="theme-dark-fix-bg theme-dark-fix-text theme-dark-fix-border"
+                                    style={{ width: '100%', background: '#fff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '12px', fontSize: '14px', outline: 'none', color: '#0f172a', marginBottom: '16px' }}
+                                    value={selectedTemplate}
+                                    onChange={handleTemplateSelect}
+                                >
+                                    <option value="">-- Seleccionar Plantilla --</option>
+                                    {templates.map(tpl => (
+                                        <option key={tpl.TemplateID} value={tpl.TemplateID}>{tpl.TemplateName}</option>
+                                    ))}
+                                </select>
+
                                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#0369a1', marginBottom: '8px' }}>Objetivo del Mes</label>
                                 <input 
                                     type="text" 

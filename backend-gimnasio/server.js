@@ -20,10 +20,24 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [process.env.FRONTEND_URL || 'http://localhost:5173', 'http://localhost:3000', 'http://localhost:5001'];
+
 const corsOptions = {
-  origin: '*',
+  origin: (origin, callback) => {
+    // Permitir peticiones sin origen (como Postman, peticiones del mismo servidor o cURL)
+    if (!origin) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production' || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.warn(`[CORS Bloqueado] Petición no autorizada desde el origen: ${origin}`);
+      return callback(new Error('Acceso denegado por políticas de CORS del servidor.'));
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 
 app.use(cors(corsOptions));

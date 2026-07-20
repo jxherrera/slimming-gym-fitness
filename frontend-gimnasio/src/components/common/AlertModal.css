@@ -103,3 +103,23 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(255, 59, 59, 0.6);
 }
+
+@media (max-width: 600px) {
+  .alert-modal-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .btn-secondary-modal,
+  .btn-primary-modal {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .alert-lock-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 1.8rem;
+  }
+}
+

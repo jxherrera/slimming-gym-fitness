@@ -32,7 +32,6 @@
   font-weight: 800;
   margin: 0 0 10px 0;
   background: linear-gradient(135deg, #ffffff, #ff3b3b);
-  -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -61,11 +60,6 @@
 }
 
 .planes-card.featured {
-<<<<<<< HEAD
-  background: linear-gradient(180deg, rgba(35, 25, 45, 0.95), rgba(20, 25, 45, 0.95));
-=======
-  background: linear-gradient(180deg, rgba(35, 25, 40, 0.95), rgba(20, 25, 45, 0.95));
->>>>>>> 0c8201efa2d2488dbf2f7c1e027812e1237e7c9c
   border: 2px solid #ff3b3b;
   box-shadow: 0 15px 35px rgba(255, 59, 59, 0.25);
   transform: scale(1.04);

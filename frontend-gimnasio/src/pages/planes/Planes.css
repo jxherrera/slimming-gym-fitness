@@ -1,0 +1,159 @@
+/* Estilos de la página pública de Planes */
+
+.planes-page-container {
+  padding: 4rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  color: #fff;
+}
+
+.planes-hero-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.planes-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 59, 59, 0.15);
+  border: 1px solid rgba(255, 59, 59, 0.3);
+  color: #ff3b3b;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 50px;
+  margin-bottom: 1rem;
+}
+
+.planes-hero-header h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0 0 10px 0;
+  background: linear-gradient(135deg, #ffffff, #ff3b3b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.planes-hero-header p {
+  color: #9ca3af;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.planes-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.planes-card {
+  background: rgba(22, 28, 45, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.planes-card.featured {
+  background: linear-gradient(180deg, rgba(35, 25, 45, 0.95), rgba(20, 25, 45, 0.95));
+  border: 2px solid #ff3b3b;
+  box-shadow: 0 15px 35px rgba(255, 59, 59, 0.25);
+  transform: scale(1.04);
+}
+
+.planes-featured-tag {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #ff3b3b, #ff7300);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.planes-card-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+}
+
+.planes-card-days {
+  color: #888;
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+}
+
+.planes-card-price {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 1.5rem;
+}
+
+.planes-card-price .dollar {
+  font-size: 1.6rem;
+  color: #ff3b3b;
+  vertical-align: super;
+}
+
+.planes-card-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.planes-card-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.92rem;
+  color: #ddd;
+}
+
+.planes-card-features .check {
+  color: #48bb78;
+}
+
+.planes-card-btn {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid #ff3b3b;
+  color: #ff3b3b;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-top: auto;
+}
+
+.planes-card-btn:hover {
+  background: #ff3b3b;
+  color: #fff;
+}
+
+.btn-featured {
+  background: linear-gradient(135deg, #ff3b3b, #d32f2f);
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 20px rgba(255, 59, 59, 0.4);
+}
+
+.btn-featured:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 59, 59, 0.6);
+}

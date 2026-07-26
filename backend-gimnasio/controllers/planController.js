@@ -6,9 +6,13 @@ exports.getPlans = async (req, res) => {
         const pool = await poolPromise;
         const { all } = req.query;
         
-        let query = 'SELECT * FROM Plans';
+        let query = '';
         if (all !== 'true') {
-            query += " WHERE Status = 'A'";
+            // Optimización para la web pública: Usar Stored Procedure compilado
+            query = 'EXEC sp_GetPublicPlans';
+        } else {
+            // Consulta administrativa
+            query = 'SELECT * FROM Plans';
         }
         
         const result = await pool.request().query(query);

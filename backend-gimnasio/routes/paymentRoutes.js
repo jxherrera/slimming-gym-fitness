@@ -11,6 +11,7 @@ const upload = multer({
 });
 
 router.get('/pending', paymentController.getPendingPayments);
+router.get('/history', paymentController.getPaymentHistory);
 router.patch('/:id/approve', paymentController.approvePayment);
 router.patch('/:id/reject', paymentController.rejectPayment);
 

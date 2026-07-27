@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaDumbbell, 
@@ -13,12 +13,79 @@ import {
   FaEnvelope, 
   FaMapMarkerAlt 
 } from 'react-icons/fa';
+import api from '../../services/api';
 import './Home.css';
 
 const heroImg = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop";
 
+const getPlanDetails = (plan, index) => {
+  const name = String(plan.PlanName).toLowerCase();
+  if (name.includes('vip') || name.includes('anual') || name.includes('año')) {
+    return {
+      badge: 'Máximo Ahorro',
+      period: '/ año',
+      isFeatured: false,
+      features: [
+        { text: 'Acceso VIP Preferencial a todas las sedes', enabled: true },
+        { text: 'Plan Nutricional personalizado', enabled: true },
+        { text: 'Asesoría 1-a-1 con Coach Máster', enabled: true },
+        { text: 'Invitado gratis 2 veces al mes', enabled: true }
+      ]
+    };
+  } else if (name.includes('pro') || name.includes('trimestral') || name.includes('3 meses') || index === 1) {
+    return {
+      badge: 'RECOMENDADO',
+      period: '/ 3 meses',
+      isFeatured: true,
+      features: [
+        { text: 'Todos los beneficios del Plan Básico', enabled: true },
+        { text: 'Rutina digital personalizada en el panel', enabled: true },
+        { text: 'Acceso ilimitado a clases grupales', enabled: true },
+        { text: 'Acompañamiento con Entrenador', enabled: true }
+      ]
+    };
+  } else {
+    return {
+      badge: 'Popular',
+      period: '/ mes',
+      isFeatured: false,
+      features: [
+        { text: 'Acceso ilimitado a zona de máquinas', enabled: true },
+        { text: 'Evaluación física inicial', enabled: true },
+        { text: 'Lockers y duchas de agua caliente', enabled: true },
+        { text: 'Coach asignado dedicado', enabled: false }
+      ]
+    };
+  }
+};
+
 const Home = () => {
   const navigate = useNavigate();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/plans')
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setPlans(res.data);
+        }
+      })
+      .catch(err => {
+        console.error('Error al cargar planes desde la API:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const defaultPlans = [
+    { PlanID: 1, PlanName: 'Plan Básico', Price: 29.99, DurationDays: 30 },
+    { PlanID: 2, PlanName: 'Plan Pro', Price: 79.99, DurationDays: 90 },
+    { PlanID: 3, PlanName: 'Plan VIP', Price: 279.99, DurationDays: 365 }
+  ];
+
+  const displayPlans = plans.length > 0 ? plans : defaultPlans;
 
   return (
     <div className="home-landing">
@@ -126,65 +193,52 @@ const Home = () => {
         </div>
 
         <div className="plans-grid">
-          {/* Plan Básico */}
-          <div className="plan-card">
-            <div className="plan-badge-top">Popular</div>
-            <h3 className="plan-name">Plan Básico</h3>
-            <p className="plan-duration">Acceso Mensual (30 días)</p>
-            <div className="plan-price">
-              <span className="currency">$</span>29<span className="cents">.99</span>
-              <span className="period">/ mes</span>
-            </div>
-            <ul className="plan-features">
-              <li><FaCheckCircle className="check-icon" /> Acceso ilimitado a zona de máquinas</li>
-              <li><FaCheckCircle className="check-icon" /> Evaluación física inicial</li>
-              <li><FaCheckCircle className="check-icon" /> Lockers y duchas de agua caliente</li>
-              <li className="disabled"><FaCheckCircle className="check-icon" /> Coach asignado dedicado</li>
-            </ul>
-            <button className="btn-plan-select" onClick={() => navigate('/planes')}>
-              Elegir Plan Básico
-            </button>
-          </div>
+          {displayPlans.map((plan, index) => {
+            const details = getPlanDetails(plan, index);
+            const priceStr = String(plan.Price);
+            const dotIndex = priceStr.indexOf('.');
+            let integerPart = priceStr;
+            let decimalPart = '00';
+            if (dotIndex !== -1) {
+              integerPart = priceStr.substring(0, dotIndex);
+              decimalPart = priceStr.substring(dotIndex + 1).padEnd(2, '0').substring(0, 2);
+            }
 
-          {/* Plan Pro - Destacado */}
-          <div className="plan-card featured">
-            <div className="featured-banner">RECOMENDADO</div>
-            <h3 className="plan-name">Plan Pro</h3>
-            <p className="plan-duration">Acceso Trimestral (90 días)</p>
-            <div className="plan-price">
-              <span className="currency">$</span>79<span className="cents">.99</span>
-              <span className="period">/ 3 meses</span>
-            </div>
-            <ul className="plan-features">
-              <li><FaCheckCircle className="check-icon" /> Todos los beneficios del Plan Básico</li>
-              <li><FaCheckCircle className="check-icon" /> Rutina digital personalizada en el panel</li>
-              <li><FaCheckCircle className="check-icon" /> Acceso ilimitado a clases grupales</li>
-              <li><FaCheckCircle className="check-icon" /> Acompañamiento con Entrenador</li>
-            </ul>
-            <button className="btn-plan-select featured-btn" onClick={() => navigate('/planes')}>
-              Inscribirme Ahora
-            </button>
-          </div>
+            return (
+              <div 
+                key={plan.PlanID || index} 
+                className={`plan-card ${details.isFeatured ? 'featured' : ''}`}
+              >
+                {details.isFeatured && <div className="featured-banner">RECOMENDADO</div>}
+                {!details.isFeatured && details.badge && <div className="plan-badge-top">{details.badge}</div>}
+                
+                <h3 className="plan-name">{plan.PlanName}</h3>
+                <p className="plan-duration">Acceso por {plan.DurationDays} días</p>
+                
+                <div className="plan-price">
+                  <span className="currency">$</span>
+                  {integerPart}
+                  <span className="cents">.{decimalPart}</span>
+                  <span className="period">{details.period}</span>
+                </div>
 
-          {/* Plan VIP */}
-          <div className="plan-card">
-            <div className="plan-badge-top">Máximo Ahorro</div>
-            <h3 className="plan-name">Plan VIP</h3>
-            <p className="plan-duration">Acceso Anual (365 días)</p>
-            <div className="plan-price">
-              <span className="currency">$</span>279<span className="cents">.99</span>
-              <span className="period">/ año</span>
-            </div>
-            <ul className="plan-features">
-              <li><FaCheckCircle className="check-icon" /> Acceso VIP Preferencial a todas las sedes</li>
-              <li><FaCheckCircle className="check-icon" /> Plan Nutricional personalizado</li>
-              <li><FaCheckCircle className="check-icon" /> Asesoría 1-a-1 con Coach Máster</li>
-              <li><FaCheckCircle className="check-icon" /> Invitado gratis 2 veces al mes</li>
-            </ul>
-            <button className="btn-plan-select" onClick={() => navigate('/planes')}>
-              Elegir Plan VIP
-            </button>
-          </div>
+                <ul className="plan-features">
+                  {details.features.map((feat, idx) => (
+                    <li key={idx} className={feat.enabled ? '' : 'disabled'}>
+                      <FaCheckCircle className="check-icon" /> {feat.text}
+                    </li>
+                  ))}
+                </ul>
+
+                <button 
+                  className={`btn-plan-select ${details.isFeatured ? 'featured-btn' : ''}`}
+                  onClick={() => navigate('/planes')}
+                >
+                  {details.isFeatured ? 'Inscribirme Ahora' : `Elegir ${plan.PlanName}`}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </section>
 

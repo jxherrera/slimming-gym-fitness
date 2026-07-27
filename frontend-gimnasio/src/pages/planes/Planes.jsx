@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaStar, FaShieldAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import api from '../../services/api';
 import './Planes.css';
 
 const Planes = () => {
@@ -11,13 +12,12 @@ const Planes = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/plans`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setPlans(data);
-        } else if (data.plans) {
-          setPlans(data.plans);
+    api.get('/plans')
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setPlans(res.data);
+        } else if (res.data.plans) {
+          setPlans(res.data.plans);
         }
       })
       .catch(err => console.error('Error al cargar planes:', err))

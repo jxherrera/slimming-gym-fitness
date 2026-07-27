@@ -290,3 +290,92 @@ exports.webhookPayment = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error interno procesando webhook.', error: error.message });
   }
 };
+
+exports.getPaymentHistory = async (req, res) => {
+  try {
+    const { startDate, endDate, page = 1, limit = 10 } = req.query;
+
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const offset = (pageNum - 1) * limitNum;
+
+    const pool = await poolPromise;
+    let querySpec = `
+      FROM Payments p
+      INNER JOIN Subscriptions s ON p.SubscriptionID = s.SubscriptionID
+      INNER JOIN Users u ON s.UserID = u.UserID
+      INNER JOIN Plans pl ON s.PlanID = pl.PlanID
+    `;
+
+    const whereClauses = [];
+    const requestCount = pool.request();
+    const requestData = pool.request();
+
+    if (startDate) {
+      whereClauses.push('p.PaymentDate >= @StartDate');
+      const start = new Date(startDate);
+      requestCount.input('StartDate', sql.DateTime, start);
+      requestData.input('StartDate', sql.DateTime, start);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      whereClauses.push('p.PaymentDate <= @EndDate');
+      requestCount.input('EndDate', sql.DateTime, end);
+      requestData.input('EndDate', sql.DateTime, end);
+    }
+
+    if (whereClauses.length > 0) {
+      querySpec += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+
+    // 1. Get total record count
+    const countQuery = `SELECT COUNT(*) as total ${querySpec}`;
+    const countResult = await requestCount.query(countQuery);
+    const totalRecords = countResult.recordset[0].total;
+
+    // 2. Fetch the paginated data
+    requestData.input('Offset', sql.Int, offset);
+    requestData.input('Limit', sql.Int, limitNum);
+
+    const dataQuery = `
+      SELECT 
+        p.PaymentID as paymentId,
+        p.SubscriptionID as subscriptionId,
+        p.AmountPaid as amountPaid,
+        p.PaymentDate as paymentDate,
+        p.PaymentMethod as paymentMethod,
+        p.ReferenceNumber as referenceNumber,
+        p.ReceiptImageUrl as receiptImageUrl,
+        p.Status as paymentStatus,
+        u.UserID as userId,
+        (u.FirstName + ' ' + u.LastName) as memberName,
+        u.Email as memberEmail,
+        pl.PlanName as planName,
+        pl.DurationDays as durationDays
+      ${querySpec}
+      ORDER BY p.PaymentDate DESC
+      OFFSET @Offset ROWS
+      FETCH NEXT @Limit ROWS ONLY
+    `;
+
+    const dataResult = await requestData.query(dataQuery);
+
+    const totalPages = Math.ceil(totalRecords / limitNum);
+
+    res.json({
+      success: true,
+      data: dataResult.recordset,
+      totalRecords,
+      totalPages,
+      currentPage: pageNum
+    });
+  } catch (error) {
+    console.error('Error al obtener el historial de pagos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno al obtener el historial de pagos.',
+      error: error.message
+    });
+  }
+};

@@ -231,13 +231,13 @@ const CoachPanel = () => {
     };
 
     if (loading) return (
-        <div className={`admin-page ${themeClass}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div className={`admin-page admin-page-loading ${themeClass}`}>
             <div style={{ color: '#8b8593' }}>Cargando alumnos...</div>
         </div>
     );
 
     if (error) return (
-        <div className={`admin-page ${themeClass}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div className={`admin-page admin-page-loading ${themeClass}`}>
             <div style={{ background: '#fee2e2', color: '#991b1b', padding: '16px', borderRadius: '8px' }}>{error}</div>
         </div>
     );

@@ -4,6 +4,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   background: rgba(10, 10, 15, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -107,16 +108,28 @@
 /* --- Ajustes Responsive para Pantallas Móviles --- */
 @media (max-width: 600px) {
   .modal-backdrop {
-    padding: 10px;
+    padding: 0;
     align-items: flex-end;
   }
 
   .modal-container {
-    max-height: 85vh;
-    max-height: 85dvh;
-    border-radius: 16px 16px 12px 12px;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-radius: 20px 20px 0 0;
     width: 100%;
     margin: 0;
+    animation: bottomSheetSlide 0.3s cubic-bezier(0.175, 0.885, 0.32, 1) forwards;
+  }
+
+  @keyframes bottomSheetSlide {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .modal-header {

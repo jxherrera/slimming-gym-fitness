@@ -41,13 +41,14 @@ const Navbar = () => {
   const isLoginPage = location.pathname === '/login';
 
   return (
-    <div className="header">
+    <div className="main-header">
       <Link to="/" onClick={closeMenu} style={{ textDecoration: 'none' }}>
-        <h1 className="logo">SLIMMING <span className="red-text">GYM</span></h1>
+        <h1 className="main-logo">SLIMMING <span className="red-text">GYM</span></h1>
       </Link>
       
       {!isLoginPage && (
         <>
+          <div className={click ? "nav-backdrop active" : "nav-backdrop"} onClick={closeMenu}></div>
           <ul className={click ? "nav-menu active" : "nav-menu"}>
             <li><Link to="/" onClick={closeMenu}>Inicio</Link></li>
             <li><Link to="/sobre-nosotros" onClick={closeMenu}>Sobre Nosotros</Link></li>
@@ -88,7 +89,7 @@ const Navbar = () => {
                 </button>
               </div>
             ) : (
-              <button className="btn-login" onClick={goToLogin}>
+              <button className="nav-btn-login" onClick={goToLogin}>
                 Iniciar Sesión
               </button>
             )}

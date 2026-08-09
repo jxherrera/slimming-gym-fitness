@@ -90,11 +90,13 @@ const ResetPassword = () => {
               <label htmlFor="new-password">Nueva Contraseña:</label>
               <input 
                 type="password" 
+                autoComplete="new-password"
                 id="new-password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="Mínimo 8 caracteres"
                 required 
+                enterKeyHint="next"
               />
             </div>
 
@@ -102,11 +104,13 @@ const ResetPassword = () => {
               <label htmlFor="confirm-new-password">Confirmar Contraseña:</label>
               <input 
                 type="password" 
+                autoComplete="new-password"
                 id="confirm-new-password" 
                 value={confirmPassword} 
                 onChange={(e) => setConfirmPassword(e.target.value)} 
                 placeholder="Repite la contraseña"
                 required 
+                enterKeyHint="done"
               />
             </div>
 

@@ -1,0 +1,38 @@
+/* Reglas base móviles para mejor experiencia UX y evitar comportamientos indeseados en iOS/Android */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overscroll-behavior-y: contain; /* Evita el "bounce" pull-to-refresh en toda la pantalla */
+  -webkit-tap-highlight-color: transparent; /* Quita el rectángulo azul al tocar enlaces/botones en mobile */
+}
+
+img, svg, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Interacción táctil para inputs (Evitar zoom en iOS) y botones */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important; 
+  }
+
+  button, a, [role="button"], .tab-btn, .nav-btn, .menu-item {
+    min-height: var(--tap-min);
+  }
+}
+
+/* Accesibilidad teclado */
+:focus-visible {
+  outline: 2px solid var(--rojo-hero, #D20000);
+  outline-offset: 2px;
+}
+
+/* Envolver efectos hover (para que no se queden "pegados" en móvil) */
+@media (hover: hover) and (pointer: fine) {
+  /* Se recomienda que a futuro las clases con :hover puramente visuales se envuelvan aquí, pero
+     por ahora definimos este bloque como guía para las siguientes fases */
+}

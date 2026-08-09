@@ -147,8 +147,12 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
 
   return (
     <>
-      <div className="mobile-toggle" onClick={toggleMobileSidebar}>
-        {isOpen ? <FaTimes /> : <FaBars />}
+      <div className={isOpen ? "sidebar-backdrop active" : "sidebar-backdrop"} onClick={toggleMobileSidebar}></div>
+      <div className="mobile-admin-topbar">
+        <div className="mobile-toggle" onClick={toggleMobileSidebar}>
+          {isOpen ? <FaTimes /> : <FaBars />}
+        </div>
+        <div className="mobile-topbar-title">SLIMMING GYM</div>
       </div>
       
       <div 
@@ -157,7 +161,7 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         onMouseLeave={() => !isCollapsed && toggleCollapse()}
       >
         <div className="sidebar-header">
-          <h2 className="logo">{isCollapsed ? (role === 'admin' ? 'G' : role === 'coach' ? 'C' : 'U') : role === 'admin' ? 'GYM ADMIN' : role === 'coach' ? 'PANEL COACH' : 'MI PERFIL'}</h2>
+          <h2 className="main-logo">{isCollapsed ? (role === 'admin' ? 'G' : role === 'coach' ? 'C' : 'U') : role === 'admin' ? 'GYM ADMIN' : role === 'coach' ? 'PANEL COACH' : 'MI PERFIL'}</h2>
         </div>
         
         <div className="sidebar-menu">

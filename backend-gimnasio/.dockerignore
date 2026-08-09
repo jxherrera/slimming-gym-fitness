@@ -1,0 +1,35 @@
+# Dependencias: se instalan dentro de la imagen con npm ci. Copiarlas, ademas de
+# pesar cientos de MB, traeria binarios compilados para otra arquitectura (por
+# ejemplo bcrypt construido en un Mac arm64 dentro de una imagen amd64).
+node_modules
+npm-debug.log*
+
+# Credenciales. CRITICO: sin esta exclusion el .env con las contrasenas de base
+# de datos y SMTP quedaria dentro de la imagen, legible por cualquiera que la
+# descargue o la inspeccione con `docker history`.
+.env
+.env.*
+!.env.example
+config/google-key.json
+*.key
+*.pem
+
+# Archivos subidos por los usuarios: viven en un volumen, no en la imagen
+uploads
+
+# Scripts de operacion y diagnostico: se ejecutan a mano contra la base, no
+# forman parte del servicio
+scripts
+
+# Control de versiones, metadatos de construccion y sistema operativo
+.git
+.gitignore
+.dockerignore
+Dockerfile
+.DS_Store
+
+# NOTA: los archivos *.test.js SI se incluyen a proposito. Pesan unos pocos KB y
+# permiten ejecutar la suite contra la imagen real que se despliega:
+#   docker compose run --rm api npm test
+# Verificar sobre el artefacto que va a produccion, y no sobre el codigo local,
+# es lo que da valor a la prueba.

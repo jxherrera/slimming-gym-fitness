@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "seed": "node seeders/seedRunner.js",
-    "test": "node --test \"utils/*.test.js\"",
+    "test": "node --test utils/*.test.js",
     "diagnostico:db": "node scripts/diagnostico-db.js",
     "inspeccionar:esquema": "node scripts/inspeccionar-esquema.js",
     "probar:triggers": "node scripts/prueba-integridad-triggers.js",

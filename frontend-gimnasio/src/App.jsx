@@ -21,6 +21,7 @@ const AdminPagos = lazy(() => import('./pages/admin/pagos/AdminPagos'));
 const AdminHorarios = lazy(() => import('./pages/admin/horarios/AdminHorarios'));
 const AdminPagosVerificacion = lazy(() => import('./pages/admin/pagos/AdminPagosVerificacion'));
 const AdminCorreos = lazy(() => import('./pages/admin/correos/AdminCorreos'));
+const AdminAccesos = lazy(() => import('./pages/admin/accesos/AdminAccesos'));
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isAuthenticated, loading } = useAuth();
@@ -72,7 +73,7 @@ function MainLayout() {
               <Route path="/admin/pagos/verificacion" element={<ProtectedRoute allowedRoles={['admin']}><AdminPagosVerificacion /></ProtectedRoute>} />
               <Route path="/admin/horarios" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><AdminHorarios /></ProtectedRoute>} />
               <Route path="/admin/correos" element={<ProtectedRoute allowedRoles={['admin']}><AdminCorreos /></ProtectedRoute>} />
-              <Route path="/admin/configuracion" element={<ProtectedRoute allowedRoles={['admin']}><div /></ProtectedRoute>} />
+              <Route path="/admin/accesos" element={<ProtectedRoute allowedRoles={['admin']}><AdminAccesos /></ProtectedRoute>} />
             </Route>
           </Routes>
         </Suspense>

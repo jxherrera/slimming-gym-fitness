@@ -6,19 +6,25 @@ import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
+// Configuracion estatica de pestanas: se define fuera del componente para que
+// TABS y VALID_TABS mantengan la misma identidad entre renders y puedan usarse
+// como dependencias de efectos sin provocar ejecuciones innecesarias.
+const TABS = [
+  { id: 'dashboard', label: 'Dashboard', icon: <FaChartLine /> },
+  { id: 'coaches', label: 'Entrenadores', icon: <FaUserTie /> },
+  { id: 'members', label: 'Miembros', icon: <FaUsers /> },
+  { id: 'admins', label: 'Admins', icon: <FaUserShield /> },
+  { id: 'register', label: 'Registrar usuario', icon: <FaUserPlus /> }
+];
+const VALID_TABS = TABS.map(t => t.id);
+
 const Admin = () => {
-  const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: <FaChartLine /> },
-    { id: 'coaches', label: 'Entrenadores', icon: <FaUserTie /> },
-    { id: 'members', label: 'Miembros', icon: <FaUsers /> },
-    { id: 'admins', label: 'Admins', icon: <FaUserShield /> },
-    { id: 'register', label: 'Registrar usuario', icon: <FaUserPlus /> }
-  ];
+  const tabs = TABS;
+  const validTabs = VALID_TABS;
 
   const [searchParams, setSearchParams] = useSearchParams();
   const modeParam = searchParams.get('mode');
-  const validTabs = tabs.map(t => t.id);
-  
+
   const [activeTab, setActiveTab] = useState(validTabs.includes(modeParam) ? modeParam : 'dashboard');
 
   useEffect(() => {
@@ -27,7 +33,7 @@ const Admin = () => {
         setActiveTab(modeParam);
       }
     }
-  }, [modeParam]);
+  }, [modeParam, activeTab, validTabs]);
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -315,7 +321,7 @@ const Admin = () => {
     setIsEditLoading(true);
 
     try {
-      const response = await api.patch(`/users/${editForm.id}`, {
+      await api.patch(`/users/${editForm.id}`, {
         idNumber: editForm.idNumber,
         firstName: editForm.firstName,
         lastName: editForm.lastName,
@@ -323,7 +329,6 @@ const Admin = () => {
         phone: editForm.phone
       });
 
-      const data = response.data;
       setEditMessage('Usuario actualizado correctamente.');
       setIsEditLoading(false);
       loadAdminEntities();
@@ -416,7 +421,9 @@ const Admin = () => {
     };
 
     try {
-      await api.post('/auth/register', payload);
+      // Endpoint exclusivo del Administrador: es el unico que permite elegir el rol.
+      // El registro publico (/auth/register) crea siempre Socios.
+      await api.post('/auth/users', payload);
 
       setRegisterMessage('Usuario registrado con éxito.');
       setRegisterForm({
@@ -439,7 +446,9 @@ const Admin = () => {
       }
     } catch (error) {
       console.error('Error al registrar usuario:', error);
-      setRegisterMessage('Error de conexión con el servidor.');
+      // El backend explica el motivo real (correo duplicado, contrasena debil,
+      // permisos insuficientes). Mostrarlo en lugar de un mensaje genérico.
+      setRegisterMessage(`Error: ${error.response?.data?.message || 'No se pudo conectar con el servidor.'}`);
       setIsRegisterLoading(false);
     }
   };

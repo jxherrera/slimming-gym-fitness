@@ -1,34 +1,32 @@
 {
   "name": "backend-gimnasio",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "API REST del sistema de gestion Slimming Gym Fitness",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "seed": "node seeders/seedRunner.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test utils/*.test.js",
+    "diagnostico:db": "node scripts/diagnostico-db.js",
+    "inspeccionar:esquema": "node scripts/inspeccionar-esquema.js",
+    "probar:triggers": "node scripts/prueba-integridad-triggers.js",
+    "probar:correo": "node scripts/probar-correo.js",
+    "verificar:historial-pagos": "node scripts/verificar-historial-pagos.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@google-cloud/storage": "^7.21.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "gaxios": "^7.1.6",
-    "google-auth-library": "^10.9.0",
     "jsonwebtoken": "^9.0.3",
     "mssql": "^12.5.2",
     "multer": "^2.2.0",
     "node-cron": "^4.5.0",
     "nodemailer": "^9.0.3",
     "pdfkit": "^0.19.1"
-  },
-  "overrides": {
-    "gaxios": "^7.1.6",
-    "google-auth-library": "^10.9.0"
   }
 }

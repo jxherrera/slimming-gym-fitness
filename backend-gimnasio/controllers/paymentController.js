@@ -1,5 +1,5 @@
 const { poolPromise, sql } = require('../config/db');
-const { bucket } = require('../config/gcs');
+const { guardarComprobante, eliminarArchivo, isStorageConfigured } = require('../services/storageService');
 const emailService = require('../services/emailService');
 
 exports.getPendingPayments = async (req, res) => {
@@ -161,68 +161,70 @@ exports.uploadPayment = async (req, res) => {
 
     const amountPaid = planResult.recordset[0].Price;
 
-    let safeOriginalName = req.file.originalname || 'comprobante.jpg';
-    safeOriginalName = safeOriginalName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    if (safeOriginalName.startsWith('.')) {
-      safeOriginalName = 'comprobante' + safeOriginalName;
+    if (!isStorageConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: 'El almacenamiento de comprobantes no está disponible en el servidor.'
+      });
     }
 
-    const blob = bucket.file(`receipts/${Date.now()}_${safeOriginalName}`);
-    const blobStream = blob.createWriteStream({
-      resumable: false,
-      validation: false,
-      contentType: req.file.mimetype || 'image/jpeg',
-    });
-
-    blobStream.on('error', (err) => {
-      console.error('Error al subir a GCS:', err);
-      return res.status(500).json({ success: false, message: 'Error subiendo el archivo a la nube.' });
-    });
-
-    blobStream.on('finish', async () => {
-      const receiptImageUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-
-      const transaction = new sql.Transaction(pool);
-      await transaction.begin();
-
-      try {
-        const subResult = await transaction.request()
-          .input('UserID', sql.Int, userId)
-          .input('PlanID', sql.Int, planId)
-          .query(`
-            INSERT INTO Subscriptions (UserID, PlanID, StartDate, EndDate, PaymentStatus)
-            OUTPUT INSERTED.SubscriptionID
-            VALUES (@UserID, @PlanID, CAST(GETDATE() AS DATE), CAST(GETDATE() AS DATE), 'U')
-          `);
-
-        const subscriptionId = subResult.recordset[0].SubscriptionID;
-
-        await transaction.request()
-          .input('SubscriptionID', sql.Int, subscriptionId)
-          .input('AmountPaid', sql.Decimal(10, 2), amountPaid)
-          .input('PaymentMethod', sql.VarChar(50), paymentMethod)
-          .input('ReferenceNumber', sql.VarChar(100), referenceNumber)
-          .input('ReceiptImageUrl', sql.VarChar(500), receiptImageUrl)
-          .query(`
-            INSERT INTO Payments (SubscriptionID, AmountPaid, PaymentDate, PaymentMethod, ReferenceNumber, ReceiptImageUrl, Status)
-            VALUES (@SubscriptionID, @AmountPaid, GETDATE(), @PaymentMethod, @ReferenceNumber, @ReceiptImageUrl, 'P')
-          `);
-
-        await transaction.commit();
-
-        res.status(201).json({
-          success: true,
-          message: 'Comprobante de pago reportado con éxito. Queda en estado pendiente de aprobación.',
-          receiptImageUrl
-        });
-      } catch (err) {
-        await transaction.rollback();
-        console.error('Error guardando en BD tras subir a GCS:', err);
-        return res.status(500).json({ success: false, message: 'Error guardando en la base de datos.' });
+    // El archivo se guarda en el disco de la VM. storageService valida el tipo
+    // MIME y asigna un nombre aleatorio con la extension derivada del tipo.
+    let comprobante;
+    try {
+      comprobante = await guardarComprobante(req.file);
+    } catch (err) {
+      if (err.statusCode === 415) {
+        return res.status(415).json({ success: false, message: err.message });
       }
-    });
+      throw err;
+    }
 
-    blobStream.end(req.file.buffer);
+    const receiptImageUrl = comprobante.url;
+
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    try {
+      const subResult = await transaction.request()
+        .input('UserID', sql.Int, userId)
+        .input('PlanID', sql.Int, planId)
+        .query(`
+          INSERT INTO Subscriptions (UserID, PlanID, StartDate, EndDate, PaymentStatus)
+          OUTPUT INSERTED.SubscriptionID
+          VALUES (@UserID, @PlanID, CAST(GETDATE() AS DATE), CAST(GETDATE() AS DATE), 'U')
+        `);
+
+      const subscriptionId = subResult.recordset[0].SubscriptionID;
+
+      await transaction.request()
+        .input('SubscriptionID', sql.Int, subscriptionId)
+        .input('AmountPaid', sql.Decimal(10, 2), amountPaid)
+        .input('PaymentMethod', sql.VarChar(50), paymentMethod)
+        .input('ReferenceNumber', sql.VarChar(100), referenceNumber)
+        .input('ReceiptImageUrl', sql.VarChar(500), receiptImageUrl)
+        .query(`
+          INSERT INTO Payments (SubscriptionID, AmountPaid, PaymentDate, PaymentMethod, ReferenceNumber, ReceiptImageUrl, Status)
+          VALUES (@SubscriptionID, @AmountPaid, GETDATE(), @PaymentMethod, @ReferenceNumber, @ReceiptImageUrl, 'P')
+        `);
+
+      await transaction.commit();
+
+      res.status(201).json({
+        success: true,
+        message: 'Comprobante de pago reportado con éxito. Queda en estado pendiente de aprobación.',
+        receiptImageUrl
+      });
+    } catch (err) {
+      await transaction.rollback();
+
+      // El registro en base de datos fallo: se descarta el archivo ya escrito
+      // para no dejar comprobantes huerfanos ocupando disco.
+      await eliminarArchivo(comprobante.absolutePath);
+
+      console.error('Error guardando el pago en la base de datos:', err);
+      return res.status(500).json({ success: false, message: 'Error guardando en la base de datos.' });
+    }
 
   } catch (error) {
     console.error('Error al registrar el pago del socio:', error);
@@ -231,8 +233,23 @@ exports.uploadPayment = async (req, res) => {
 };
 
 exports.webhookPayment = async (req, res) => {
+  // Este endpoint es publico porque lo invoca la pasarela externa, que no puede
+  // presentar un JWT. Se autentica con un secreto compartido: sin esta
+  // verificacion, cualquiera podria activar suscripciones sin haber pagado.
+  const secretoEsperado = process.env.WEBHOOK_SECRET;
+
+  if (!secretoEsperado) {
+    console.error('[Webhook] WEBHOOK_SECRET no está definida: se rechaza la petición.');
+    return res.status(503).json({ success: false, message: 'Webhook no configurado en el servidor.' });
+  }
+
+  if (req.headers['x-webhook-secret'] !== secretoEsperado) {
+    console.warn('[Webhook] Petición rechazada: secreto inválido o ausente.');
+    return res.status(401).json({ success: false, message: 'Firma de webhook inválida.' });
+  }
+
   const { ReferenceNumber, Status } = req.body;
-  
+
   if (!ReferenceNumber || Status !== 'Approved') {
     return res.status(400).json({ success: false, message: 'Payload inválido o pago no aprobado.' });
   }

@@ -1,26 +1,47 @@
 const { poolPromise, sql } = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/jwt');
+const { validarPassword, camposFaltantes } = require('../utils/validators');
 const emailService = require('../services/emailService');
 
-exports.register = async (req, res) => {
-    const { IDNumber, FirstName, LastName, Email, Password, PhoneNumber, RoleID } = req.body;
+const ROLE_MAPPING = {
+    1: 'Member',
+    2: 'Coach',
+    3: 'Admin'
+};
+const ROLE_MEMBER = 1;
+const ROLES_VALIDOS = [1, 2, 3];
+
+/**
+ * Alta de usuario. El rol NO se lee de req.body: lo decide quien invoca esta
+ * funcion. Es lo que impide que el registro publico cree Administradores.
+ */
+const createUser = async (req, res, roleIdForzado) => {
+    const { IDNumber, FirstName, LastName, Email, Password, PhoneNumber } = req.body;
 
     try {
+        const faltantes = camposFaltantes(req.body, ['IDNumber', 'FirstName', 'LastName', 'Email', 'Password']);
+        if (faltantes.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Faltan campos obligatorios: ${faltantes.join(', ')}.`
+            });
+        }
+
+        const errorPassword = validarPassword(Password);
+        if (errorPassword) {
+            return res.status(400).json({ success: false, message: errorPassword });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(Password, salt);
 
         const pool = await poolPromise;
 
-        const roleMapping = {
-            1: 'Member',
-            2: 'Coach',
-            3: 'Admin'
-        };
+        const roleMapping = ROLE_MAPPING;
 
-        let roleId = Number(RoleID) || 1;
-        if (![1, 2, 3].includes(roleId)) roleId = 1;
-
+        let roleId = roleIdForzado;
         const roleName = roleMapping[roleId];
 
         const roleResult = await pool.request()
@@ -128,12 +149,28 @@ exports.register = async (req, res) => {
 
     } catch (error) {
         console.error("Error en registro:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: "Error al registrar el usuario.", 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: "Error al registrar el usuario.",
+            error: error.message
         });
     }
+};
+
+/**
+ * POST /api/auth/register — Registro publico.
+ * Crea SIEMPRE un Socio. Cualquier RoleID enviado en el body se ignora.
+ */
+exports.register = (req, res) => createUser(req, res, ROLE_MEMBER);
+
+/**
+ * POST /api/auth/users — Alta desde el panel administrativo.
+ * Aqui el rol si puede venir del body, pero la ruta exige token de Admin.
+ */
+exports.createUserByAdmin = (req, res) => {
+    let roleId = Number(req.body.RoleID) || ROLE_MEMBER;
+    if (!ROLES_VALIDOS.includes(roleId)) roleId = ROLE_MEMBER;
+    return createUser(req, res, roleId);
 };
 
 exports.login = async (req, res) => {
@@ -160,20 +197,14 @@ exports.login = async (req, res) => {
             });
         }
 
-        const roleMapping = {
-            1: 'Member',
-            2: 'Coach',
-            3: 'Admin'
-        };
-
         const roleName = user.RoleName && user.RoleName.trim()
             ? user.RoleName.trim()
-            : roleMapping[user.RoleID] || 'Member';
+            : ROLE_MAPPING[user.RoleID] || 'Member';
 
         const token = jwt.sign(
             { userId: user.UserID, role: roleName },
-            process.env.JWT_SECRET || 'supersecret_fallback_key',
-            { expiresIn: '24h' }
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
         );
 
         res.json({

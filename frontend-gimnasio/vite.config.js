@@ -4,6 +4,16 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // En produccion Nginx sirve el frontend y la API bajo el mismo dominio, por lo
+  // que las rutas relativas (/api, /uploads) resuelven solas. En desarrollo el
+  // frontend corre en :5173 y la API en :5001: sin este proxy, un comprobante
+  // referenciado como /uploads/... daria 404.
+  server: {
+    proxy: {
+      '/api': { target: 'http://localhost:5001', changeOrigin: true },
+      '/uploads': { target: 'http://localhost:5001', changeOrigin: true }
+    }
+  },
   build: {
     // 1. Minificar al máximo con esbuild (opción predeterminada y súper rápida)
     minify: 'esbuild',

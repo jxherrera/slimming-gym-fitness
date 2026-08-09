@@ -1,0 +1,294 @@
+/* Control de Ingreso (Recepcion)
+   Usa las variables de tema definidas en shared/admin-core.css, por lo que
+   responde al modo claro/oscuro sin logica adicional en el componente. */
+
+.acc-page {
+  animation: accEntrada 0.25s ease-out;
+}
+
+.acc-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.acc-panel {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  color: var(--admin-text);
+}
+
+.acc-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+  font-size: 1.05rem;
+  color: var(--admin-heading);
+}
+
+.acc-contador {
+  margin-left: auto;
+  min-width: 2rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* --- Formulario de validacion --- */
+
+.acc-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--admin-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.acc-input-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.acc-input-icon {
+  position: absolute;
+  left: 0.9rem;
+  color: var(--admin-muted);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.acc-input-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.9rem 0.9rem 0.9rem 2.5rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface-alt);
+  color: var(--admin-text);
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.acc-input-row input::placeholder {
+  color: var(--admin-muted);
+  opacity: 0.55;
+  font-size: 1rem;
+  letter-spacing: normal;
+}
+
+.acc-input-row input:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 3px var(--admin-accent-soft);
+}
+
+.acc-input-row button {
+  flex-shrink: 0;
+  padding: 0.9rem 1.5rem;
+  border: 0;
+  border-radius: 12px;
+  background: var(--admin-accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.acc-input-row button:hover:not(:disabled) {
+  background: var(--admin-accent-dark);
+}
+
+.acc-input-row button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.acc-input-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- Panel de resultado --- */
+
+.acc-resultado {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border-radius: 14px;
+  border-left: 5px solid;
+  animation: accEntrada 0.2s ease-out;
+}
+
+.acc-resultado > svg {
+  flex-shrink: 0;
+  font-size: 2.5rem;
+}
+
+.acc-resultado.concedido {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: #10b981;
+  color: #059669;
+}
+
+.acc-resultado.denegado {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: #f43f5e;
+  color: #e11d48;
+}
+
+body.theme-dark .acc-resultado.concedido { color: #34d399; }
+body.theme-dark .acc-resultado.denegado { color: #fb7185; }
+
+.acc-resultado-texto {
+  min-width: 0;
+}
+
+.acc-resultado strong {
+  display: block;
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+}
+
+.acc-nombre {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--admin-text);
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.acc-resultado p {
+  margin: 0.35rem 0 0;
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+}
+
+.acc-etiqueta {
+  display: inline-block;
+  margin-top: 0.65rem;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background: currentColor;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.acc-ayuda {
+  margin: 1.5rem 0 0;
+  color: var(--admin-muted);
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* --- Bitacora de ingresos --- */
+
+.acc-bitacora {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
+.acc-bitacora li {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.7rem 0.15rem;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 0.9rem;
+}
+
+.acc-bitacora li:last-child {
+  border-bottom: 0;
+}
+
+.acc-hora {
+  color: var(--admin-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.acc-socio {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--admin-text);
+  font-weight: 500;
+}
+
+.acc-socio small {
+  color: var(--admin-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.acc-rol {
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.acc-vacio,
+.acc-vacio-estado p {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+}
+
+.acc-vacio-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.acc-vacio-estado svg {
+  font-size: 2rem;
+  color: var(--admin-muted);
+  opacity: 0.45;
+}
+
+@keyframes accEntrada {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 960px) {
+  .acc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .acc-input-row {
+    flex-wrap: wrap;
+  }
+
+  .acc-input-row button {
+    width: 100%;
+  }
+}

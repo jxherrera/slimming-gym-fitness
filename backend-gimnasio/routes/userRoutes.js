@@ -1,24 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const { authMiddleware, checkRole, checkOwnership } = require('../middleware/authMiddleware');
 
-router.get('/role/:roleName', userController.getUsersByRole);
-router.get('/summary', userController.getDashboardSummary);
-router.patch('/:id', userController.updateUser);
-router.delete('/:id', userController.deleteUser);
-router.put('/:id/activate', userController.activateUser);
-router.patch('/:id/password/admin', userController.changePasswordByAdmin);
-router.patch('/:id/password', userController.changeUserPassword);
-router.delete('/:id/hard', userController.hardDeleteUser);
+// Ninguna operacion sobre usuarios es publica.
+router.use(authMiddleware);
 
-// Endpoint que permite al socio consultar el estado actual de su membresía y sus días restantes
-router.get('/:id/subscription', userController.getUserSubscription);
+// --- Gestion de usuarios: exclusiva del Administrador ---
+router.get('/role/:roleName', checkRole(['Admin']), userController.getUsersByRole);
+router.get('/summary', checkRole(['Admin']), userController.getDashboardSummary);
+router.patch('/:id', checkRole(['Admin']), userController.updateUser);
+router.delete('/:id', checkRole(['Admin']), userController.deleteUser);
+router.put('/:id/activate', checkRole(['Admin']), userController.activateUser);
+router.patch('/:id/password/admin', checkRole(['Admin']), userController.changePasswordByAdmin);
+router.delete('/:id/hard', checkRole(['Admin']), userController.hardDeleteUser);
 
-// Endpoints para gestionar las notificaciones de los socios
-router.get('/:id/notifications', userController.getUserNotifications);
-router.patch('/:id/notifications/:notifId/read', userController.markNotificationRead);
+// --- Datos propios del usuario (o de cualquiera, si es Administrador) ---
+router.patch('/:id/password', checkOwnership, userController.changeUserPassword);
 
-// Endpoint para el historial de pagos del socio
-router.get('/:id/payments', userController.getUserPayments);
+// Estado actual de la membresia y dias restantes
+router.get('/:id/subscription', checkOwnership, userController.getUserSubscription);
+
+// Notificaciones del socio
+router.get('/:id/notifications', checkOwnership, userController.getUserNotifications);
+router.patch('/:id/notifications/:notifId/read', checkOwnership, userController.markNotificationRead);
+
+// Historial de pagos del socio
+router.get('/:id/payments', checkOwnership, userController.getUserPayments);
 
 module.exports = router;

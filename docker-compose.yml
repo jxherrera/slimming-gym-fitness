@@ -1,0 +1,147 @@
+# Slimming Gym Fitness — despliegue completo sobre una VM Linux
+#
+#   proxy (Nginx)  ->  sirve el frontend compilado, balancea /api entre las
+#                      replicas de la API y sirve /uploads desde el volumen
+#   api            ->  escalable:  docker compose up -d --scale api=3
+#   worker         ->  misma imagen, unica instancia con las tareas programadas
+#   db             ->  SQL Server 2022
+#
+# Los datos persisten en dos volumenes con nombre: sqldata (base de datos) y
+# uploads (comprobantes de pago). Sin ellos, `docker compose down` los borraria.
+#
+# Uso:
+#   cp .env.example .env      y completar los valores
+#   docker compose up -d --build
+#   docker compose up -d --scale api=3
+
+services:
+  # ---------------------------------------------------------------------------
+  # Base de datos. La configuracion fina de este servicio la mantiene Ariel.
+  # ---------------------------------------------------------------------------
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: slimming-db
+    # La imagen oficial no tiene build para arm64. En un Mac con Apple Silicon
+    # descomenta la linea siguiente para ejecutarla emulada (necesita ~2 GB de
+    # RAM y es notablemente mas lenta). En la VM x86_64 corre nativo.
+    # platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?define MSSQL_SA_PASSWORD en el .env}
+      MSSQL_PID: Express
+    volumes:
+      # Persistencia de la base. Es el montaje mas importante del archivo.
+      - sqldata:/var/opt/mssql
+      # Respaldos en el disco del host: sobreviven incluso a `down -v`
+      - ./backups:/backups
+    # El puerto NO se publica hacia la red: los demas contenedores llegan por la
+    # red interna usando el nombre 'db'. Para conectarte con una herramienta
+    # grafica, usa un tunel SSH y descomenta la publicacion en localhost.
+    # ports:
+    #   - "127.0.0.1:1433:1433"
+    healthcheck:
+      # Se consulta con sqlcmd y no con una simple prueba de puerto: SQL Server
+      # acepta conexiones TCP bastante antes de estar listo para responder
+      # consultas, y la API arrancaria contra una base que aun no atiende.
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    networks: [interna]
+
+  # ---------------------------------------------------------------------------
+  # API. Escalable horizontalmente: no guarda estado en memoria y la
+  # autenticacion es por token JWT, por lo que cualquier replica puede atender
+  # cualquier peticion sin sesiones pegajosas ni almacen de sesiones compartido.
+  # ---------------------------------------------------------------------------
+  api: &api-base
+    build:
+      context: ./backend-gimnasio
+    image: slimming-api:latest
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      DB_SERVER: db
+      DB_PORT: 1433
+      DB_NAME: ${DB_NAME:-slimming_gym_db}
+      DB_USER: ${DB_USER:-sa}
+      DB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en el .env}
+      JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en el .env}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      SMTP_EMAIL: ${SMTP_EMAIL:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      UPLOADS_DIR: /app/uploads
+      # Las replicas NO ejecutan tareas programadas: si lo hicieran, cada socio
+      # recibiria un aviso de vencimiento por replica.
+      ENABLE_CRON: "false"
+    volumes:
+      # El MISMO volumen para todas las replicas. Si cada una tuviera su propio
+      # almacenamiento, un comprobante subido a la replica 1 no existiria para la
+      # replica 2 y el administrador veria imagenes roto de forma intermitente.
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    # Sin puertos publicados: solo el proxy alcanza la API.
+    restart: unless-stopped
+    networks: [interna]
+
+  # ---------------------------------------------------------------------------
+  # Worker: la misma imagen que la API, unica instancia, y el unico proceso con
+  # las tareas programadas activas.
+  # ---------------------------------------------------------------------------
+  worker:
+    <<: *api-base
+    container_name: slimming-worker
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      DB_SERVER: db
+      DB_PORT: 1433
+      DB_NAME: ${DB_NAME:-slimming_gym_db}
+      DB_USER: ${DB_USER:-sa}
+      DB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en el .env}
+      JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en el .env}
+      SMTP_EMAIL: ${SMTP_EMAIL:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      UPLOADS_DIR: /app/uploads
+      ENABLE_CRON: "true"
+    # No debe escalarse nunca por encima de una replica.
+    deploy:
+      replicas: 1
+
+  # ---------------------------------------------------------------------------
+  # Proxy inverso y balanceador. Construido desde ./frontend-gimnasio con un
+  # Dockerfile multietapa (responsabilidad de Kevin) que compila el frontend y
+  # lo sirve con Nginx.
+  # ---------------------------------------------------------------------------
+  proxy:
+    build:
+      context: ./frontend-gimnasio
+    image: slimming-web:latest
+    container_name: slimming-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Solo lectura: el proxy sirve los comprobantes pero no debe modificarlos.
+      - uploads:/app/uploads:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks: [interna]
+
+volumes:
+  # Datos de SQL Server. Perderlo equivale a perder el sistema completo.
+  sqldata:
+  # Comprobantes de pago subidos por los socios. Compartido entre las replicas
+  # de la API (lectura y escritura) y el proxy (solo lectura).
+  uploads:
+
+networks:
+  interna:
+    driver: bridge

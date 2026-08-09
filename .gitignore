@@ -22,6 +22,9 @@ google-key.json
 dist/
 build/
 
+# Archivos subidos por los usuarios (comprobantes de pago con datos personales)
+uploads/
+
 # Restos de proveedores cloud (el proyecto corre en VM propia)
 cloud-sql-proxy
 .firebase/

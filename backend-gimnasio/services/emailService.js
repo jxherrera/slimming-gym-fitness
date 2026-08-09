@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
+const { rutaAbsolutaDesdeUrl } = require('./storageService');
 const { poolPromise, sql } = require('../config/db');
 require('dotenv').config();
 const { getWelcomeTemplate, getPaymentApprovedTemplate, getClassJoinedTemplate } = require('./emailTemplates');
@@ -106,10 +108,20 @@ class EmailService {
         
         const attachments = [];
         if (receiptImageUrl) {
-            attachments.push({
-                filename: 'Comprobante_de_Pago.jpg',
-                path: receiptImageUrl
-            });
+            // Los comprobantes viven en el disco de la VM: se adjunta el archivo
+            // por su ruta absoluta. Los historicos guardados en Google Cloud
+            // Storage conservan una URL absoluta, que nodemailer descarga con
+            // 'href'. Si el archivo local ya no existe, se omite el adjunto en
+            // lugar de hacer fallar el correo de aprobacion.
+            const rutaLocal = rutaAbsolutaDesdeUrl(receiptImageUrl);
+
+            if (rutaLocal) {
+                attachments.push({ filename: path.basename(rutaLocal), path: rutaLocal });
+            } else if (/^https?:\/\//i.test(receiptImageUrl)) {
+                attachments.push({ filename: 'Comprobante_de_Pago.jpg', href: receiptImageUrl });
+            } else {
+                console.warn(`[Email] Comprobante no encontrado, se envía el correo sin adjunto: ${receiptImageUrl}`);
+            }
         }
         
         return this.sendEmailAndLog(userId, email, subject, html, 'Pago', attachments);

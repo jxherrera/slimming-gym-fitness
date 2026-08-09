@@ -17,6 +17,7 @@ const workoutRoutes = require('./routes/workoutRoutes');
 const emailRoutes = require('./routes/emailRoutes');
 const { startCronJobs } = require('./cron/expirationChecker');
 const errorHandler = require('./middleware/errorHandler');
+const { UPLOADS_DIR } = require('./services/storageService');
 
 const app = express();
 
@@ -51,6 +52,15 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Archivos subidos (comprobantes de pago) almacenados en el disco de la VM.
+// En produccion Nginx intercepta /uploads antes de llegar a Node; esta linea
+// cubre el entorno de desarrollo y sirve de respaldo.
+app.use('/uploads', express.static(UPLOADS_DIR, {
+  index: false,          // sin listado de directorios
+  dotfiles: 'deny',
+  maxAge: '7d'
+}));
 
 app.use('/api/routines', routineRoutes);
 app.use('/api/auth', authRoutes);

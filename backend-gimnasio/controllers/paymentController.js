@@ -1,5 +1,5 @@
 const { poolPromise, sql } = require('../config/db');
-const { bucket, isStorageConfigured } = require('../config/gcs');
+const { guardarComprobante, eliminarArchivo, isStorageConfigured } = require('../services/storageService');
 const emailService = require('../services/emailService');
 
 exports.getPendingPayments = async (req, res) => {
@@ -164,72 +164,67 @@ exports.uploadPayment = async (req, res) => {
     if (!isStorageConfigured()) {
       return res.status(503).json({
         success: false,
-        message: 'El almacenamiento de comprobantes no está configurado en el servidor.'
+        message: 'El almacenamiento de comprobantes no está disponible en el servidor.'
       });
     }
 
-    let safeOriginalName = req.file.originalname || 'comprobante.jpg';
-    safeOriginalName = safeOriginalName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    if (safeOriginalName.startsWith('.')) {
-      safeOriginalName = 'comprobante' + safeOriginalName;
+    // El archivo se guarda en el disco de la VM. storageService valida el tipo
+    // MIME y asigna un nombre aleatorio con la extension derivada del tipo.
+    let comprobante;
+    try {
+      comprobante = await guardarComprobante(req.file);
+    } catch (err) {
+      if (err.statusCode === 415) {
+        return res.status(415).json({ success: false, message: err.message });
+      }
+      throw err;
     }
 
-    const blob = bucket.file(`receipts/${Date.now()}_${safeOriginalName}`);
-    const blobStream = blob.createWriteStream({
-      resumable: false,
-      validation: false,
-      contentType: req.file.mimetype || 'image/jpeg',
-    });
+    const receiptImageUrl = comprobante.url;
 
-    blobStream.on('error', (err) => {
-      console.error('Error al subir a GCS:', err);
-      return res.status(500).json({ success: false, message: 'Error subiendo el archivo a la nube.' });
-    });
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
 
-    blobStream.on('finish', async () => {
-      const receiptImageUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+    try {
+      const subResult = await transaction.request()
+        .input('UserID', sql.Int, userId)
+        .input('PlanID', sql.Int, planId)
+        .query(`
+          INSERT INTO Subscriptions (UserID, PlanID, StartDate, EndDate, PaymentStatus)
+          OUTPUT INSERTED.SubscriptionID
+          VALUES (@UserID, @PlanID, CAST(GETDATE() AS DATE), CAST(GETDATE() AS DATE), 'U')
+        `);
 
-      const transaction = new sql.Transaction(pool);
-      await transaction.begin();
+      const subscriptionId = subResult.recordset[0].SubscriptionID;
 
-      try {
-        const subResult = await transaction.request()
-          .input('UserID', sql.Int, userId)
-          .input('PlanID', sql.Int, planId)
-          .query(`
-            INSERT INTO Subscriptions (UserID, PlanID, StartDate, EndDate, PaymentStatus)
-            OUTPUT INSERTED.SubscriptionID
-            VALUES (@UserID, @PlanID, CAST(GETDATE() AS DATE), CAST(GETDATE() AS DATE), 'U')
-          `);
+      await transaction.request()
+        .input('SubscriptionID', sql.Int, subscriptionId)
+        .input('AmountPaid', sql.Decimal(10, 2), amountPaid)
+        .input('PaymentMethod', sql.VarChar(50), paymentMethod)
+        .input('ReferenceNumber', sql.VarChar(100), referenceNumber)
+        .input('ReceiptImageUrl', sql.VarChar(500), receiptImageUrl)
+        .query(`
+          INSERT INTO Payments (SubscriptionID, AmountPaid, PaymentDate, PaymentMethod, ReferenceNumber, ReceiptImageUrl, Status)
+          VALUES (@SubscriptionID, @AmountPaid, GETDATE(), @PaymentMethod, @ReferenceNumber, @ReceiptImageUrl, 'P')
+        `);
 
-        const subscriptionId = subResult.recordset[0].SubscriptionID;
+      await transaction.commit();
 
-        await transaction.request()
-          .input('SubscriptionID', sql.Int, subscriptionId)
-          .input('AmountPaid', sql.Decimal(10, 2), amountPaid)
-          .input('PaymentMethod', sql.VarChar(50), paymentMethod)
-          .input('ReferenceNumber', sql.VarChar(100), referenceNumber)
-          .input('ReceiptImageUrl', sql.VarChar(500), receiptImageUrl)
-          .query(`
-            INSERT INTO Payments (SubscriptionID, AmountPaid, PaymentDate, PaymentMethod, ReferenceNumber, ReceiptImageUrl, Status)
-            VALUES (@SubscriptionID, @AmountPaid, GETDATE(), @PaymentMethod, @ReferenceNumber, @ReceiptImageUrl, 'P')
-          `);
+      res.status(201).json({
+        success: true,
+        message: 'Comprobante de pago reportado con éxito. Queda en estado pendiente de aprobación.',
+        receiptImageUrl
+      });
+    } catch (err) {
+      await transaction.rollback();
 
-        await transaction.commit();
+      // El registro en base de datos fallo: se descarta el archivo ya escrito
+      // para no dejar comprobantes huerfanos ocupando disco.
+      await eliminarArchivo(comprobante.absolutePath);
 
-        res.status(201).json({
-          success: true,
-          message: 'Comprobante de pago reportado con éxito. Queda en estado pendiente de aprobación.',
-          receiptImageUrl
-        });
-      } catch (err) {
-        await transaction.rollback();
-        console.error('Error guardando en BD tras subir a GCS:', err);
-        return res.status(500).json({ success: false, message: 'Error guardando en la base de datos.' });
-      }
-    });
-
-    blobStream.end(req.file.buffer);
+      console.error('Error guardando el pago en la base de datos:', err);
+      return res.status(500).json({ success: false, message: 'Error guardando en la base de datos.' });
+    }
 
   } catch (error) {
     console.error('Error al registrar el pago del socio:', error);

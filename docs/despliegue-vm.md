@@ -97,6 +97,20 @@ Edita el `.env` con los valores reales. Tres puntos obligatorios:
   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
   ```
 - `ALLOWED_ORIGINS=https://tu-dominio.com` — el dominio real de la aplicación.
+- `UPLOADS_DIR=/var/lib/slimming/uploads` — directorio de comprobantes de pago,
+  ubicado deliberadamente fuera del árbol del repositorio para que un `git pull`
+  o un redespliegue no lo afecte.
+
+Crea el directorio de subidas con permisos restringidos:
+
+```bash
+sudo mkdir -p /var/lib/slimming/uploads
+sudo chown -R $USER:www-data /var/lib/slimming/uploads
+sudo chmod 750 /var/lib/slimming/uploads
+```
+
+El grupo `www-data` permite que Nginx lea los archivos; la aplicación los escribe
+como propietaria.
 
 Protege el archivo para que solo el usuario propietario pueda leerlo:
 
@@ -192,6 +206,17 @@ server {
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+    }
+
+    # --- Comprobantes de pago subidos por los socios ---
+    # Los sirve Nginx directamente desde el disco, sin pasar por Node.
+    location /uploads/ {
+        alias /var/lib/slimming/uploads/;
+        autoindex off;                 # nunca listar el contenido del directorio
+        add_header X-Content-Type-Options nosniff;
+        # Los nombres son aleatorios de 32 caracteres hexadecimales: no se pueden
+        # enumerar ni adivinar a partir de la fecha o del nombre original.
+        expires 30d;
     }
 
     # --- API ---

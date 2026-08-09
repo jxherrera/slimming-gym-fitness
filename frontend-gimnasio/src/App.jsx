@@ -22,6 +22,9 @@ const AdminHorarios = lazy(() => import('./pages/admin/horarios/AdminHorarios'))
 const AdminPagosVerificacion = lazy(() => import('./pages/admin/pagos/AdminPagosVerificacion'));
 const AdminCorreos = lazy(() => import('./pages/admin/correos/AdminCorreos'));
 const AdminAccesos = lazy(() => import('./pages/admin/accesos/AdminAccesos'));
+const TestDesignSystem = lazy(() => import('./pages/test/TestDesignSystem'));
+const ForgotPassword = lazy(() => import('./pages/login/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/login/ResetPassword'));
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isAuthenticated, loading } = useAuth();
@@ -61,6 +64,11 @@ function MainLayout() {
             <Route path="/sobre-nosotros" element={<SobreNosotros />} />
             <Route path="/planes" element={<Planes />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            {import.meta.env.DEV && (
+              <Route path="/dev/design-system" element={<TestDesignSystem />} />
+            )}
             
             {/* Rutas Protegidas de Administración / Socio */}
             <Route element={<AdminLayout />}>

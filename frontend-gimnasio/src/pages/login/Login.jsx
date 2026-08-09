@@ -122,6 +122,19 @@ const Login = () => {
           <input type="password" name="password" value={formData.password} onChange={handleChange} required />
         </div>
 
+        {isLogin && (
+          <div style={{ textAlign: 'right', marginTop: '-0.5rem' }}>
+            <button 
+              type="button" 
+              className="toggle-link" 
+              style={{ fontSize: '0.85rem', textDecoration: 'none' }}
+              onClick={() => navigate('/forgot-password')}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+        )}
+
         <button type="submit" className="login-btn" disabled={isSubmitting}>
           {isSubmitting ? 'Procesando...' : (isLogin ? 'Entrar' : 'Crear cuenta')}
         </button>

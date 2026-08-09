@@ -1,6 +1,32 @@
+# Dependencias
 node_modules/
+
+# Variables de entorno (NUNCA versionar: contienen credenciales)
 .env
-cloud-sql-proxy
-.DS_Store
+.env.local
+.env.*.local
+!.env.example
+
+# Credenciales y llaves
 google-key.json
 *.key
+*.pem
+
+# Respaldos de base de datos (contienen datos personales de socios)
+*.bak
+*.bacpac
+*.sql.gz
+*.dump
+
+# Artefactos de compilacion
+dist/
+build/
+
+# Restos de proveedores cloud (el proyecto corre en VM propia)
+cloud-sql-proxy
+.firebase/
+
+# Sistema operativo y logs
+.DS_Store
+*.log
+npm-debug.log*

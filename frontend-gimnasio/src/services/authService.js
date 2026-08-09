@@ -1,11 +1,12 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/auth` : 'http://localhost:5001/api/auth';
+import api from './api';
 
 const TOKEN_KEY = 'jwt_token';
 const USER_KEY = 'user_data';
 
 // Decodificar payload de JWT sin librerías externas
+// ATENCIÓN: Esta función decodifica el token sin verificar la firma.
+// NO representa una validación de seguridad (eso lo hace el servidor),
+// se incluye únicamente por comodidad en la interfaz del cliente.
 export const parseJwt = (token) => {
   if (!token) return null;
   try {
@@ -19,8 +20,8 @@ export const parseJwt = (token) => {
         .join('')
     );
     return JSON.parse(jsonPayload);
-  } catch (e) {
-    console.error('Error al decodificar JWT token:', e);
+  } catch (error) {
+    console.error('Error al decodificar JWT token:', error);
     return null;
   }
 };
@@ -33,19 +34,19 @@ export const isTokenExpired = (token) => {
   return decoded.exp < currentTime;
 };
 
-// Configurar encabezado de autorización Axios de manera global
+// Configurar encabezado de autorización de manera global
 export const setAuthTokenHeader = (token) => {
   if (token) {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   } else {
-    delete axios.defaults.headers.common['Authorization'];
+    delete api.defaults.headers.common['Authorization'];
   }
 };
 
 export const authService = {
   // Iniciar Sesión
   login: async (email, password) => {
-    const response = await axios.post(`${API_URL}/login`, {
+    const response = await api.post('/auth/login', {
       Email: email,
       Password: password
     });
@@ -60,8 +61,10 @@ export const authService = {
       if (role === '3') role = 'admin';
       user.role = role;
 
-      // Si el backend entrega un token real, usaremos ese token. De lo contrario, estructuramos un JWT standard válido
-      const token = data.token || authService.generateClientJwt(user);
+      if (!data.token) {
+        throw new Error('El servidor no devolvió un token de sesión válido.');
+      }
+      const token = data.token;
       
       authService.saveSession(token, user);
       setAuthTokenHeader(token);
@@ -72,7 +75,7 @@ export const authService = {
 
   // Registrar Usuario
   register: async (formData) => {
-    const response = await axios.post(`${API_URL}/register`, {
+    const response = await api.post('/auth/register', {
       ...formData,
       Email: formData.email,
       Password: formData.password
@@ -105,7 +108,7 @@ export const authService = {
     if (!userStr) return null;
     try {
       return JSON.parse(userStr);
-    } catch (e) {
+    } catch {
       return null;
     }
   },
@@ -116,20 +119,5 @@ export const authService = {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem('user');
     setAuthTokenHeader(null);
-  },
-
-  // Utilidad de simulación de JWT estándar en caso de que el backend expida datos sin firma en dev
-  generateClientJwt: (user) => {
-    const header = window.btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-    const payload = window.btoa(JSON.stringify({
-      sub: user.userId || user.id,
-      email: user.email,
-      role: user.role,
-      name: user.firstName,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 horas
-    }));
-    const signature = window.btoa('slimming_gym_secret_signature');
-    return `${header}.${payload}.${signature}`;
   }
 };

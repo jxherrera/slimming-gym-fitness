@@ -13,7 +13,7 @@ const SobreNosotros = lazy(() => import('./pages/sobrenossotros/SobreNosotros'))
 const Planes = lazy(() => import('./pages/planes/Planes'));
 const Login = lazy(() => import('./pages/login/Login'));
 const Admin = lazy(() => import('./pages/admin/dashboard/AdminDashboard'));
-const Coach = lazy(() => import('./pages/admin/CoachPanel'));
+const Coach = lazy(() => import('./pages/admin/coaches/CoachPanel'));
 const RoutineManager = lazy(() => import('./pages/admin/coaches/RoutineManager'));
 const Member = lazy(() => import('./pages/admin/Member'));
 const AdminPlanes = lazy(() => import('./pages/admin/planes/AdminPlanes'));
@@ -74,7 +74,7 @@ function MainLayout() {
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
               <Route path="/coach" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><Coach /></ProtectedRoute>} />
-              <Route path="/coach/rutinas" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><RoutineManager coachId={2} /></ProtectedRoute>} />
+              <Route path="/coach/rutinas" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><RoutineManager /></ProtectedRoute>} />
               <Route path="/member" element={<ProtectedRoute allowedRoles={['admin', 'coach', 'member']}><Member /></ProtectedRoute>} />
               <Route path="/admin/planes" element={<ProtectedRoute allowedRoles={['admin']}><AdminPlanes /></ProtectedRoute>} />
               <Route path="/admin/pagos" element={<ProtectedRoute allowedRoles={['admin']}><AdminPagos /></ProtectedRoute>} />

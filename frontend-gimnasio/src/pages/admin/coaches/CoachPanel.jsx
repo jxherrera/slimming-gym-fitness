@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import api from '../../services/api';
-import { useAuth } from '../../hooks/useAuth';
-import './shared/admin-core.css';
-import { useTheme } from '../../context/ThemeContext';
+import api from '../../../services/api';
+import { useAuth } from '../../../hooks/useAuth';
+import '../shared/admin-core.css';
+import { useTheme } from '../../../context/ThemeContext';
 import { FaUser, FaDumbbell, FaTrash, FaPlus, FaTimes } from 'react-icons/fa';
 
 const CoachPanel = () => {
@@ -29,7 +29,7 @@ const CoachPanel = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { user } = useAuth();
-    const coachId = user?.id || 2; 
+    const coachId = user?.userId; 
 
     const fetchClients = async () => {
         try {

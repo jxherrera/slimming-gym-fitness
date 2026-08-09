@@ -229,3 +229,138 @@ exports.login = async (req, res) => {
         });
     }
 };
+
+const crypto = require('crypto');
+
+// Vigencia del enlace de recuperacion. Corto a proposito: reduce la ventana en
+// que un token filtrado sigue siendo util.
+const MINUTOS_VIGENCIA_TOKEN = 30;
+
+/**
+ * POST /api/auth/forgot-password
+ *
+ * Responde SIEMPRE lo mismo, exista o no la cuenta. Distinguir los casos
+ * permitiria a un atacante averiguar que correos estan registrados
+ * (enumeracion de usuarios).
+ */
+exports.forgotPassword = async (req, res) => {
+    const { Email } = req.body;
+    const respuestaNeutral = {
+        success: true,
+        message: 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.'
+    };
+
+    try {
+        if (!Email || !String(Email).trim()) {
+            return res.status(400).json({ success: false, message: 'El correo es obligatorio.' });
+        }
+
+        const pool = await poolPromise;
+        const resultado = await pool.request()
+            .input('Email', sql.VarChar(255), String(Email).trim())
+            .query("SELECT UserID, FirstName FROM Users WHERE Email = @Email AND Status = 'A'");
+
+        // Si no existe, se corta aqui pero se devuelve la misma respuesta.
+        if (resultado.recordset.length === 0) {
+            return res.json(respuestaNeutral);
+        }
+
+        const usuario = resultado.recordset[0];
+
+        // El token viaja por correo; en la base solo se guarda su hash.
+        const token = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+        // Se invalidan los enlaces anteriores del usuario: solo uno vigente a la vez.
+        await pool.request()
+            .input('UserID', sql.Int, usuario.UserID)
+            .query('UPDATE PasswordResetTokens SET UsedAt = GETDATE() WHERE UserID = @UserID AND UsedAt IS NULL');
+
+        await pool.request()
+            .input('UserID', sql.Int, usuario.UserID)
+            .input('TokenHash', sql.VarChar(255), tokenHash)
+            .input('Minutos', sql.Int, MINUTOS_VIGENCIA_TOKEN)
+            .query(`INSERT INTO PasswordResetTokens (UserID, TokenHash, ExpiresAt)
+                    VALUES (@UserID, @TokenHash, DATEADD(minute, @Minutos, GETDATE()))`);
+
+        const base = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const enlace = `${base.replace(/\/$/, '')}/reset-password?token=${token}`;
+
+        emailService.sendEmail(
+            String(Email).trim(),
+            'Restablecer tu contraseña - Slimming Gym',
+            `<p>Hola ${usuario.FirstName || ''},</p>
+             <p>Recibimos una solicitud para restablecer tu contraseña. El enlace vence en ${MINUTOS_VIGENCIA_TOKEN} minutos:</p>
+             <p><a href="${enlace}">Restablecer mi contraseña</a></p>
+             <p>Si no fuiste tú, ignora este mensaje: tu contraseña no cambiará.</p>`
+        ).catch(err => console.error('Error enviando el correo de recuperación:', err));
+
+        return res.json(respuestaNeutral);
+    } catch (error) {
+        console.error('Error en forgotPassword:', error);
+        // Incluso ante un fallo interno se mantiene la respuesta neutral.
+        return res.json(respuestaNeutral);
+    }
+};
+
+/**
+ * POST /api/auth/reset-password
+ * Valida el token, aplica la politica de contrasenas y marca el token como usado.
+ */
+exports.resetPassword = async (req, res) => {
+    const { Token, Password } = req.body;
+
+    try {
+        if (!Token || !Password) {
+            return res.status(400).json({ success: false, message: 'Token y contraseña son obligatorios.' });
+        }
+
+        const errorPassword = validarPassword(Password);
+        if (errorPassword) {
+            return res.status(400).json({ success: false, message: errorPassword });
+        }
+
+        const tokenHash = crypto.createHash('sha256').update(String(Token)).digest('hex');
+        const pool = await poolPromise;
+
+        const resultado = await pool.request()
+            .input('TokenHash', sql.VarChar(255), tokenHash)
+            .query(`SELECT TokenID, UserID FROM PasswordResetTokens
+                    WHERE TokenHash = @TokenHash AND UsedAt IS NULL AND ExpiresAt > GETDATE()`);
+
+        if (resultado.recordset.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'El enlace no es válido o ya expiró. Solicita uno nuevo.'
+            });
+        }
+
+        const { TokenID, UserID } = resultado.recordset[0];
+        const passwordHash = await bcrypt.hash(Password, await bcrypt.genSalt(10));
+
+        // Cambio de contrasena y consumo del token en una sola transaccion: no
+        // puede quedar la contrasena cambiada con el token aun utilizable.
+        const transaccion = new sql.Transaction(pool);
+        await transaccion.begin();
+        try {
+            await transaccion.request()
+                .input('UserID', sql.Int, UserID)
+                .input('PasswordHash', sql.VarChar(255), passwordHash)
+                .query('UPDATE Users SET PasswordHash = @PasswordHash WHERE UserID = @UserID');
+
+            await transaccion.request()
+                .input('TokenID', sql.Int, TokenID)
+                .query('UPDATE PasswordResetTokens SET UsedAt = GETDATE() WHERE TokenID = @TokenID');
+
+            await transaccion.commit();
+        } catch (err) {
+            await transaccion.rollback();
+            throw err;
+        }
+
+        return res.json({ success: true, message: 'Contraseña restablecida correctamente.' });
+    } catch (error) {
+        console.error('Error en resetPassword:', error);
+        return res.status(500).json({ success: false, message: 'Error al restablecer la contraseña.' });
+    }
+};

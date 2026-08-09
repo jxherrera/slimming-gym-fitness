@@ -29,6 +29,13 @@ services:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?define MSSQL_SA_PASSWORD en el .env}
       MSSQL_PID: Express
+      # Zona horaria: los contenedores corren en UTC por defecto y NO heredan la
+      # del host. Sin esto, GETDATE() devuelve hora UTC y la bitacora de ingresos
+      # del dia aparece vacia a partir de las 19:00 hora de Ecuador.
+      TZ: ${TZ:-America/Guayaquil}
+      # Techo de memoria: sin limite, SQL Server reserva toda la que ve y deja
+      # sin margen a la API y a la compilacion del frontend.
+      MSSQL_MEMORY_LIMIT_MB: ${MSSQL_MEMORY_LIMIT_MB:-3072}
     volumes:
       # Persistencia de la base. Es el montaje mas importante del archivo.
       - sqldata:/var/opt/mssql
@@ -65,7 +72,7 @@ services:
       PORT: 5001
       DB_SERVER: db
       DB_PORT: 1433
-      DB_NAME: ${DB_NAME:-slimming_gym_db}
+      DB_NAME: ${DB_NAME:-GymDatabase}
       DB_USER: ${DB_USER:-sa}
       DB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en el .env}
       JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en el .env}
@@ -75,6 +82,7 @@ services:
       SMTP_EMAIL: ${SMTP_EMAIL:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       UPLOADS_DIR: /app/uploads
+      TZ: ${TZ:-America/Guayaquil}
       # Las replicas NO ejecutan tareas programadas: si lo hicieran, cada socio
       # recibiria un aviso de vencimiento por replica.
       ENABLE_CRON: "false"
@@ -102,13 +110,14 @@ services:
       PORT: 5001
       DB_SERVER: db
       DB_PORT: 1433
-      DB_NAME: ${DB_NAME:-slimming_gym_db}
+      DB_NAME: ${DB_NAME:-GymDatabase}
       DB_USER: ${DB_USER:-sa}
       DB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en el .env}
       JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en el .env}
       SMTP_EMAIL: ${SMTP_EMAIL:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       UPLOADS_DIR: /app/uploads
+      TZ: ${TZ:-America/Guayaquil}
       ENABLE_CRON: "true"
     # No debe escalarse nunca por encima de una replica.
     deploy:

@@ -44,14 +44,19 @@ exports.getPendingPayments = async (req, res) => {
 
 exports.approvePayment = async (req, res) => {
   const paymentId = Number(req.params.id);
-  const { userId } = req.body;
+
+  // El administrador que aprueba se toma del token, NUNCA del cuerpo de la
+  // peticion: un dato de auditoria que envia el cliente puede falsificarse, y
+  // ademas el frontend enviaba un userId fijo, con lo que todas las
+  // aprobaciones quedaban registradas a nombre del mismo usuario.
+  const userId = req.user?.userId;
 
   if (!paymentId) {
     return res.status(400).json({ success: false, message: 'ID de pago no válido.' });
   }
 
   if (!userId) {
-    return res.status(400).json({ success: false, message: 'El ID del administrador (userId) es requerido para auditoría.' });
+    return res.status(401).json({ success: false, message: 'Sesión no válida para registrar la auditoría.' });
   }
 
   try {
@@ -110,13 +115,16 @@ exports.approvePayment = async (req, res) => {
 
 exports.rejectPayment = async (req, res) => {
   const paymentId = Number(req.params.id);
-  const { userId } = req.body;
+
+  // Igual que en la aprobacion: el responsable se toma del token, no del body.
+  const userId = req.user?.userId;
+
   if (!paymentId) {
     return res.status(400).json({ success: false, message: 'ID de pago no válido.' });
   }
 
   if (!userId) {
-    return res.status(400).json({ success: false, message: 'El ID del administrador (userId) es requerido para auditoría.' });
+    return res.status(401).json({ success: false, message: 'Sesión no válida para registrar la auditoría.' });
   }
 
   try {

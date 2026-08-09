@@ -15,7 +15,7 @@ const startCronJobs = () => {
                 SELECT s.SubscriptionID, s.UserID, s.EndDate, u.FirstName, u.LastName, u.Email
                 FROM Subscriptions s
                 JOIN Users u ON s.UserID = u.UserID
-                WHERE s.PaymentStatus = 'Paid'
+                WHERE s.PaymentStatus = 'P'
                   AND CAST(s.EndDate AS DATE) = CAST(DATEADD(day, 3, GETDATE()) AS DATE)
             `);
 

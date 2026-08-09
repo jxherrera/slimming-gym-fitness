@@ -113,6 +113,14 @@ pm2 save
 pm2 startup          # ejecuta el comando que imprime, con sudo
 ```
 
+> **Orden de arranque:** al reiniciar la VM, los servicios se inician en paralelo y
+> SQL Server tarda más en estar disponible que Node. La API tolera esa situación:
+> reintenta la conexión 5 veces con 5 segundos de espera (unos 25 segundos de
+> margen) y **no termina el proceso si no lo logra**, para no provocar un ciclo de
+> reinicios en PM2. Si agota los reintentos, la API sigue respondiendo y devuelve
+> error 500 solo en las operaciones que necesitan la base; basta `pm2 restart`
+> cuando la base esté disponible.
+
 Comandos de operación habituales:
 
 ```bash
@@ -264,6 +272,7 @@ El frontend no requiere reinicio: Nginx sirve los archivos nuevos de inmediato.
 | `404` al recargar una ruta interna | Falta `try_files` en Nginx | `sudo nginx -T \| grep try_files` |
 | Peticiones bloqueadas por CORS | `ALLOWED_ORIGINS` no incluye el dominio | `grep ALLOWED_ORIGINS .env` |
 | `ETIMEOUT` al conectar a la base | SQL Server detenido o `DB_SERVER` incorrecto | `npm run diagnostico:db` |
+| `500` en operaciones con datos, pero la API responde | La conexión a la base agotó sus 5 reintentos | `pm2 logs slimming-api` y luego `pm2 restart slimming-api` |
 | Los correos no salen | Credenciales SMTP inválidas | `npm run probar:correo -- tu@correo.com` |
 
 ## 12. Respaldos

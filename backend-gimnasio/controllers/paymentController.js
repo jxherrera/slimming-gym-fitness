@@ -238,8 +238,23 @@ exports.uploadPayment = async (req, res) => {
 };
 
 exports.webhookPayment = async (req, res) => {
+  // Este endpoint es publico porque lo invoca la pasarela externa, que no puede
+  // presentar un JWT. Se autentica con un secreto compartido: sin esta
+  // verificacion, cualquiera podria activar suscripciones sin haber pagado.
+  const secretoEsperado = process.env.WEBHOOK_SECRET;
+
+  if (!secretoEsperado) {
+    console.error('[Webhook] WEBHOOK_SECRET no está definida: se rechaza la petición.');
+    return res.status(503).json({ success: false, message: 'Webhook no configurado en el servidor.' });
+  }
+
+  if (req.headers['x-webhook-secret'] !== secretoEsperado) {
+    console.warn('[Webhook] Petición rechazada: secreto inválido o ausente.');
+    return res.status(401).json({ success: false, message: 'Firma de webhook inválida.' });
+  }
+
   const { ReferenceNumber, Status } = req.body;
-  
+
   if (!ReferenceNumber || Status !== 'Approved') {
     return res.status(400).json({ success: false, message: 'Payload inválido o pago no aprobado.' });
   }

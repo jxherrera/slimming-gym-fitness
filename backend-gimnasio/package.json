@@ -1,12 +1,17 @@
 {
   "name": "backend-gimnasio",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "API REST del sistema de gestion Slimming Gym Fitness",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "seed": "node seeders/seedRunner.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test \"utils/*.test.js\"",
+    "diagnostico:db": "node scripts/diagnostico-db.js",
+    "inspeccionar:esquema": "node scripts/inspeccionar-esquema.js",
+    "probar:triggers": "node scripts/prueba-integridad-triggers.js",
+    "probar:correo": "node scripts/probar-correo.js",
+    "verificar:historial-pagos": "node scripts/verificar-historial-pagos.js"
   },
   "keywords": [],
   "author": "",

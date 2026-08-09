@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   FaBars, FaTimes, FaHome, FaUser, FaDumbbell, 
   FaCalendarAlt, FaMoneyBillWave, FaCog, FaClipboardList,
-  FaChevronDown, FaChevronUp, FaEnvelope
+  FaChevronDown, FaChevronUp, FaEnvelope, FaDoorOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import './AdminSidebar.css';
@@ -78,6 +78,12 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         category: 'Comunicaciones',
         items: [
           { path: '/admin/correos', name: 'Correos', icon: <FaEnvelope /> }
+        ]
+      },
+      {
+        category: 'Recepción',
+        items: [
+          { path: '/admin/accesos', name: 'Control de Ingreso', icon: <FaDoorOpen /> }
         ]
       },
       {

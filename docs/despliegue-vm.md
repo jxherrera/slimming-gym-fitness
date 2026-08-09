@@ -350,3 +350,86 @@ docker compose logs --tail=50 worker  # ultimas lineas del worker
 docker compose exec api sh            # shell dentro de una replica
 docker stats                          # consumo de CPU y memoria
 ```
+
+---
+
+## 13. Especificación de la máquina virtual
+
+| Recurso | Valor | Motivo |
+|---|---|---|
+| Tipo | `e2-standard-2` (2 vCPU, 8 GB) | SQL Server exige 2 GB solo para él; la compilación del frontend pide picos de 1–2 GB |
+| Disco | 30–50 GB `pd-balanced` | Las imágenes y la caché de construcción ocupan mucho más que los datos |
+| Arquitectura | **x86_64 obligatorio** | La imagen de SQL Server no tiene compilación para arm64 |
+| Sistema | Debian 13 o Ubuntu 22.04+ | Cualquiera de los dos; cambia la URL del repositorio de Docker |
+| Swap | 2 GB | Las VM de GCP no traen; red de seguridad ante picos de memoria |
+| Puertos publicados | 80 y 443 únicamente | 1433 y 5001 nunca salen de la red interna de Docker |
+
+## 14. Tres fallos reales del primer despliegue
+
+Encontrados al montar el sistema por primera vez. Se documentan porque cada uno
+enmascaraba al siguiente y el mensaje de error no apuntaba a la causa.
+
+### 14.1 Disco lleno disfrazado de error de permisos
+
+**Síntoma:** el contenedor de base de datos reinicia en bucle con
+`The system directory [/.system] could not be created ... Permission denied`.
+
+**Causa real:** el disco de arranque al 100 %. Con el sistema de archivos lleno,
+las escrituras fallan con errores que parecen de permisos. Además, **editar un
+archivo con `nano` en esas condiciones lo deja vacío**: el editor lo trunca antes
+de escribir y la escritura nunca ocurre. Así se perdió el `docker-compose.yml`,
+que hubo que recuperar con `git restore`.
+
+**Prevención:** verificar el espacio antes de cualquier operación. El
+`scripts/deploy.sh` aborta si hay menos de 5 GB libres.
+
+```bash
+df -h / && docker system df
+```
+
+### 14.2 Propiedad del volumen de datos
+
+**Síntoma:** el mismo error de `/.system`.
+
+**Causa:** SQL Server 2022 corre dentro del contenedor como el usuario `mssql`
+(UID 10001, GID 0). El volumen quedó con propietario `root` y grupo `10001`, con
+modo 770: el usuario caía en «otros» y no tenía acceso.
+
+**Corrección** (con los contenedores detenidos):
+
+```bash
+docker run --rm -v slimming_sqldata:/data busybox sh -c 'chown -R 10001:0 /data && chmod -R 770 /data'
+sudo chown $USER:0 backups && sudo chmod 775 backups
+```
+
+El grupo `0` en la carpeta de respaldos permite que el contenedor escriba ahí y
+que el usuario de la VM siga pudiendo leerla.
+
+### 14.3 Contraseña que no cumple la política de SQL Server
+
+**Síntoma:** el contenedor arranca, registra `SQL Server is now ready for client
+connections` y muere a los pocos segundos. Se repite indefinidamente.
+
+**Causa:** `MSSQL_SA_PASSWORD` sin complejidad suficiente. El log lo indica de
+forma explícita: se requieren **al menos 8 caracteres y caracteres de tres de los
+cuatro grupos** (mayúsculas, minúsculas, dígitos, símbolos). Al fallar la
+configuración inicial, el proceso termina y `restart: unless-stopped` lo relanza.
+
+**Diagnóstico que lo revela:**
+
+```bash
+docker inspect slimming-db --format 'salida={{.State.ExitCode}} | OOM={{.State.OOMKilled}} | reinicios={{.RestartCount}}'
+docker compose logs --tail=40 db
+```
+
+`OOMKilled=false` con `ExitCode=255` descarta la memoria y apunta a un fallo de
+configuración, no de recursos.
+
+### 14.4 Zona horaria de los contenedores
+
+No provocó una caída, pero sí un error funcional silencioso: **los contenedores
+corren en UTC y no heredan la zona horaria del host**. Con Ecuador en UTC−5, a
+partir de las 19:00 el servidor considera que ya es el día siguiente, de modo que
+el control de ingreso rechazaría membresías vigentes y la bitácora del día
+aparecería vacía. Se resuelve con la variable `TZ` en los servicios `db`, `api` y
+`worker`, ya incluida en el `docker-compose.yml`.

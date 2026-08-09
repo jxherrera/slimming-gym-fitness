@@ -1,28 +1,28 @@
 import React, { useState } from 'react';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '@/hooks/useToast';
 import Spinner from '../../components/common/Spinner';
 import Skeleton from '../../components/common/Skeleton';
 import Modal from '../../components/common/Modal';
 import './TestDesignSystem.css';
 
 const TestDesignSystem = () => {
-  const { addToast } = useToast();
+  const toast = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const triggerSuccessToast = () => {
-    addToast('¡Operación realizada con éxito!', 'success');
+    toast.showToast('¡Operación realizada con éxito!', 'success');
   };
 
   const triggerErrorToast = () => {
-    addToast('Ocurrió un error al procesar la solicitud.', 'error');
+    toast.showToast('Ocurrió un error al procesar la solicitud.', 'error');
   };
 
   const triggerWarningToast = () => {
-    addToast('Atención: Tu membresía está próxima a vencer.', 'warning');
+    toast.showToast('Atención: Tu membresía está próxima a vencer.', 'warning');
   };
 
   const triggerInfoToast = () => {
-    addToast('Información: El gimnasio cerrará temprano este viernes.', 'info');
+    toast.showToast('Información: El gimnasio cerrará temprano este viernes.', 'info');
   };
 
   return (
@@ -116,7 +116,7 @@ const TestDesignSystem = () => {
             <button 
               className="btn-modal-action" 
               onClick={() => {
-                addToast('¡Membresía renovada con éxito!', 'success');
+                toast.showToast('¡Membresía renovada con éxito!', 'success');
                 setIsModalOpen(false);
               }}
             >

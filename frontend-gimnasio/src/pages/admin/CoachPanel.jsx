@@ -125,11 +125,9 @@ const CoachPanel = () => {
         setIsModalOpen(true);
 
         try {
-            const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-            const res = await fetch(`${apiBase}/routines/user/${client.UserID}/current`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data.success && data.routine) {
+            const res = await api.get(`/routines/user/${client.UserID}/current`);
+            const data = res.data;
+            if (data.success && data.routine) {
                     setRoutineGoal(data.routine.Goal || '');
                     if (data.routine.exercises && data.routine.exercises.length > 0) {
                         const mapped = { Lunes: [], Martes: [], Miércoles: [], Jueves: [], Viernes: [], Sábado: [], Domingo: [] };
@@ -142,10 +140,9 @@ const CoachPanel = () => {
                         setExercisesByDay(mapped);
                     }
                 }
+            } catch (error) {
+                console.error("Error obteniendo la rutina actual:", error);
             }
-        } catch (error) {
-            console.error("Error obteniendo la rutina actual:", error);
-        }
     };
 
     const closeModal = () => {

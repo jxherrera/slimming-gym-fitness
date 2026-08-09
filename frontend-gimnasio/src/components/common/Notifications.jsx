@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FaBell, FaExclamationTriangle, FaClock, FaTimesCircle, FaCheckCircle, FaChevronRight } from 'react-icons/fa';
 import './Notifications.css';
 
 const Notifications = ({ subscription, onRenovarClick }) => {
-  const [closed, setClosed] = useState(false);
-
-  if (!subscription || closed) return null;
+  if (!subscription) return null;
 
   const { paymentStatus, remainingDays, paymentRequestStatus } = subscription;
 

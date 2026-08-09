@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaCalendarAlt, FaClock, FaUser, FaCheck, FaTimes, FaFire, FaFilter } from 'react-icons/fa';
-import { scheduleService } from '../../services/scheduleService';
-import { useToast } from '../../hooks/useToast';
+import { scheduleService } from '@/services/scheduleService';
+import { useToast } from '@/hooks/useToast';
+import Spinner from '@/components/common/Spinner';
 import './ClassSchedule.css';
 
 const DAYS = ['Todos', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -13,7 +14,7 @@ const ClassSchedule = ({ userId }) => {
   const [selectedDay, setSelectedDay] = useState('Todos');
   const [loading, setLoading] = useState(true);
 
-  const loadSchedule = async () => {
+  const loadSchedule = useCallback(async () => {
     try {
       setLoading(true);
       const data = await scheduleService.getClasses();
@@ -23,17 +24,17 @@ const ClassSchedule = ({ userId }) => {
         const bookedIds = reservations.map(r => r.classId);
         setUserReservations(bookedIds);
       }
-    } catch (e) {
-      console.error('Error al cargar agenda:', e);
+    } catch (error) {
+      console.error('Error al cargar agenda:', error);
       toast.error('Error al obtener la programación de clases.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, toast]);
 
   useEffect(() => {
     loadSchedule();
-  }, [userId]);
+  }, [loadSchedule]);
 
   const handleBook = async (classId, className) => {
     try {
@@ -41,7 +42,8 @@ const ClassSchedule = ({ userId }) => {
       toast.success(`¡Cupo reservado exitosamente para ${className}!`);
       setUserReservations(prev => [...prev, classId]);
       setClasses(prev => prev.map(c => c.id === classId ? { ...c, bookedCount: c.bookedCount + 1 } : c));
-    } catch (e) {
+    } catch (error) {
+      console.error('Error booking class:', error);
       toast.error('Ocurrió un problema al procesar tu reserva.');
     }
   };
@@ -52,7 +54,8 @@ const ClassSchedule = ({ userId }) => {
       toast.info(`Reserva cancelada para ${className}.`);
       setUserReservations(prev => prev.filter(id => id !== classId));
       setClasses(prev => prev.map(c => c.id === classId ? { ...c, bookedCount: c.bookedCount - 1 } : c));
-    } catch (e) {
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
       toast.error('Error al cancelar la reserva.');
     }
   };
@@ -60,6 +63,10 @@ const ClassSchedule = ({ userId }) => {
   const filteredClasses = selectedDay === 'Todos'
     ? classes
     : classes.filter(c => c.day === selectedDay);
+
+  if (loading) {
+    return <Spinner fullPage={false} text="Cargando agenda de clases..." size="md" />;
+  }
 
   return (
     <div className="schedule-card-container">

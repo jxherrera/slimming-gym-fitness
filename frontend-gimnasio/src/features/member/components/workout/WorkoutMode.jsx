@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
-import { useToast } from '../../../hooks/useToast';
-import { workoutService } from '../../../services/workoutService';
+import { useToast } from '@/hooks/useToast';
+import { workoutService } from '@/services/workoutService';
 import { getTodayInSpanish } from './workoutUtils';
 import DaySelector from './DaySelector';
 import ExerciseCard from './ExerciseCard';
@@ -86,6 +86,7 @@ const WorkoutMode = ({ routine, user, onClose }) => {
       });
       toast.success('¡Entrenamiento guardado con éxito! Gran trabajo hoy.');
     } catch (error) {
+      console.error('Error saving workout session:', error);
       toast.error('Hubo un problema guardando tu progreso, pero puedes cerrar esta ventana.');
     } finally {
       setIsSaving(false);

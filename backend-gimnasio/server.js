@@ -15,6 +15,7 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
 const emailRoutes = require('./routes/emailRoutes');
+const healthRoutes = require('./routes/healthRoutes');
 const { startCronJobs } = require('./cron/expirationChecker');
 const errorHandler = require('./middleware/errorHandler');
 const { UPLOADS_DIR } = require('./services/storageService');
@@ -62,6 +63,10 @@ app.use('/uploads', express.static(UPLOADS_DIR, {
   maxAge: '7d'
 }));
 
+// Sonda de estado. Publica y montada antes del resto: la consultan Docker y
+// Nginx, que no disponen de token.
+app.use('/api/health', healthRoutes);
+
 app.use('/api/routines', routineRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -81,7 +86,16 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
-startCronJobs();
+// Las tareas programadas deben ejecutarse en UNA sola instancia. Con varias
+// replicas de la API, cada una dispararia el aviso de vencimiento y los socios
+// recibirian un correo por replica. En Docker Compose solo el servicio 'worker'
+// lleva ENABLE_CRON=true; las replicas de 'api' lo dejan apagado.
+if (process.env.ENABLE_CRON === 'true') {
+    startCronJobs();
+    console.log('Tareas programadas activadas en esta instancia.');
+} else {
+    console.log('Tareas programadas desactivadas en esta instancia (ENABLE_CRON != true).');
+}
 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);

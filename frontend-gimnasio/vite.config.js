@@ -1,9 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  },
   // En produccion Nginx sirve el frontend y la API bajo el mismo dominio, por lo
   // que las rutas relativas (/api, /uploads) resuelven solas. En desarrollo el
   // frontend corre en :5173 y la API en :5001: sin este proxy, un comprobante

@@ -5,7 +5,6 @@ import './AlertModal.css';
 
 const AlertModal = ({ isOpen, onClose, reason = 'expired', onGoToPayment }) => {
   const isExpired = reason === 'expired';
-  const isSuspended = reason === 'suspended';
 
   const title = isExpired 
     ? 'Acceso Bloqueado: Membresía Vencida' 

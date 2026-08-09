@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaMoneyBillWave, FaCamera, FaCreditCard, FaReceipt, FaCheckCircle, FaImage, FaUpload } from 'react-icons/fa';
-import { memberService } from '../../services/memberService';
-import { useToast } from '../../hooks/useToast';
+import { memberService } from '@/services/memberService';
+import { useToast } from '@/hooks/useToast';
 import './Payments.css';
 
-const Payments = ({ userId, plans = [], onPaymentSuccess }) => {
+const Payments = ({ userId, plans = [], onPaymentSuccess, initialPlanId }) => {
   const toast = useToast();
   const fileInputRef = useRef(null);
   
-  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState(initialPlanId || '');
   const [paymentMethod, setPaymentMethod] = useState('Transferencia');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

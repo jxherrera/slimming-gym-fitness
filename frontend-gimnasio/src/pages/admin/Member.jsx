@@ -7,13 +7,14 @@ import { memberService } from '../../services/memberService';
 import Spinner from '../../components/common/Spinner';
 import Notifications from '../../components/common/Notifications';
 import AlertModal from '../../components/common/AlertModal';
-import SubscriptionStatus from '../../components/member/SubscriptionStatus';
-import Payments from '../../components/member/Payments';
-import UserProfile from '../../components/member/UserProfile';
-import ClassSchedule from '../../components/member/ClassSchedule';
-import ProgressChart from '../../components/member/ProgressChart';
-import RoutinePdfExporter from '../../components/member/RoutinePdfExporter';
+import SubscriptionStatus from '@/features/member/components/SubscriptionStatus';
+import Payments from '@/features/member/components/Payments';
+import UserProfile from '@/features/member/components/UserProfile';
+import ClassSchedule from '@/features/member/components/ClassSchedule';
+import ProgressChart from '@/features/member/components/ProgressChart';
+import RoutinePdfExporter from '@/features/member/components/RoutinePdfExporter';
 import './Member.css';
+import api from '@/services/api';
 
 const Member = () => {
   const { user } = useAuth();
@@ -32,7 +33,11 @@ const Member = () => {
         setActiveTab(modeParam);
       }
     }
-  }, [modeParam]);
+    const planIdParam = searchParams.get('planId');
+    if (planIdParam) {
+      setPreselectedPlanId(planIdParam);
+    }
+  }, [modeParam, searchParams]);
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -44,6 +49,7 @@ const Member = () => {
   const [loading, setLoading] = useState(true);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertReason, setAlertReason] = useState('expired');
+  const [preselectedPlanId, setPreselectedPlanId] = useState('');
 
   const fetchData = async () => {
     if (!userId) {
@@ -73,15 +79,15 @@ const Member = () => {
 
       // Cargar rutina actual del socio
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/routines/user/${userId}/current`);
-        const routineData = await res.json();
+        const res = await api.get(`/routines/user/${userId}/current`);
+        const routineData = res.data;
         if (routineData.success && routineData.routine) {
           setRoutines([routineData.routine]);
         } else {
           setRoutines([]);
         }
-      } catch (e) {
-        console.error('Error al cargar rutinas:', e);
+      } catch (error) {
+        console.error('Error al cargar rutinas:', error);
       }
 
     } catch (error) {
@@ -97,6 +103,7 @@ const Member = () => {
   }, [userId]);
 
   const handleSelectPlanFromCatalog = (planId) => {
+    setPreselectedPlanId(planId);
     handleTabChange('payments');
   };
 
@@ -193,6 +200,7 @@ const Member = () => {
             userId={userId} 
             plans={plans} 
             onPaymentSuccess={fetchData}
+            initialPlanId={preselectedPlanId}
           />
         )}
 

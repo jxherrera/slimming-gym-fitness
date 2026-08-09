@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FaUser, FaIdCard, FaEnvelope, FaPhone, FaDumbbell, FaSave, FaUserCheck, FaCalendarAlt, FaClock, FaSyncAlt, FaKey } from 'react-icons/fa';
-import Modal from '../common/Modal';
-import { scheduleService } from '../../services/scheduleService';
-import { memberService } from '../../services/memberService';
-import { useToast } from '../../hooks/useToast';
+import Modal from '@/components/common/Modal';
+import { scheduleService } from '@/services/scheduleService';
+import { memberService } from '@/services/memberService';
+import { useToast } from '@/hooks/useToast';
 import './UserProfile.css';
+import api from '@/services/api';
 
 const UserProfile = ({ user, onUpdateSuccess }) => {
   const toast = useToast();
@@ -55,15 +56,12 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
 
         // Buscar si hay un entrenador asignado en la base de datos
         try {
-          const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-          const assignRes = await fetch(`${apiBase}/coaches/assignments`);
-          if (assignRes.ok) {
-            const assignData = await assignRes.json();
-            const myAssignment = Array.isArray(assignData) ? assignData.find(a => String(a.MemberID) === String(userId)) : null;
-            if (myAssignment) {
-              const current = list.find(c => String(c.UserID || c.id) === String(myAssignment.CoachID));
-              if (current) setAssignedCoach(current);
-            }
+          const assignRes = await api.get('/coaches/assignments');
+          const assignData = assignRes.data;
+          const myAssignment = Array.isArray(assignData) ? assignData.find(a => String(a.MemberID) === String(userId)) : null;
+          if (myAssignment) {
+            const current = list.find(c => String(c.UserID || c.id) === String(myAssignment.CoachID));
+            if (current) setAssignedCoach(current);
           }
         } catch (err) {
           console.error("Error obteniendo asignaciones", err);

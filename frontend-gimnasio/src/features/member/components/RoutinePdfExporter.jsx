@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react';
 import { FaFilePdf, FaDumbbell, FaUser, FaBullseye, FaPrint, FaCheckSquare, FaPlay } from 'react-icons/fa';
-import { useToast } from '../../hooks/useToast';
+import { useToast } from '@/hooks/useToast';
 import WorkoutMode from './workout/WorkoutMode';
 import './RoutinePdfExporter.css';
+import api from '@/services/api';
 
-import Modal from './../common/Modal';
+import Modal from '@/components/common/Modal';
 
 const RoutinePdfExporter = ({ routines = [], user, onRoutineAssigned }) => {
   const toast = useToast();
@@ -19,9 +20,8 @@ const RoutinePdfExporter = ({ routines = [], user, onRoutineAssigned }) => {
   const fetchTemplates = async () => {
       try {
           setLoadingTemplates(true);
-          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-          const res = await fetch(`${API_BASE}/routines/templates/all`);
-          const data = await res.json();
+          const res = await api.get('/routines/templates/all');
+          const data = res.data;
           if (data.success) {
               setTemplates(data.templates);
           }
@@ -43,7 +43,6 @@ const RoutinePdfExporter = ({ routines = [], user, onRoutineAssigned }) => {
       
       try {
           setIsAssigning(true);
-          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
           const payload = {
               userId: user?.id || user?.userId,
               coachId: tpl.CoachID, // Asignamos el ID del coach que creó la plantilla
@@ -51,13 +50,8 @@ const RoutinePdfExporter = ({ routines = [], user, onRoutineAssigned }) => {
               exercises: tpl.exercises || []
           };
           
-          const response = await fetch(`${API_BASE}/routines/assign`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-          });
-          
-          const data = await response.json();
+          const response = await api.post('/routines/assign', payload);
+          const data = response.data;
           if (data.success) {
               toast.success('¡Rutina aplicada con éxito!');
               setShowTemplateModal(false);

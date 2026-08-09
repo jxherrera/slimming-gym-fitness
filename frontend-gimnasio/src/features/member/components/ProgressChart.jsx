@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaChartLine, FaWeight, FaPercentage, FaDumbbell, FaPlus, FaCalendarAlt, FaFilePdf } from 'react-icons/fa';
-import { progressService } from '../../services/progressService';
-import { memberService } from '../../services/memberService';
-import { useToast } from '../../hooks/useToast';
-import Modal from '../common/Modal';
+import { progressService } from '@/services/progressService';
+import { memberService } from '@/services/memberService';
+import { useToast } from '@/hooks/useToast';
+import Modal from '@/components/common/Modal';
+import Spinner from '@/components/common/Spinner';
 import { jsPDF } from 'jspdf';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import './ProgressChart.css';
@@ -13,14 +14,12 @@ const ProgressChart = ({ userId }) => {
   const [history, setHistory] = useState([]);
   const [metric, setMetric] = useState('weight'); // 'weight' | 'bodyFat' | 'muscleMass'
   const [loading, setLoading] = useState(true);
-
-  // Modal para agregar registro
   const [showAddModal, setShowAddModal] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [newFat, setNewFat] = useState('');
   const [newMuscle, setNewMuscle] = useState('');
 
-  const fetchProgress = async () => {
+  const fetchProgress = useCallback(async () => {
     try {
       setLoading(true);
       const data = await progressService.getProgressHistory(userId);
@@ -30,11 +29,11 @@ const ProgressChart = ({ userId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     fetchProgress();
-  }, [userId]);
+  }, [fetchProgress]);
 
   const handleAddRecord = async (e) => {
     e.preventDefault();
@@ -54,7 +53,8 @@ const ProgressChart = ({ userId }) => {
       setNewMuscle('');
       setShowAddModal(false);
       fetchProgress();
-    } catch (e) {
+    } catch (error) {
+      console.error('Error adding progress record:', error);
       toast.error('Error al guardar registro.');
     }
   };
@@ -118,7 +118,7 @@ const ProgressChart = ({ userId }) => {
         doc.line(20, startY + 2, 190, startY + 2);
         
         startY += 10;
-        history.forEach((record, index) => {
+        history.forEach((record) => {
           doc.text(record.date || 'N/A', 20, startY);
           doc.text(`${record.weight} kg`, 60, startY);
           doc.text(`${record.bodyFat}%`, 110, startY);
@@ -148,6 +148,10 @@ const ProgressChart = ({ userId }) => {
     bodyFat: { label: 'Grasa Corporal (%)', key: 'bodyFat', color: '#ffb300', unit: '%', icon: <FaPercentage /> },
     muscleMass: { label: 'Masa Muscular (kg)', key: 'muscleMass', color: '#00e676', unit: 'kg', icon: <FaDumbbell /> }
   };
+
+  if (loading) {
+    return <Spinner fullPage={false} text="Cargando historial de progreso..." size="md" />;
+  }
 
   const currentConfig = metricConfig[metric];
 

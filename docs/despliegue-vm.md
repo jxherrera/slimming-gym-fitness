@@ -1,313 +1,352 @@
 # Despliegue en Máquina Virtual — Slimming Gym Fitness
 
-Procedimiento reproducible para levantar el sistema completo en una única máquina
-virtual Linux (Ubuntu Server 22.04 LTS o superior).
+Procedimiento reproducible para levantar el sistema completo con **Docker Compose**
+sobre una máquina virtual Linux (Ubuntu Server 22.04 LTS o superior).
 
-En esta arquitectura la VM aloja los tres componentes: **Nginx** como servidor web
-y proxy inverso, la **API Node.js** gestionada por PM2, y la instancia de **SQL
-Server**. La base de datos escucha únicamente en `localhost`, por lo que su puerto
-no queda expuesto a la red.
+## 1. Arquitectura
 
 ```
-Internet ──HTTPS──> Nginx :443
-                      ├── /        → archivos estáticos del frontend (dist/)
-                      └── /api     → proxy inverso a Node.js :5001
-                                          └── SQL Server 127.0.0.1:1433
+                        Internet
+                           │
+                      HTTPS │ 443
+                           ▼
+        ┌──────────────────────────────────────────┐
+        │  proxy  (Nginx)                          │
+        │   /         → frontend compilado         │
+        │   /uploads  → volumen de comprobantes    │
+        │   /api      → balanceo entre réplicas    │
+        └───────────────────┬──────────────────────┘
+                            │  round-robin
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+          ┌───────┐     ┌───────┐     ┌───────┐      ┌──────────┐
+          │ api 1 │     │ api 2 │     │ api 3 │      │  worker  │
+          └───┬───┘     └───┬───┘     └───┬───┘      └────┬─────┘
+              └─────────────┼─────────────┴───────────────┘
+                            ▼
+                     ┌─────────────┐
+                     │  db (SQL)   │
+                     └─────────────┘
+
+Volúmenes persistentes:
+  sqldata  → /var/opt/mssql   (base de datos)
+  uploads  → /app/uploads     (comprobantes de pago, compartido)
 ```
 
-## Decisión de arquitectura: PM2 en lugar de contenedores
+| Servicio | Réplicas | Publica puertos | Tareas programadas |
+|---|---|---|---|
+| `proxy` | 1 | 80, 443 | — |
+| `api` | 1 a N (escalable) | ninguno | **no** |
+| `worker` | 1 (fija) | ninguno | **sí** |
+| `db` | 1 | ninguno | — |
 
-Se descartó Docker para el despliegue. El sistema es una única aplicación Node.js
-junto a una base de datos, sin necesidad de orquestación ni escalado horizontal;
-introducir una capa de contenedores añadiría complejidad operativa (redes, volúmenes,
-construcción de imágenes) sin beneficio proporcional, y ninguno de los integrantes
-del equipo la domina lo suficiente para depurarla bajo presión. PM2 ofrece lo que el
-proyecto necesita: reinicio automático ante fallos, arranque con el sistema
-operativo y acceso directo a los registros.
+### Por qué contenedores
+
+Se optó por Docker Compose frente a la ejecución nativa con un gestor de procesos
+por cuatro razones:
+
+1. **Entorno idéntico** en las máquinas de los tres desarrolladores y en el
+   servidor. Elimina la clase de fallo "en mi equipo funciona", que en este
+   proyecto ya se manifestó: el script de pruebas dependía de una expansión de
+   patrones que existe en Node 22 pero no en Node 20.
+2. **Despliegue en un comando**, con las versiones de Node y SQL Server fijadas
+   en la definición y no en el estado del servidor.
+3. **Aislamiento**: la API corre como usuario sin privilegios dentro del
+   contenedor, y la base de datos no expone su puerto a la red.
+4. **Escalado horizontal de la capa de aplicación**, aprovechando que la API no
+   guarda estado en memoria.
+
+### Sobre el balanceo de carga
+
+El `proxy` reparte las peticiones entre las réplicas del servicio `api` mediante
+resolución DNS con round-robin. Esto proporciona reparto de carga entre procesos,
+despliegues sin interrupción del servicio y aislamiento de fallos por réplica: si
+una réplica deja de responder, Nginx reintenta la petición en otra.
+
+**No constituye alta disponibilidad.** Todas las réplicas comparten la misma
+máquina virtual, que sigue siendo un punto único de fallo: si la VM cae, el
+sistema completo queda fuera de servicio. La evolución natural de esta
+arquitectura sería replicar la aplicación en varias máquinas virtuales tras un
+balanceador externo, y separar la base de datos en una instancia dedicada con
+replicación.
+
+Un detalle de diseño que hace posible el escalado: **la autenticación se basa en
+JSON Web Tokens sin estado**, por lo que cualquier réplica puede validar cualquier
+petición sin consultar un almacén de sesiones. Con sesiones del lado del servidor
+habría sido necesario introducir afinidad de sesión en el balanceador o un
+almacén compartido como Redis.
 
 ---
 
-## 1. Requisitos previos
+## 2. Requisitos e instalación de Docker
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git nginx ufw
+sudo apt install -y ca-certificates curl git gnupg ufw
 ```
 
-Node.js 20 LTS desde el repositorio oficial de NodeSource:
+Docker Engine y el plugin Compose desde el repositorio oficial:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-node --version   # debe reportar v20.x
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-PM2 de forma global:
+Permite usar Docker sin `sudo` (requiere cerrar y reabrir la sesión):
 
 ```bash
-sudo npm install -g pm2
+sudo usermod -aG docker $USER
 ```
 
-## 2. Cortafuegos
+Verifica:
+```bash
+docker --version && docker compose version
+```
 
-Solo se abren SSH y HTTP/HTTPS. **El puerto 1433 de SQL Server y el 5001 de Node
-nunca se exponen**: ambos se consumen desde dentro de la propia VM.
+**Requisitos de memoria:** SQL Server exige un mínimo de 2 GB de RAM solo para su
+proceso. La VM debería tener al menos 4 GB para alojar además el proxy y varias
+réplicas de la API.
+
+## 3. Cortafuegos
+
+Solo SSH y HTTP/HTTPS. **Los puertos 1433 (base de datos) y 5001 (API) nunca se
+publican**: se consumen desde la red interna de Docker.
 
 ```bash
 sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw enable
 sudo ufw status verbose
 ```
 
-## 3. Base de datos
+> Docker manipula `iptables` directamente y puede sortear las reglas de `ufw` si
+> un servicio publica un puerto. Por eso el `docker-compose.yml` deja sin
+> publicar los puertos de `db` y `api`: es la defensa efectiva, no el cortafuegos.
 
-La instalación de SQL Server, la creación del usuario de aplicación con permisos
-mínimos y la restauración del respaldo están documentadas en
-[`database/README_INSTALACION_VM.md`](../database/README_INSTALACION_VM.md).
-
-Antes de continuar, verifica desde la VM que la base responde:
+## 4. Código y configuración
 
 ```bash
-cd /var/www/slimming/backend-gimnasio && npm run diagnostico:db
-```
-
-## 4. Código fuente
-
-```bash
-sudo mkdir -p /var/www/slimming
-sudo chown -R $USER:$USER /var/www/slimming
-git clone https://github.com/jxherrera/slimming-gym-fitness.git /var/www/slimming
-cd /var/www/slimming
-```
-
-## 5. Backend
-
-```bash
-cd /var/www/slimming/backend-gimnasio
-npm ci --omit=dev
+sudo mkdir -p /opt/slimming && sudo chown -R $USER:$USER /opt/slimming
+git clone https://github.com/jxherrera/slimming-gym-fitness.git /opt/slimming
+cd /opt/slimming
 cp .env.example .env
 ```
 
-Edita el `.env` con los valores reales. Tres puntos obligatorios:
-
-- `DB_SERVER=localhost` — la base está en la misma máquina.
-- `JWT_SECRET` — **el servidor se niega a arrancar sin esta variable**. Genérala con:
-  ```bash
-  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-  ```
-- `ALLOWED_ORIGINS=https://tu-dominio.com` — el dominio real de la aplicación.
-- `UPLOADS_DIR=/var/lib/slimming/uploads` — directorio de comprobantes de pago,
-  ubicado deliberadamente fuera del árbol del repositorio para que un `git pull`
-  o un redespliegue no lo afecte.
-
-Crea el directorio de subidas con permisos restringidos:
+Completa el `.env` de la raíz. Tres valores son obligatorios y el sistema no
+arranca sin ellos:
 
 ```bash
-sudo mkdir -p /var/lib/slimming/uploads
-sudo chown -R $USER:www-data /var/lib/slimming/uploads
-sudo chmod 750 /var/lib/slimming/uploads
+# Genera cada secreto por separado
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-El grupo `www-data` permite que Nginx lea los archivos; la aplicación los escribe
-como propietaria.
+- `MSSQL_SA_PASSWORD` — contraseña del contenedor de base de datos.
+- `DB_PASSWORD` — credencial con la que se conecta la API. En producción debe ser
+  un usuario de aplicación con permisos mínimos, nunca `sa`
+  (ver `database/README_INSTALACION_VM.md`).
+- `JWT_SECRET` — **la API se niega a arrancar si falta o mide menos de 32
+  caracteres.** Es intencional: evita que vuelva a colarse una clave por defecto.
 
-Protege el archivo para que solo el usuario propietario pueda leerlo:
-
+Protege el archivo:
 ```bash
 chmod 600 .env
 ```
 
-Verifica que las pruebas unitarias pasan y arranca con PM2:
+## 5. Puesta en marcha
 
 ```bash
-npm test
-pm2 start server.js --name slimming-api
-pm2 save
-pm2 startup          # ejecuta el comando que imprime, con sudo
+docker compose up -d --build
+docker compose ps
 ```
 
-> **Orden de arranque:** al reiniciar la VM, los servicios se inician en paralelo y
-> SQL Server tarda más en estar disponible que Node. La API tolera esa situación:
-> reintenta la conexión 5 veces con 5 segundos de espera (unos 25 segundos de
-> margen) y **no termina el proceso si no lo logra**, para no provocar un ciclo de
-> reinicios en PM2. Si agota los reintentos, la API sigue respondiendo y devuelve
-> error 500 solo en las operaciones que necesitan la base; basta `pm2 restart`
-> cuando la base esté disponible.
+El primer arranque tarda unos minutos: descarga la imagen de SQL Server (~1,5 GB)
+y compila las dos imágenes propias. El servicio `api` espera a que `db` reporte
+estado sano antes de iniciar.
 
-Comandos de operación habituales:
+Restaura la base de datos siguiendo `database/README_INSTALACION_VM.md`, y
+verifica:
 
 ```bash
-pm2 status                  # estado del proceso
-pm2 logs slimming-api       # registros en vivo
-pm2 restart slimming-api    # reiniciar tras un despliegue
-pm2 monit                   # consumo de CPU y memoria
+curl -s localhost/api/health | jq
 ```
 
-## 6. Frontend
+Debe devolver `status: "ok"` y `database: "ok"`.
 
-El frontend se compila a archivos estáticos que sirve Nginx; no requiere un proceso
-en ejecución.
+### Escalar la API
 
 ```bash
-cd /var/www/slimming/frontend-gimnasio
-npm ci
+docker compose up -d --scale api=3
 ```
 
-Crea el archivo `.env.production` con una **ruta relativa**:
-
-```
-VITE_API_URL=/api
-```
-
-Esto es deliberado: al servirse el frontend y la API bajo el mismo dominio, el
-navegador no realiza peticiones de origen cruzado, con lo que desaparece cualquier
-problema de CORS y la compilación funciona en cualquier dominio o IP sin necesidad
-de recompilar.
+Comprueba que el balanceo reparte de verdad:
 
 ```bash
-npm run build     # genera dist/
+for i in $(seq 1 9); do curl -s localhost/api/health/live | grep -o '"instance":"[^"]*"'; done
 ```
 
-## 7. Nginx
+Deben aparecer tres identificadores de contenedor distintos, alternándose. Si
+sale siempre el mismo, falta la directiva `resolver` o la variable en
+`proxy_pass` de `frontend-gimnasio/nginx.conf`.
+
+> **No escales `worker`.** Es el único proceso con las tareas programadas
+> activas: con dos instancias, cada socio recibiría dos avisos de vencimiento.
+
+## 6. HTTPS
+
+El sistema maneja datos personales y contraseñas: HTTPS no es opcional.
 
 ```bash
-sudo nano /etc/nginx/sites-available/slimming
+sudo apt install -y certbot
+docker compose stop proxy                       # libera el puerto 80
+sudo certbot certonly --standalone -d tu-dominio.com -d www.tu-dominio.com
 ```
 
-```nginx
-server {
-    listen 80;
-    server_name tu-dominio.com www.tu-dominio.com;
+Añade el montaje de los certificados al servicio `proxy` del
+`docker-compose.yml`:
 
-    # Registros separados para facilitar el diagnóstico
-    access_log /var/log/nginx/slimming.access.log;
-    error_log  /var/log/nginx/slimming.error.log;
-
-    # Límite de subida: los comprobantes de pago aceptan hasta 5 MB en el backend
-    client_max_body_size 6M;
-
-    # Compresión de los archivos estáticos
-    gzip on;
-    gzip_types text/css application/javascript application/json image/svg+xml;
-    gzip_min_length 1024;
-
-    # --- Frontend compilado ---
-    root /var/www/slimming/frontend-gimnasio/dist;
-    index index.html;
-
-    location / {
-        # Indispensable para React Router: sin esta línea, recargar el navegador
-        # en /admin/pagos devuelve 404 porque no existe un archivo en esa ruta.
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Los recursos con hash en el nombre se pueden cachear indefinidamente
-    location /assets/ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # --- Comprobantes de pago subidos por los socios ---
-    # Los sirve Nginx directamente desde el disco, sin pasar por Node.
-    location /uploads/ {
-        alias /var/lib/slimming/uploads/;
-        autoindex off;                 # nunca listar el contenido del directorio
-        add_header X-Content-Type-Options nosniff;
-        # Los nombres son aleatorios de 32 caracteres hexadecimales: no se pueden
-        # enumerar ni adivinar a partir de la fecha o del nombre original.
-        expires 30d;
-    }
-
-    # --- API ---
-    location /api/ {
-        proxy_pass http://127.0.0.1:5001/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 60s;
-    }
-}
+```yaml
+    volumes:
+      - uploads:/app/uploads:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 ```
 
-Activa el sitio, retira el predeterminado y recarga:
+Descomenta el bloque `listen 443 ssl` de `frontend-gimnasio/nginx.conf`,
+sustituye el dominio, y levanta de nuevo:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/slimming /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t          # valida la sintaxis antes de aplicar
-sudo systemctl reload nginx
+docker compose up -d --build proxy
 ```
 
-## 8. HTTPS
-
-El sistema maneja datos personales y contraseñas: **HTTPS no es opcional**.
+Para que la renovación automática recargue el certificado, crea un enlace de
+despliegue en `/etc/letsencrypt/renewal-hooks/deploy/slimming.sh`:
 
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d tu-dominio.com -d www.tu-dominio.com
+#!/bin/sh
+cd /opt/slimming && docker compose restart proxy
 ```
-
-Certbot modifica la configuración de Nginx para redirigir HTTP a HTTPS e instala una
-tarea de renovación automática. Verifícala con:
-
-```bash
-sudo certbot renew --dry-run
-```
+Hazlo ejecutable con `chmod +x` y valida la renovación con
+`sudo certbot renew --dry-run`.
 
 ---
 
-## 9. Verificación posterior al despliegue
+## 7. Persistencia de datos
+
+Es la parte más importante de este documento.
+
+| Volumen | Contenido | Consecuencia de perderlo |
+|---|---|---|
+| `sqldata` | Base de datos completa: usuarios, suscripciones, pagos, rutinas | Pérdida total del sistema |
+| `uploads` | Comprobantes de pago subidos por los socios | Pérdida de la evidencia de los pagos |
+
+```bash
+docker volume ls | grep slimming
+docker volume inspect slimming_sqldata
+```
+
+Los volúmenes son independientes del ciclo de vida de los contenedores:
+`docker compose down`, `up`, `build` y `restart` **no** los afectan.
+
+> ### ⚠️ El comando que destruye el proyecto
+>
+> ```
+> docker compose down -v
+> ```
+>
+> La opción `-v` **elimina los volúmenes**: borra la base de datos completa y
+> todos los comprobantes de pago, de forma irreversible. Para detener el sistema
+> se usa `docker compose down` **sin** `-v`. No ejecutes `down -v` en la VM de
+> producción bajo ninguna circunstancia.
+
+Los respaldos se guardan en `./backups`, que es un montaje al disco del host
+(no un volumen): sobreviven incluso a la eliminación de los volúmenes. El script
+que los genera y los cifra está en `database/scripts/backup.sh`; verifica que su
+tarea de `cron` está activa con `crontab -l`.
+
+**Prueba una restauración al menos una vez.** Un respaldo que nunca se ha
+restaurado no es un respaldo comprobado, es una suposición.
+
+## 8. Actualización sin interrupción del servicio
+
+```bash
+cd /opt/slimming
+git pull origin main
+
+# Reconstruye la imagen de la API y sustituye las replicas por tandas
+docker compose build api
+docker compose up -d --no-deps --scale api=3 api
+
+# El frontend se recompila dentro de su imagen
+docker compose up -d --build proxy
+```
+
+Verifica antes de dar por bueno el despliegue:
+```bash
+docker compose run --rm api npm test     # las pruebas, contra la imagen real
+curl -s localhost/api/health | jq
+```
+
+## 9. Desarrollo local
+
+En un Mac con Apple Silicon (arm64), la imagen oficial de SQL Server **no tiene
+compilación nativa**: hay que descomentar `platform: linux/amd64` en el servicio
+`db` del `docker-compose.yml`. Funciona mediante emulación, pero consume unos
+2 GB de RAM y es notablemente más lenta. En la VM x86_64 corre nativo.
+
+Alternativa más ágil para el día a día: levantar solo `db` en Docker y ejecutar la
+API con `npm start` desde `backend-gimnasio` y el frontend con `npm run dev`. En
+ese modo `ENABLE_CRON` va en `true` (hay una sola instancia) y `vite.config.js`
+ya incluye el proxy de `/api` y `/uploads` hacia el puerto 5001.
+
+---
+
+## 10. Verificación posterior al despliegue
 
 | # | Comprobación | Resultado esperado |
 |---|---|---|
-| 1 | `pm2 status` | `slimming-api` en estado `online` |
-| 2 | `curl -i http://127.0.0.1:5001/api/plans` | `200` con la lista de planes |
-| 3 | `curl -i https://tu-dominio.com/api/users/1` | `401` (sin token, correcto) |
+| 1 | `docker compose ps` | Los cuatro servicios en `running`, `db` en `healthy` |
+| 2 | `curl -s localhost/api/health` | `200` con `status: ok` y `database: ok` |
+| 3 | `curl -i localhost/api/users/1` | `401`: sin token, correcto |
 | 4 | Abrir `https://tu-dominio.com` | La landing carga los planes desde la API |
-| 5 | Iniciar sesión y recargar en `/admin/pagos` | La página carga, **no** un 404 |
-| 6 | `sudo ufw status` | 1433 y 5001 ausentes de la lista |
-| 7 | Reiniciar la VM y repetir el paso 1 | El proceso vuelve a levantar solo |
+| 5 | Iniciar sesión y recargar en `/admin/pagos` | La página carga; **no** un 404 |
+| 6 | Escalar a 3 y consultar `/api/health/live` nueve veces | Tres instancias alternándose |
+| 7 | `docker compose logs api \| grep -c "programadas activadas"` | `0` |
+| 8 | `docker compose logs worker \| grep -c "programadas activadas"` | `1` |
+| 9 | Subir un comprobante y `docker compose restart api` | El comprobante sigue visible |
+| 10 | `docker compose down && docker compose up -d` | Todos los datos siguen ahí |
+| 11 | `sudo ufw status` | 1433 y 5001 ausentes de la lista |
+| 12 | Reiniciar la VM y repetir el paso 1 | Los servicios levantan solos |
 
-El paso 5 es el que suele fallar: si devuelve 404, falta la línea `try_files` del
-bloque `location /`.
-
-## 10. Actualización de la aplicación
-
-```bash
-cd /var/www/slimming
-git pull origin main
-
-cd backend-gimnasio && npm ci --omit=dev && npm test
-pm2 restart slimming-api
-
-cd ../frontend-gimnasio && npm ci && npm run build
-```
-
-El frontend no requiere reinicio: Nginx sirve los archivos nuevos de inmediato.
+Los pasos 5 y 6 son los que suelen fallar: el 5 por falta de `try_files` en la
+configuración de Nginx, el 6 por falta del `resolver`.
 
 ## 11. Diagnóstico de fallos frecuentes
 
 | Síntoma | Causa probable | Verificación |
 |---|---|---|
-| La API no arranca y el log dice `FATAL: JWT_SECRET` | Falta la variable en el `.env` | `grep JWT_SECRET .env` |
-| `502 Bad Gateway` en `/api` | El proceso de Node está caído | `pm2 status` y `pm2 logs slimming-api` |
-| `404` al recargar una ruta interna | Falta `try_files` en Nginx | `sudo nginx -T \| grep try_files` |
-| Peticiones bloqueadas por CORS | `ALLOWED_ORIGINS` no incluye el dominio | `grep ALLOWED_ORIGINS .env` |
-| `ETIMEOUT` al conectar a la base | SQL Server detenido o `DB_SERVER` incorrecto | `npm run diagnostico:db` |
-| `500` en operaciones con datos, pero la API responde | La conexión a la base agotó sus 5 reintentos | `pm2 logs slimming-api` y luego `pm2 restart slimming-api` |
-| Los correos no salen | Credenciales SMTP inválidas | `npm run probar:correo -- tu@correo.com` |
+| `api` reinicia en bucle y el log dice `FATAL: JWT_SECRET` | Falta la variable en el `.env` de la raíz | `grep JWT_SECRET .env` |
+| `api` no arranca nunca | `db` no llega a estado sano | `docker inspect --format='{{.State.Health.Status}}' slimming-db` |
+| `502 Bad Gateway` en `/api` | Ninguna réplica responde | `docker compose ps` y `docker compose logs api` |
+| `404` al recargar una ruta interna | Falta `try_files` en `nginx.conf` | `docker compose exec proxy nginx -T \| grep try_files` |
+| El balanceo siempre responde con la misma instancia | Falta `resolver` o la variable en `proxy_pass` | `docker compose exec proxy nginx -T \| grep resolver` |
+| Imágenes de comprobantes roto de forma intermitente | El volumen `uploads` no es compartido entre réplicas | `docker compose config \| grep -A3 volumes` |
+| Correos de vencimiento duplicados | `ENABLE_CRON` en `true` en las réplicas de `api` | `docker compose exec api printenv ENABLE_CRON` |
+| `/api/health` responde `503 degraded` | La base no responde, pero la API está viva | `docker compose logs db` |
+| Peticiones bloqueadas por CORS | `ALLOWED_ORIGINS` no incluye el dominio | `docker compose exec api printenv ALLOWED_ORIGINS` |
+| Los correos no salen | Credenciales SMTP inválidas | `docker compose exec api npm run probar:correo -- tu@correo.com` |
 
-## 12. Respaldos
+Comandos de operación habituales:
 
-El respaldo de la base de datos es responsabilidad del script documentado en
-`database/scripts/backup.sh`, ejecutado por `cron` a diario.
-
-> **Importante:** en la nube los respaldos eran automáticos; en una VM propia no
-> existe ningún mecanismo que los realice por sí solo. Sin esa tarea programada, un
-> fallo del disco supone la pérdida total de la información del sistema.
-
-Verifica que la tarea está activa con `crontab -l`, y **prueba una restauración al
-menos una vez**: un respaldo que nunca se ha restaurado no es un respaldo comprobado.
+```bash
+docker compose ps                     # estado de los servicios
+docker compose logs -f api            # registros en vivo
+docker compose logs --tail=50 worker  # ultimas lineas del worker
+docker compose exec api sh            # shell dentro de una replica
+docker stats                          # consumo de CPU y memoria
+```

@@ -416,7 +416,9 @@ const Admin = () => {
     };
 
     try {
-      await api.post('/auth/register', payload);
+      // Endpoint exclusivo del Administrador: es el unico que permite elegir el rol.
+      // El registro publico (/auth/register) crea siempre Socios.
+      await api.post('/auth/users', payload);
 
       setRegisterMessage('Usuario registrado con éxito.');
       setRegisterForm({
@@ -439,7 +441,9 @@ const Admin = () => {
       }
     } catch (error) {
       console.error('Error al registrar usuario:', error);
-      setRegisterMessage('Error de conexión con el servidor.');
+      // El backend explica el motivo real (correo duplicado, contrasena debil,
+      // permisos insuficientes). Mostrarlo en lugar de un mensaje genérico.
+      setRegisterMessage(`Error: ${error.response?.data?.message || 'No se pudo conectar con el servidor.'}`);
       setIsRegisterLoading(false);
     }
   };

@@ -15,6 +15,8 @@ import {
 } from 'react-icons/fa';
 import api from '../../services/api';
 import './Home.css';
+import Skeleton from '../../components/common/Skeleton';
+import { siteConfig } from '../../config/site';
 
 const heroImg = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop";
 
@@ -69,6 +71,8 @@ const Home = () => {
       .then(res => {
         if (Array.isArray(res.data)) {
           setPlans(res.data);
+        } else if (res.data && Array.isArray(res.data.plans)) {
+          setPlans(res.data.plans);
         }
       })
       .catch(err => {
@@ -78,14 +82,6 @@ const Home = () => {
         setLoading(false);
       });
   }, []);
-
-  const defaultPlans = [
-    { PlanID: 1, PlanName: 'Plan Básico', Price: 29.99, DurationDays: 30 },
-    { PlanID: 2, PlanName: 'Plan Pro', Price: 79.99, DurationDays: 90 },
-    { PlanID: 3, PlanName: 'Plan VIP', Price: 279.99, DurationDays: 365 }
-  ];
-
-  const displayPlans = plans.length > 0 ? plans : defaultPlans;
 
   return (
     <div className="home-landing">
@@ -192,54 +188,73 @@ const Home = () => {
           <div className="title-underline"></div>
         </div>
 
-        <div className="plans-grid">
-          {displayPlans.map((plan, index) => {
-            const details = getPlanDetails(plan, index);
-            const priceStr = String(plan.Price);
-            const dotIndex = priceStr.indexOf('.');
-            let integerPart = priceStr;
-            let decimalPart = '00';
-            if (dotIndex !== -1) {
-              integerPart = priceStr.substring(0, dotIndex);
-              decimalPart = priceStr.substring(dotIndex + 1).padEnd(2, '0').substring(0, 2);
-            }
-
-            return (
-              <div 
-                key={plan.PlanID || index} 
-                className={`plan-card ${details.isFeatured ? 'featured' : ''}`}
-              >
-                {details.isFeatured && <div className="featured-banner">RECOMENDADO</div>}
-                {!details.isFeatured && details.badge && <div className="plan-badge-top">{details.badge}</div>}
-                
-                <h3 className="plan-name">{plan.PlanName}</h3>
-                <p className="plan-duration">Acceso por {plan.DurationDays} días</p>
-                
-                <div className="plan-price">
-                  <span className="currency">$</span>
-                  {integerPart}
-                  <span className="cents">.{decimalPart}</span>
-                  <span className="period">{details.period}</span>
-                </div>
-
-                <ul className="plan-features">
-                  {details.features.map((feat, idx) => (
-                    <li key={idx} className={feat.enabled ? '' : 'disabled'}>
-                      <FaCheckCircle className="check-icon" /> {feat.text}
-                    </li>
-                  ))}
-                </ul>
-
-                <button 
-                  className={`btn-plan-select ${details.isFeatured ? 'featured-btn' : ''}`}
-                  onClick={() => navigate('/planes')}
-                >
-                  {details.isFeatured ? 'Inscribirme Ahora' : `Elegir ${plan.PlanName}`}
-                </button>
+        {loading ? (
+          <div className="plans-grid">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="plan-card skeleton-card">
+                <Skeleton type="text" width="60%" height={24} style={{ marginBottom: '16px' }} />
+                <Skeleton type="text" width="40%" height={16} style={{ marginBottom: '24px' }} />
+                <Skeleton type="text" width="70%" height={32} style={{ marginBottom: '32px' }} />
+                <Skeleton type="text" width="100%" height={12} count={4} style={{ marginBottom: '12px' }} />
+                <Skeleton type="text" width="100%" height={40} style={{ marginTop: '24px', borderRadius: '8px' }} />
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : plans.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'rgba(255,255,255,0.6)' }}>
+            <p>No se pudieron cargar los planes en este momento.</p>
+            <p>Por favor contacta con nosotros al <strong>{siteConfig.contact.phone}</strong> o escribe a <strong>{siteConfig.contact.email}</strong> para recibir más información.</p>
+          </div>
+        ) : (
+          <div className="plans-grid">
+            {plans.map((plan, index) => {
+              const details = getPlanDetails(plan, index);
+              const priceStr = String(plan.Price);
+              const dotIndex = priceStr.indexOf('.');
+              let integerPart = priceStr;
+              let decimalPart = '00';
+              if (dotIndex !== -1) {
+                integerPart = priceStr.substring(0, dotIndex);
+                decimalPart = priceStr.substring(dotIndex + 1).padEnd(2, '0').substring(0, 2);
+              }
+
+              return (
+                <div 
+                  key={plan.PlanID || index} 
+                  className={`plan-card ${details.isFeatured ? 'featured' : ''}`}
+                >
+                  {details.isFeatured && <div className="featured-banner">RECOMENDADO</div>}
+                  {!details.isFeatured && details.badge && <div className="plan-badge-top">{details.badge}</div>}
+                  
+                  <h3 className="plan-name">{plan.PlanName}</h3>
+                  <p className="plan-duration">Acceso por {plan.DurationDays} días</p>
+                  
+                  <div className="plan-price">
+                    <span className="currency">$</span>
+                    {integerPart}
+                    <span className="cents">.{decimalPart}</span>
+                    <span className="period">{details.period}</span>
+                  </div>
+
+                  <ul className="plan-features">
+                    {details.features.map((feat, idx) => (
+                      <li key={idx} className={feat.enabled ? '' : 'disabled'}>
+                        <FaCheckCircle className="check-icon" /> {feat.text}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button 
+                    className={`btn-plan-select ${details.isFeatured ? 'featured-btn' : ''}`}
+                    onClick={() => navigate('/planes')}
+                  >
+                    {details.isFeatured ? 'Inscribirme Ahora' : `Elegir ${plan.PlanName}`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* 5. TESTIMONIOS DE MIEMBROS */}
@@ -295,16 +310,16 @@ const Home = () => {
 
           <div className="footer-col">
             <h4>Contacto</h4>
-            <p><FaMapMarkerAlt className="footer-icon" /> Av. Principal #123, Quito - Ecuador</p>
-            <p><FaPhoneAlt className="footer-icon" /> +593 99 999 9999</p>
-            <p><FaEnvelope className="footer-icon" /> info@slimminggym.com</p>
+            <p><FaMapMarkerAlt className="footer-icon" /> {siteConfig.contact.address}</p>
+            <p><FaPhoneAlt className="footer-icon" /> {siteConfig.contact.phone}</p>
+            <p><FaEnvelope className="footer-icon" /> {siteConfig.contact.email}</p>
           </div>
 
           <div className="footer-col">
             <h4>Horarios de Atención</h4>
-            <p>Lunes a Viernes: 05:00 AM - 10:00 PM</p>
-            <p>Sábados: 06:00 AM - 08:00 PM</p>
-            <p>Domingos: 07:00 AM - 02:00 PM</p>
+            <p>{siteConfig.schedule.weekdays}</p>
+            <p>{siteConfig.schedule.saturdays}</p>
+            <p>{siteConfig.schedule.sundays}</p>
           </div>
         </div>
 

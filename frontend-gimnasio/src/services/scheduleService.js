@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+import api from './api';
 
 const mapIsoToDb = (isoString) => {
   const date = new Date(isoString);
@@ -36,7 +34,7 @@ export const scheduleService = {
   // --- CLASES GRUPALES ---
   getClasses: async () => {
     try {
-      const response = await axios.get(`${API_BASE}/classes`);
+      const response = await api.get('/classes');
       let classes = response.data.classes || response.data || [];
       return classes.map(c => {
         const startDate = new Date(c.StartTime);
@@ -61,7 +59,7 @@ export const scheduleService = {
 
   createClass: async (classData) => {
     try {
-      const response = await axios.post(`${API_BASE}/classes`, classData);
+      const response = await api.post('/classes', classData);
       return response.data;
     } catch (e) {
       console.error('API error in createClass', e);
@@ -71,7 +69,7 @@ export const scheduleService = {
 
   updateClass: async (id, classData) => {
     try {
-      const response = await axios.put(`${API_BASE}/classes/${id}`, classData);
+      const response = await api.put(`/classes/${id}`, classData);
       return response.data;
     } catch (e) {
       console.error('API error in updateClass', e);
@@ -81,7 +79,7 @@ export const scheduleService = {
 
   deleteClass: async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE}/classes/${id}`);
+      const response = await api.delete(`/classes/${id}`);
       return response.data;
     } catch (e) {
       console.error('API error in deleteClass', e);
@@ -92,7 +90,7 @@ export const scheduleService = {
   // --- HORARIOS DE TRABAJO DE ENTRENADORES ---
   getCoachSchedules: async () => {
     try {
-      const response = await axios.get(`${API_BASE}/coaches/schedules`);
+      const response = await api.get('/coaches/schedules');
       let schedules = response.data.schedules || response.data || [];
       schedules = schedules.map(s => ({
         ...s,
@@ -117,7 +115,7 @@ export const scheduleService = {
         startTime: dbDates.time,
         endTime: dbDatesEnd.time
       };
-      const response = await axios.post(`${API_BASE}/coaches/schedules`, payload);
+      const response = await api.post('/coaches/schedules', payload);
       return response.data;
     } catch (e) {
       console.error('API error in createCoachSchedule', e);
@@ -127,7 +125,7 @@ export const scheduleService = {
 
   updateCoachSchedule: async (id, scheduleData) => {
     try {
-      const response = await axios.put(`${API_BASE}/coaches/schedules/${id}`, scheduleData);
+      const response = await api.put(`/coaches/schedules/${id}`, scheduleData);
       return response.data;
     } catch (e) {
       console.error('API error in updateCoachSchedule', e);
@@ -137,7 +135,7 @@ export const scheduleService = {
 
   deleteCoachSchedule: async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE}/coaches/schedules/${id}`);
+      const response = await api.delete(`/coaches/schedules/${id}`);
       return response.data;
     } catch (e) {
       console.error('API error in deleteCoachSchedule', e);
@@ -148,7 +146,7 @@ export const scheduleService = {
   // --- RESERVACIONES DE SOCIOS ---
   getUserReservations: async (userId) => {
     try {
-      const response = await axios.get(`${API_BASE}/classes/user/${userId}`);
+      const response = await api.get(`/classes/user/${userId}`);
       return response.data.reservations || [];
     } catch (e) {
       console.error('API error in getUserReservations', e);
@@ -158,7 +156,7 @@ export const scheduleService = {
 
   bookClass: async (classId, userId) => {
     try {
-      const response = await axios.post(`${API_BASE}/classes/reserve`, { ClassID: classId, UserID: userId });
+      const response = await api.post('/classes/reserve', { ClassID: classId, UserID: userId });
       return response.data;
     } catch (e) {
       console.error('API error in bookClass', e);
@@ -169,7 +167,7 @@ export const scheduleService = {
   cancelBooking: async (classId, userId) => {
     try {
       // Nota: Asumiendo que /cancel está implementado en classController
-      const response = await axios.post(`${API_BASE}/classes/cancel`, { ClassID: classId, UserID: userId });
+      const response = await api.post('/classes/cancel', { ClassID: classId, UserID: userId });
       return response.data;
     } catch (e) {
       console.error('API error in cancelBooking', e);

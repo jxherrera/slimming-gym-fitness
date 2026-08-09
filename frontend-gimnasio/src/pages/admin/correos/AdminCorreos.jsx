@@ -32,6 +32,7 @@ const AdminCorreos = () => {
         setFilteredUsers(response.data.users);
       }
     } catch (error) {
+      console.error('Error fetching users:', error);
       toast.error('Error al cargar la lista de usuarios');
     } finally {
       setIsLoadingUsers(false);

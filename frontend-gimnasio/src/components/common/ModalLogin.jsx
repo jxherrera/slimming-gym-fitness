@@ -24,7 +24,27 @@ const ModalLogin = ({ isVisible, onClose }) => {
           </div>
           
           <button type="submit" className="btn-entrar">ENTRAR</button>
-          <a href="#" className="forgot-pass">¿Olvidaste tu contraseña?</a>
+          <button 
+            type="button" 
+            className="forgot-pass"
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: '#d1d1d1', 
+              cursor: 'pointer', 
+              fontSize: '0.9rem', 
+              textDecoration: 'underline', 
+              marginTop: '8px',
+              display: 'block',
+              margin: '8px auto 0 auto'
+            }}
+            onClick={() => {
+              onClose();
+              navigate('/forgot-password');
+            }}
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
 
           <div style={{ marginTop: '12px', textAlign: 'center' }}>
             <button

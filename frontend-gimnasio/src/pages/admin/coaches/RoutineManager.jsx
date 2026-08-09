@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import { FaUser, FaDumbbell, FaTrash, FaPlus, FaTimes, FaListUl } from 'react-icons/fa';
 import '../shared/admin-core.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+import api from '../../../services/api';
 
 const RoutineManager = ({ coachId }) => {
     const { isDarkMode, toggleTheme } = useTheme();
@@ -32,8 +31,8 @@ const RoutineManager = ({ coachId }) => {
 
     const fetchExercises = async () => {
         try {
-            const response = await fetch(`${API_BASE}/routines/catalog/exercises`);
-            const data = await response.json();
+            const response = await api.get('/routines/catalog/exercises');
+            const data = response.data;
             if (data.success) setExercises(data.exercises);
         } catch (error) {
             console.error("Error fetching exercises:", error);
@@ -43,8 +42,8 @@ const RoutineManager = ({ coachId }) => {
     const fetchTemplates = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_BASE}/routines/templates/coach/${coachId}`);
-            const data = await response.json();
+            const response = await api.get(`/routines/templates/coach/${coachId}`);
+            const data = response.data;
             if (data.success) setTemplates(data.templates);
         } catch (error) {
             console.error("Error fetching templates:", error);
@@ -62,14 +61,9 @@ const RoutineManager = ({ coachId }) => {
         e.preventDefault();
         setIsSubmittingExercise(true);
         try {
-            const url = editingExerciseId ? `${API_BASE}/routines/catalog/exercises/${editingExerciseId}` : `${API_BASE}/routines/catalog/exercises`;
-            const method = editingExerciseId ? 'PUT' : 'POST';
-            const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newExercise)
-            });
-            const data = await response.json();
+            const url = editingExerciseId ? `/routines/catalog/exercises/${editingExerciseId}` : '/routines/catalog/exercises';
+            const response = editingExerciseId ? await api.put(url, newExercise) : await api.post(url, newExercise);
+            const data = response.data;
             if (data.success) {
                 alert(`Ejercicio ${editingExerciseId ? 'actualizado' : 'creado'} exitosamente.`);
                 setNewExercise({ name: '', muscleGroup: '', description: '' });
@@ -94,8 +88,8 @@ const RoutineManager = ({ coachId }) => {
     const handleDeleteExercise = async (id) => {
         if (!window.confirm("¿Seguro que deseas eliminar este ejercicio del catálogo?")) return;
         try {
-            const response = await fetch(`${API_BASE}/routines/catalog/exercises/${id}`, { method: 'DELETE' });
-            if (response.ok) {
+            const response = await api.delete(`/routines/catalog/exercises/${id}`);
+            if (response.data.success || response.status === 200) {
                 fetchExercises();
             }
         } catch (error) {
@@ -142,14 +136,9 @@ const RoutineManager = ({ coachId }) => {
         };
 
         try {
-            const url = editingTemplateId ? `${API_BASE}/routines/templates/${editingTemplateId}` : `${API_BASE}/routines/templates`;
-            const method = editingTemplateId ? 'PUT' : 'POST';
-            const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await response.json();
+            const url = editingTemplateId ? `/routines/templates/${editingTemplateId}` : '/routines/templates';
+            const response = editingTemplateId ? await api.put(url, payload) : await api.post(url, payload);
+            const data = response.data;
             if (data.success) {
                 alert(`Plantilla ${editingTemplateId ? 'actualizada' : 'creada'} exitosamente.`);
                 setIsCreatingTemplate(false);
@@ -189,8 +178,8 @@ const RoutineManager = ({ coachId }) => {
     const handleDeleteTemplate = async (id) => {
         if (!window.confirm("¿Seguro que deseas eliminar esta plantilla?")) return;
         try {
-            const response = await fetch(`${API_BASE}/routines/templates/${id}`, { method: 'DELETE' });
-            if (response.ok) {
+            const response = await api.delete(`/routines/templates/${id}`);
+            if (response.data.success || response.status === 200) {
                 fetchTemplates();
             }
         } catch (error) {

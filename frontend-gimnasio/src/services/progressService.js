@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+import api from './api';
 
 const DEFAULT_PROGRESS_HISTORY = [
   { date: '2026-01-15', weight: 82.5, bodyFat: 24.2, muscleMass: 33.1 },
@@ -16,7 +14,7 @@ const PROGRESS_KEY = 'member_progress_history';
 export const progressService = {
   getProgressHistory: async (userId) => {
     try {
-      const response = await axios.get(`${API_BASE}/evaluations/user/${userId}`);
+      const response = await api.get(`/evaluations/user/${userId}`);
       if (response.data && response.data.success) {
         return response.data.history.map(ev => ({
           date: ev.EvaluationDate ? ev.EvaluationDate.split('T')[0] : '',
@@ -25,8 +23,8 @@ export const progressService = {
           muscleMass: ev.MuscleMassPercentage
         })).reverse(); // Assuming frontend wants oldest first like the default data
       }
-    } catch (e) {
-      // Fallback a almacenamiento local
+    } catch (error) {
+      console.warn('API error fetching progress history, using local fallback:', error);
     }
     const local = localStorage.getItem(`${PROGRESS_KEY}_${userId}`);
     return local ? JSON.parse(local) : DEFAULT_PROGRESS_HISTORY;
@@ -34,15 +32,15 @@ export const progressService = {
 
   addProgressRecord: async (userId, record) => {
     try {
-      await axios.post(`${API_BASE}/evaluations`, { 
+      await api.post('/evaluations', { 
         userId, 
         coachId: 1, // Default coachId if not provided (or we can extract from context if needed)
         weightKg: record.weight, 
         bodyFatPercentage: record.bodyFat, 
         muscleMassPercentage: record.muscleMass 
       });
-    } catch (e) {
-      // Fallback local
+    } catch (error) {
+      console.warn('API error adding progress record, using local fallback:', error);
     }
     const current = await progressService.getProgressHistory(userId);
     const updated = [...current, { date: record.date || new Date().toISOString().split('T')[0], ...record }];

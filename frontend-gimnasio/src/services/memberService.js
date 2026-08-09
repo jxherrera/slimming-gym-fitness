@@ -1,17 +1,15 @@
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+import api from './api';
 
 export const memberService = {
   // Obtener todos los planes del gimnasio
   getPlans: async () => {
-    const response = await axios.get(`${API_BASE}/plans`);
+    const response = await api.get('/plans');
     return response.data;
   },
 
   // Obtener la suscripción actual de un usuario
   getSubscription: async (userId) => {
-    const response = await axios.get(`${API_BASE}/users/${userId}/subscription`);
+    const response = await api.get(`/users/${userId}/subscription`);
     return response.data;
   },
 
@@ -25,17 +23,18 @@ export const memberService = {
       }
     } : {};
     
-    const response = await axios.post(`${API_BASE}/payments/upload`, paymentData, config);
+    const response = await api.post('/payments/upload', paymentData, config);
     return response.data;
   },
 
   // Verificar comprobante de pago (Aprobar / Rechazar)
   verifyPayment: async (paymentId, status, notes = '') => {
+    console.log(`Verifying payment ${paymentId} with status ${status}. Admin notes: ${notes}`);
     if (status === 'A') {
-      const response = await axios.patch(`${API_BASE}/payments/${paymentId}/approve`, { userId: 1 });
+      const response = await api.patch(`/payments/${paymentId}/approve`, { userId: 1 });
       return response.data;
     } else {
-      const response = await axios.patch(`${API_BASE}/payments/${paymentId}/reject`, { userId: 1 });
+      const response = await api.patch(`/payments/${paymentId}/reject`, { userId: 1 });
       return response.data;
     }
   },
@@ -43,44 +42,43 @@ export const memberService = {
   // Obtener Ficha Deportiva PDF
   getMemberPdfReport: async (memberId) => {
     try {
-      const response = await axios.get(`${API_BASE}/reports/member-pdf/${memberId}`, {
+      const response = await api.get(`/reports/member-pdf/${memberId}`, {
         responseType: 'blob'
       });
       return response.data;
-    } catch (e) {
-      console.warn('API error fetching member PDF, generating local client PDF fallback', e);
-      // Retornar null o propagar para generar una descarga local desde la librería jsPDF
-      throw e;
+    } catch (error) {
+      console.warn('API error fetching member PDF, generating local client PDF fallback', error);
+      throw error;
     }
   },
 
   // Obtener entrenadores disponibles
   getCoaches: async () => {
     try {
-      const response = await axios.get(`${API_BASE}/coaches`);
+      const response = await api.get('/coaches');
       return response.data;
-    } catch (e) {
-      // Fallback a ruta por rol si /coaches no está habilitado directamente
-      const response = await axios.get(`${API_BASE}/users/role/Coach`);
+    } catch (error) {
+      console.warn('Error fetching coaches direct route, falling back to role query:', error);
+      const response = await api.get('/users/role/Coach');
       return response.data;
     }
   },
 
   // Asignar o solicitar Entrenador
   assignCoach: async (coachId, memberId, userInitiated = false) => {
-    const response = await axios.post(`${API_BASE}/coaches/${coachId}/assign`, { MemberID: memberId, userInitiated });
+    const response = await api.post(`/coaches/${coachId}/assign`, { MemberID: memberId, userInitiated });
     return response.data;
   },
 
   // Actualizar perfil de usuario
   updateProfile: async (userId, userData) => {
-    const response = await axios.patch(`${API_BASE}/users/${userId}`, userData);
+    const response = await api.patch(`/users/${userId}`, userData);
     return response.data;
   },
 
   // Cambiar contraseña
   changePassword: async (userId, currentPassword, newPassword) => {
-    const response = await axios.patch(`${API_BASE}/users/${userId}/password`, { currentPassword, newPassword });
+    const response = await api.patch(`/users/${userId}/password`, { currentPassword, newPassword });
     return response.data;
   }
 };

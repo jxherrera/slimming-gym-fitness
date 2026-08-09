@@ -1,6 +1,7 @@
 const { poolPromise, sql } = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/jwt');
 const emailService = require('../services/emailService');
 
 exports.register = async (req, res) => {
@@ -172,8 +173,8 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign(
             { userId: user.UserID, role: roleName },
-            process.env.JWT_SECRET || 'supersecret_fallback_key',
-            { expiresIn: '24h' }
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
         );
 
         res.json({

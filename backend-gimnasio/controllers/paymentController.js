@@ -1,5 +1,5 @@
 const { poolPromise, sql } = require('../config/db');
-const { bucket } = require('../config/gcs');
+const { bucket, isStorageConfigured } = require('../config/gcs');
 const emailService = require('../services/emailService');
 
 exports.getPendingPayments = async (req, res) => {
@@ -160,6 +160,13 @@ exports.uploadPayment = async (req, res) => {
     }
 
     const amountPaid = planResult.recordset[0].Price;
+
+    if (!isStorageConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: 'El almacenamiento de comprobantes no está configurado en el servidor.'
+      });
+    }
 
     let safeOriginalName = req.file.originalname || 'comprobante.jpg';
     safeOriginalName = safeOriginalName.replace(/[^a-zA-Z0-9.\-_]/g, '_');

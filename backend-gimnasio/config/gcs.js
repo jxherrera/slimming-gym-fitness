@@ -13,7 +13,21 @@ if (process.env.GCS_KEYFILE_PATH) {
 }
 
 const storage = new Storage(storageOptions);
-const bucketName = process.env.GCS_BUCKET_NAME || 'slimming-gym-bucket';
-const bucket = storage.bucket(bucketName);
 
-module.exports = { storage, bucket };
+// Sin valor por defecto a proposito: un nombre de bucket quemado provocaria
+// intentos de escritura silenciosos contra un bucket equivocado o inexistente.
+const bucketName = process.env.GCS_BUCKET_NAME;
+
+if (!bucketName) {
+  console.warn(
+    '[GCS] GCS_BUCKET_NAME no está definida. La subida de comprobantes de pago ' +
+    'quedará deshabilitada hasta configurarla en el archivo .env.'
+  );
+}
+
+const bucket = bucketName ? storage.bucket(bucketName) : null;
+
+/** Indica si el almacenamiento de archivos esta configurado y utilizable. */
+const isStorageConfigured = () => Boolean(bucket);
+
+module.exports = { storage, bucket, isStorageConfigured };

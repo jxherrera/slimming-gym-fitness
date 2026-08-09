@@ -5,8 +5,19 @@ const { getWelcomeTemplate, getPaymentApprovedTemplate, getClassJoinedTemplate }
 
 class EmailService {
     constructor() {
+        // Configuracion por entorno: por defecto Gmail (lo que usamos hoy), pero
+        // definiendo SMTP_HOST se puede apuntar a cualquier servidor SMTP sin
+        // tocar codigo, algo necesario al migrar el sistema a otro servidor.
+        const transportConfig = process.env.SMTP_HOST
+            ? {
+                host: process.env.SMTP_HOST,
+                port: Number(process.env.SMTP_PORT) || 587,
+                secure: process.env.SMTP_SECURE === 'true'
+            }
+            : { service: process.env.SMTP_SERVICE || 'gmail' };
+
         this.transporter = nodemailer.createTransport({
-            service: 'gmail',
+            ...transportConfig,
             auth: {
                 user: process.env.SMTP_EMAIL,
                 pass: process.env.SMTP_PASSWORD

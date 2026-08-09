@@ -5,7 +5,6 @@ const templateController = require('../controllers/templateController');
 
 // --- RUTINAS ESTANDAR ---
 router.get('/coach/:coachId/clients', routineController.getClientsByCoach);
-router.get('/coach/:coachId/clients', routineController.getClientsByCoach);
 router.post('/assign', routineController.assignRoutine);
 router.get('/user/:userId', routineController.getUserRoutines);
 router.get('/user/:userId/current', routineController.getCurrentRoutine);
@@ -20,7 +19,6 @@ router.delete('/catalog/exercises/:id', templateController.deleteCatalogExercise
 
 // --- PLANTILLAS DE RUTINAS ---
 router.get('/templates/all', templateController.getAllRoutineTemplates);
-router.get('/templates/coach/:coachId', templateController.getRoutineTemplates);
 router.get('/templates/coach/:coachId', templateController.getRoutineTemplates);
 router.post('/templates', templateController.createRoutineTemplate);
 router.put('/templates/:id', templateController.updateRoutineTemplate);

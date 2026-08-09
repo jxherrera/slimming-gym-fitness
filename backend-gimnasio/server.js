@@ -20,19 +20,22 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+// Origenes autorizados. En produccion se definen en ALLOWED_ORIGINS (lista
+// separada por comas); el valor por defecto cubre solo desarrollo local.
+// Nota: si Nginx sirve el frontend y hace proxy de /api en el mismo dominio,
+// el navegador no emite peticiones de otro origen y CORS deja de intervenir.
+const DEV_ORIGINS = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+  'http://localhost:3000'
+];
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:3000',
-      'http://localhost:5001',
-      'https://eastern-automata-txsl0.web.app',
-      'https://eastern-automata-txsl0.firebaseapp.com'
-    ];
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
+  : DEV_ORIGINS;
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permitir peticiones sin origen (como Postman, peticiones del mismo servidor o cURL)
+    // Peticiones sin cabecera Origin (Postman, cURL, mismo servidor tras el proxy)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       return callback(null, true);

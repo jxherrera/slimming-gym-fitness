@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   FaBars, FaTimes, FaHome, FaUser, FaDumbbell, 
-  FaCalendarAlt, FaMoneyBillWave, FaCog, FaClipboardList,
+  FaCalendarAlt, FaMoneyBillWave, FaClipboardList,
   FaChevronDown, FaChevronUp, FaEnvelope, FaDoorOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
@@ -86,12 +86,9 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
           { path: '/admin/accesos', name: 'Control de Ingreso', icon: <FaDoorOpen /> }
         ]
       },
-      {
-        category: 'Ajustes',
-        items: [
-          { path: '/admin/configuracion', name: 'Configuración', icon: <FaCog /> }
-        ]
-      }
+      // Pendiente: reponer la categoria 'Ajustes' cuando exista la pantalla de
+      // gestion de permisos de entrenador (tabla CoachPermissions y el endpoint
+      // PUT /api/coaches/:id/permissions ya existen, falta la interfaz).
     ],
     coach: [
       {

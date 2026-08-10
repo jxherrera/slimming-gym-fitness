@@ -153,6 +153,11 @@ services:
     volumes:
       # Solo lectura: el proxy sirve los comprobantes pero no debe modificarlos.
       - uploads:/app/uploads:ro
+      # Certificados de Let's Encrypt emitidos con Certbot en el host.
+      # En solo lectura: Nginx los usa pero no debe poder alterarlos.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # Raiz para la validacion de renovacion sin detener el servicio.
+      - certbot-webroot:/var/www/certbot
     depends_on:
       - api
     restart: unless-stopped
@@ -164,6 +169,8 @@ volumes:
   # Comprobantes de pago subidos por los socios. Compartido entre las replicas
   # de la API (lectura y escritura) y el proxy (solo lectura).
   uploads:
+  # Raiz compartida para la validacion de Certbot en las renovaciones.
+  certbot-webroot:
 
 networks:
   interna:

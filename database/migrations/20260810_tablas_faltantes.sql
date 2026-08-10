@@ -106,10 +106,13 @@ GO
 IF OBJECT_ID('dbo.ClassReservations', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.ClassReservations (
-        ReservationID   INT PRIMARY KEY IDENTITY(1,1),
-        ClassID         INT NOT NULL,
-        UserID          INT NOT NULL,
-        ReservationDate DATETIME NOT NULL DEFAULT GETDATE(),
+        ReservationID INT PRIMARY KEY IDENTITY(1,1),
+        ClassID       INT NOT NULL,
+        UserID        INT NOT NULL,
+        -- El nombre lo fija classController.getUserReservations, que lee
+        -- cr.ReservedAt. No es un capricho: con otro nombre esa consulta
+        -- devuelve error 207 y la agenda del socio no carga.
+        ReservedAt    DATETIME NOT NULL DEFAULT GETDATE(),
         CONSTRAINT FK_ClassReservations_Classes FOREIGN KEY (ClassID)
             REFERENCES dbo.Classes(ClassID) ON DELETE CASCADE,
         CONSTRAINT FK_ClassReservations_Users FOREIGN KEY (UserID)
@@ -333,7 +336,22 @@ END
 GO
 
 -- ------------------------------------------------------------------------------
--- 12. Rol Guest
+-- 12. Correccion: ClassReservations.ReservedAt
+--
+-- La primera version de esta migracion creo la columna como ReservationDate.
+-- Las bases que ya la aplicaron necesitan el cambio de nombre; las nuevas la
+-- crean bien desde el principio y este bloque no hace nada.
+-- ------------------------------------------------------------------------------
+IF COL_LENGTH('dbo.ClassReservations', 'ReservedAt') IS NULL
+   AND COL_LENGTH('dbo.ClassReservations', 'ReservationDate') IS NOT NULL
+BEGIN
+    EXEC sp_rename 'dbo.ClassReservations.ReservationDate', 'ReservedAt', 'COLUMN';
+    PRINT 'Columna ClassReservations.ReservationDate renombrada a ReservedAt.';
+END
+GO
+
+-- ------------------------------------------------------------------------------
+-- 13. Rol Guest
 --
 -- seedRunner.js contempla cuatro roles. Si falta alguno, el alta de usuarios con
 -- ese perfil se queda sin RoleID.

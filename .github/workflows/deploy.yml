@@ -48,45 +48,6 @@ jobs:
 
           echo "Secretos presentes."
 
-      # TEMPORAL — quitar este paso cuando el despliegue vuelva a funcionar.
-      #
-      # Diagnostica un rechazo de autenticacion sin revelar ningun secreto:
-      # imprime solo huellas SHA256, que son publicas por naturaleza. Sirve para
-      # distinguir tres causas que dan el mismo error en la accion de SSH:
-      # la llave del secreto no es la autorizada, el usuario no coincide, o el
-      # host apunta a otra maquina.
-      - name: Diagnostico de la conexion
-        continue-on-error: true
-        env:
-          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
-          VM_USER: ${{ secrets.VM_USER }}
-          VM_HOST: ${{ secrets.VM_HOST }}
-          VM_PORT: ${{ secrets.VM_PORT || 22 }}
-        run: |
-          echo "== Llave privada del secreto =="
-          printf '%s\n' "$VM_SSH_KEY" > /tmp/llave
-          chmod 600 /tmp/llave
-          if ssh-keygen -y -P '' -f /tmp/llave > /tmp/llave.pub 2>/tmp/error; then
-            ssh-keygen -lf /tmp/llave.pub
-          else
-            echo "No se pudo leer la llave. Suele ser por pegarla incompleta,"
-            echo "con saltos de linea de Windows, o por tener frase de paso:"
-            cat /tmp/error
-          fi
-
-          echo
-          echo "== Usuario =="
-          echo "primeras 3 letras: $(printf '%s' "$VM_USER" | cut -c1-3) / longitud: ${#VM_USER}"
-
-          echo
-          echo "== Maquina a la que se conecta =="
-          getent hosts "$VM_HOST" | awk '{print "resuelve a una IP que termina en ." $1}' | sed 's/.*\.//' || true
-          echo "huella de la clave de host:"
-          ssh-keyscan -p "$VM_PORT" -T 10 "$VM_HOST" 2>/dev/null > /tmp/host.pub
-          ssh-keygen -lf /tmp/host.pub || echo "El servidor no respondio en el puerto $VM_PORT"
-
-          rm -f /tmp/llave /tmp/llave.pub
-
       - name: Conectar a la VM y actualizar Docker
         uses: appleboy/ssh-action@v1.2.5
         with:

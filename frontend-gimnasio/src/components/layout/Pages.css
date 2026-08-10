@@ -3,6 +3,7 @@
   padding-top: 120px; /* Espacio para que el Navbar no tape el título */
   padding-bottom: 50px;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -27,4 +28,16 @@
   line-height: 1.6;
   color: var(--text-light);
   margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding-top: 100px;
+  }
+  .content-wrap {
+    width: 95%;
+  }
+  .page-title {
+    font-size: 2.5rem;
+  }
 }

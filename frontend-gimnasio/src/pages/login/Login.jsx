@@ -95,19 +95,19 @@ const Login = () => {
           <>
             <div className="form-group">
               <label>ID Número:</label>
-              <input type="text" name="IDNumber" value={formData.IDNumber} onChange={handleChange} required />
+              <input type="text" inputMode="numeric" autoComplete="off" name="IDNumber" value={formData.IDNumber} onChange={handleChange} required enterKeyHint="next" />
             </div>
             <div className="form-group">
               <label>Nombre:</label>
-              <input type="text" name="FirstName" value={formData.FirstName} onChange={handleChange} required />
+              <input type="text" autoComplete="given-name" autoCapitalize="words" name="FirstName" value={formData.FirstName} onChange={handleChange} required enterKeyHint="next" />
             </div>
             <div className="form-group">
               <label>Apellido:</label>
-              <input type="text" name="LastName" value={formData.LastName} onChange={handleChange} required />
+              <input type="text" autoComplete="family-name" autoCapitalize="words" name="LastName" value={formData.LastName} onChange={handleChange} required enterKeyHint="next" />
             </div>
             <div className="form-group">
               <label>Teléfono:</label>
-              <input type="text" name="PhoneNumber" value={formData.PhoneNumber} onChange={handleChange} />
+              <input type="tel" inputMode="tel" autoComplete="tel" name="PhoneNumber" value={formData.PhoneNumber} onChange={handleChange} enterKeyHint="next" />
             </div>
           </>
         )}
@@ -115,11 +115,11 @@ const Login = () => {
         {/* Campos comunes */}
         <div className="form-group">
           <label>Email:</label>
-          <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+          <input type="email" inputMode="email" autoComplete="email" autoCapitalize="off" name="email" value={formData.email} onChange={handleChange} required enterKeyHint="next" />
         </div>
         <div className="form-group">
           <label>Contraseña:</label>
-          <input type="password" name="password" value={formData.password} onChange={handleChange} required />
+          <input type="password" autoComplete={isLogin ? "current-password" : "new-password"} name="password" value={formData.password} onChange={handleChange} required enterKeyHint="done" />
         </div>
 
         {isLogin && (

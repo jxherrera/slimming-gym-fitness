@@ -588,33 +588,33 @@ const Admin = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>ID Número</label>
-                      <input type="text" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.IDNumber} onChange={(e) => handleRegisterChange('IDNumber', e.target.value)} required />
+                      <input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.IDNumber} onChange={(e) => handleRegisterChange('IDNumber', e.target.value)} required />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Email</label>
-                      <input type="email" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.Email} onChange={(e) => handleRegisterChange('Email', e.target.value)} required />
+                      <input type="email" inputMode="email" autoComplete="email" autoCapitalize="off" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.Email} onChange={(e) => handleRegisterChange('Email', e.target.value)} required />
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Nombre</label>
-                      <input type="text" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.FirstName} onChange={(e) => handleRegisterChange('FirstName', e.target.value)} required />
+                      <input type="text" autoComplete="given-name" autoCapitalize="words" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.FirstName} onChange={(e) => handleRegisterChange('FirstName', e.target.value)} required />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Apellido</label>
-                      <input type="text" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.LastName} onChange={(e) => handleRegisterChange('LastName', e.target.value)} required />
+                      <input type="text" autoComplete="family-name" autoCapitalize="words" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.LastName} onChange={(e) => handleRegisterChange('LastName', e.target.value)} required />
                     </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Contraseña</label>
-                      <input type="password" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.Password} onChange={(e) => handleRegisterChange('Password', e.target.value)} required />
+                      <input type="password" autoComplete="new-password" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.Password} onChange={(e) => handleRegisterChange('Password', e.target.value)} required />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Teléfono</label>
-                      <input type="text" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.PhoneNumber} onChange={(e) => handleRegisterChange('PhoneNumber', e.target.value)} />
+                      <input type="tel" inputMode="tel" autoComplete="tel" enterKeyHint="done" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.PhoneNumber} onChange={(e) => handleRegisterChange('PhoneNumber', e.target.value)} />
                     </div>
                   </div>
 

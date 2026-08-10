@@ -47,11 +47,18 @@ body.theme-dark,
 
 .admin-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--admin-bg);
   color: var(--admin-text);
   padding: 0 0 10px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   position: relative;
+}
+
+.admin-page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .admin-header {
@@ -234,7 +241,7 @@ body.theme-dark,
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -514,11 +521,14 @@ body.theme-dark,
   -webkit-backdrop-filter: var(--glass-blur);
 }
 
-.form-grid {
+.form-grid, .form-grid-2, .form-grid-3 {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
+
+.form-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.form-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.form-grid-3 { grid-template-columns: repeat(3, 1fr); }
 
 .form-group {
   display: flex;
@@ -711,17 +721,13 @@ body.theme-dark,
     padding: 0;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
   .stat-card {
     flex-direction: column;
     text-align: center;
   }
 
-  form {
-    grid-template-columns: 1fr;
+  form, .form-grid, .form-grid-2, .form-grid-3 {
+    grid-template-columns: 1fr !important;
   }
 
   .form-section,
@@ -729,9 +735,73 @@ body.theme-dark,
     padding: 18px;
   }
 
-  .data-table {
+  /* Setting row flex to column */
+  .setting-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+  .setting-action {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .setting-action button, .setting-action a {
+    flex: 1;
+    min-height: 44px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Patrón Tarjeta para tablas */
+  .data-table, .data-table thead, .data-table tbody, .data-table th, .data-table td, .data-table tr,
+  .clients-table, .clients-table thead, .clients-table tbody, .clients-table th, .clients-table td, .clients-table tr {
+    display: block;
+  }
+  
+  .data-table thead, .clients-table thead {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+  
+  .data-table tr, .clients-table tr {
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: var(--admin-surface);
+    padding: 8px;
+  }
+  
+  .data-table td, .clients-table td {
+    border: none;
+    border-bottom: 1px solid var(--admin-border);
+    position: relative;
+    padding-left: 45%;
+    text-align: right;
+    min-height: 44px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
     font-size: 0.88rem;
-    min-width: 0;
+  }
+  
+  .data-table td::before, .clients-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 8px;
+    width: 40%;
+    padding-right: 10px;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: 700;
+    color: var(--admin-muted);
+  }
+  
+  .data-table td:last-child, .clients-table td:last-child {
+    border-bottom: 0;
   }
 
   .data-table th,

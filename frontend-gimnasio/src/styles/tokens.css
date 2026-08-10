@@ -1,0 +1,66 @@
+:root {
+  /* Escala fluida de tipografía */
+  --fs-xs: clamp(0.75rem, 1.5vw, 0.875rem);
+  --fs-sm: clamp(0.875rem, 2vw, 1rem);
+  --fs-base: clamp(1rem, 2.5vw, 1.125rem);
+  --fs-lg: clamp(1.125rem, 3vw, 1.25rem);
+  --fs-xl: clamp(1.25rem, 4vw, 1.5rem);
+  --fs-2xl: clamp(1.5rem, 5vw, 2rem);
+  --fs-3xl: clamp(1.9rem, 6vw, 3.6rem);
+  --fs-4xl: clamp(2.25rem, 8vw, 4.5rem);
+
+  /* Escala de espaciado */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-8: 3rem;
+
+  /* Accesibilidad Táctil */
+  --tap-min: 44px;
+
+  /* Paleta Base (Unificada) */
+  --brand-red: #D20000;
+  --brand-red-light: #e63946;
+  --brand-red-dark: #b91c1c;
+  --brand-red-soft: rgba(210, 0, 0, 0.15);
+  
+  --surface-dark: #121212;
+  --surface-dark-alt: #0b0f19;
+  --surface-light: #F4F4F4;
+  --surface-white: #FFFFFF;
+  
+  --text-primary-dark: #FFFFFF;
+  --text-primary-light: #121212;
+  --text-secondary: #64748b;
+  --text-slate: #333333;
+
+  /* Alias de compatibilidad (App.css, index.css) */
+  --rojo-hero: var(--brand-red);
+  --negro-carbon: var(--surface-dark);
+  --gris-pizarra: var(--text-slate);
+  --gris-nube: var(--surface-light);
+  --blanco-nieve: var(--surface-white);
+  
+  --bg-dark: var(--surface-dark);
+  --text-light: var(--text-primary-dark);
+  --primary-red: var(--brand-red-light);
+  --secondary-gray: #f5f5f5;
+  --card-bg: var(--surface-white);
+
+  /* Alias Admin (admin-core.css Base / Light Theme Defaults) */
+  --admin-bg: #f8fafc;
+  --admin-surface: rgba(255, 255, 255, 0.75);
+  --admin-surface-alt: rgba(241, 245, 249, 0.85);
+  --admin-border: rgba(203, 213, 225, 0.6);
+  --admin-text: #0f172a;
+  --admin-heading: #020617;
+  --admin-muted: #64748b;
+  --admin-accent: var(--brand-red-dark);
+  --admin-accent-dark: #7f1d1d;
+  --admin-accent-soft: rgba(220, 38, 38, 0.1);
+  --glass-blur: blur(16px);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}

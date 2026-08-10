@@ -52,12 +52,16 @@ const ForgotPassword = () => {
           <label htmlFor="recovery-email">Correo Electrónico:</label>
           <input 
             type="email" 
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="off"
             id="recovery-email" 
             name="email" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
             placeholder="ejemplo@correo.com"
             required 
+            enterKeyHint="done"
           />
         </div>
 

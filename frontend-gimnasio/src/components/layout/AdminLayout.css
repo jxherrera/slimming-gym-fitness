@@ -1,6 +1,7 @@
 .admin-layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--admin-bg);
   width: 100%;
 }
@@ -9,6 +10,7 @@
   flex: 1;
   margin-left: 250px;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;

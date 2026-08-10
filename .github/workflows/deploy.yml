@@ -5,17 +5,64 @@ on:
     branches:
       - main # Se ejecuta solo cuando hay cambios en main
 
+# Dos despliegues a la vez dejarian la VM a medio reconstruir: el segundo espera
+# a que termine el primero.
+concurrency:
+  group: despliegue-vm
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Sin esta comprobacion, un secreto vacio se manifiesta como
+      # "can't connect without a private SSH key or password" dentro de la
+      # accion de SSH, que no dice cual de los tres falta.
+      - name: Verificar que existan los secretos de acceso
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+        run: |
+          faltantes=""
+          [ -z "$VM_HOST" ] && faltantes="$faltantes VM_HOST"
+          [ -z "$VM_USER" ] && faltantes="$faltantes VM_USER"
+          [ -z "$VM_SSH_KEY" ] && faltantes="$faltantes VM_SSH_KEY"
+
+          if [ -n "$faltantes" ]; then
+            echo "::error::Faltan estos secretos del repositorio:$faltantes"
+            echo "Configuralos en Settings > Secrets and variables > Actions > Repository secrets."
+            echo "VM_SSH_KEY debe ser la clave PRIVADA completa, incluidas las lineas BEGIN y END."
+            exit 1
+          fi
+
+          # La clave publica no sirve para autenticarse: es un error facil de
+          # cometer al copiar y pegar, y el mensaje de la accion no lo aclara.
+          case "$VM_SSH_KEY" in
+            ssh-rsa*|ssh-ed25519*|ecdsa-sha2*)
+              echo "::error::VM_SSH_KEY contiene una clave PUBLICA. Debe ser el contenido del archivo sin extension .pub."
+              exit 1
+              ;;
+          esac
+
+          echo "Secretos presentes."
+
       - name: Conectar a la VM y actualizar Docker
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
+          # Solo si la clave se genero con frase de paso.
+          passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
+          port: ${{ secrets.VM_PORT || 22 }}
+          # Reconstruir las imagenes tarda mas que el limite de 10 minutos que
+          # trae la accion por defecto.
+          command_timeout: 20m
+          # Sin esto, un fallo del git pull no detiene el resto y la VM se
+          # reconstruiria con el codigo anterior, aparentando un despliegue bueno.
+          script_stop: true
           script: |
             # Entra a la carpeta del proyecto en la VM
             cd /opt/slimming
@@ -26,3 +73,6 @@ jobs:
             # Reconstruye y reinicia los contenedores en segundo plano
             docker compose down
             docker compose up -d --build
+
+            # Deja constancia del estado con el que quedo el despliegue
+            docker compose ps

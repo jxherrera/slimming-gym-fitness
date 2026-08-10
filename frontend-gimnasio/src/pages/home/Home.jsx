@@ -11,7 +11,8 @@ import {
   FaHeartbeat, 
   FaPhoneAlt, 
   FaEnvelope, 
-  FaMapMarkerAlt 
+  FaMapMarkerAlt,
+  FaInstagram
 } from 'react-icons/fa';
 import api from '../../services/api';
 import './Home.css';
@@ -321,6 +322,11 @@ const Home = () => {
             <p><FaMapMarkerAlt className="footer-icon" /> {siteConfig.contact.address}</p>
             <p><FaPhoneAlt className="footer-icon" /> {siteConfig.contact.phone}</p>
             <p><FaEnvelope className="footer-icon" /> {siteConfig.contact.email}</p>
+            <p style={{ marginTop: '8px' }}>
+              <a href="https://www.instagram.com/slimming_gym_fitness/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FaInstagram className="footer-icon" /> @slimming_gym_fitness
+              </a>
+            </p>
           </div>
 
           <div className="footer-col">

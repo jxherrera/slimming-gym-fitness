@@ -86,7 +86,14 @@ const AdminHorarios = () => {
   
   // Calendar controlled state
   const [calendarDate, setCalendarDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState('week');
+  /* La vista semanal necesita 650px de ancho mínimo: en un teléfono obliga a
+     arrastrar de lado para leer el calendario. La vista de agenda es una lista
+     vertical, así que se usa como vista inicial en móvil. */
+  const [calendarView, setCalendarView] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+      ? 'agenda'
+      : 'week'
+  );
   
   // Formularios
   const [classForm, setClassForm] = useState({
@@ -767,6 +774,7 @@ const AdminHorarios = () => {
               </div>
               <div className="calendar-container">
                 <Calendar
+                  className={calendarView === 'agenda' ? 'vista-agenda' : ''}
                   localizer={localizer}
                   events={events}
                   date={calendarDate}

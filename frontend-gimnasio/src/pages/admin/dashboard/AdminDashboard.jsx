@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { FaChartLine, FaUserTie, FaUsers, FaUserPlus, FaDollarSign, FaUserShield } from 'react-icons/fa';
 import '../shared/admin-core.css';
 import { useTheme } from '../../../context/ThemeContext';
+import { useEsMovil } from '../../../hooks/useMediaQuery';
 import api from '../../../services/api';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
@@ -40,6 +41,7 @@ const Admin = () => {
     setSearchParams({ mode: tabId });
   };
   const { isDarkMode, toggleTheme } = useTheme();
+  const esMovil = useEsMovil();
   const [entities, setEntities] = useState({
     coaches: [],
     members: [],
@@ -552,8 +554,8 @@ const Admin = () => {
                 <p style={{ color: 'var(--admin-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
                   Progreso histórico promedio mensual de peso y porcentaje de grasa corporal de la base de socios activos.
                 </p>
-                <div style={{ minHeight: '300px', width: '100%' }}>
-                  <ResponsiveContainer width="100%" height={300}>
+                <div style={{ minHeight: esMovil ? '240px' : '300px', width: '100%' }}>
+                  <ResponsiveContainer width="100%" height={esMovil ? 240 : 300}>
                     <LineChart
                       data={[
                         { name: 'Ene', peso: 81.5, grasa: 24.1 },
@@ -563,14 +565,16 @@ const Admin = () => {
                         { name: 'May', peso: 78.2, grasa: 20.8 },
                         { name: 'Jun', peso: 77.5, grasa: 19.9 }
                       ]}
-                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      margin={esMovil ? { top: 10, right: 4, left: -20, bottom: 0 } : { top: 10, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                      <XAxis dataKey="name" stroke="var(--admin-muted)" style={{ fontSize: '12px' }} />
-                      <YAxis yAxisId="left" stroke="#ff3b3b" label={{ value: 'Peso (kg)', angle: -90, position: 'insideLeft', style: { fill: '#ff3b3b', fontSize: '11px', fontWeight: 'bold' } }} style={{ fontSize: '11px' }} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#ffb300" label={{ value: 'Grasa (%)', angle: 90, position: 'insideRight', style: { fill: '#ffb300', fontSize: '11px', fontWeight: 'bold' } }} style={{ fontSize: '11px' }} />
+                      <XAxis dataKey="name" stroke="var(--admin-muted)" style={{ fontSize: esMovil ? '10px' : '12px' }} interval={esMovil ? 'preserveStartEnd' : 0} minTickGap={esMovil ? 20 : 5} />
+                      {/* En móvil se ocultan las etiquetas rotadas de los ejes: se comían
+                          casi la mitad del ancho útil de la gráfica */}
+                      <YAxis yAxisId="left" stroke="#ff3b3b" width={esMovil ? 30 : 60} tickCount={esMovil ? 4 : 6} label={esMovil ? undefined : { value: 'Peso (kg)', angle: -90, position: 'insideLeft', style: { fill: '#ff3b3b', fontSize: '11px', fontWeight: 'bold' } }} style={{ fontSize: esMovil ? '10px' : '11px' }} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#ffb300" width={esMovil ? 30 : 60} tickCount={esMovil ? 4 : 6} label={esMovil ? undefined : { value: 'Grasa (%)', angle: 90, position: 'insideRight', style: { fill: '#ffb300', fontSize: '11px', fontWeight: 'bold' } }} style={{ fontSize: esMovil ? '10px' : '11px' }} />
                       <Tooltip contentStyle={{ background: '#1f2937', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px' }} />
-                      <Legend style={{ fontSize: '12px' }} />
+                      <Legend wrapperStyle={{ fontSize: esMovil ? '11px' : '12px' }} />
                       <Line yAxisId="left" type="monotone" dataKey="peso" name="Peso Promedio (kg)" stroke="#ff3b3b" strokeWidth={3} activeDot={{ r: 8 }} />
                       <Line yAxisId="right" type="monotone" dataKey="grasa" name="Grasa Promedio (%)" stroke="#ffb300" strokeWidth={3} />
                     </LineChart>
@@ -585,7 +589,7 @@ const Admin = () => {
                 {registerMessage && <div style={{ background: registerMessage.includes('Error') ? '#fee2e2' : '#dcfce7', color: registerMessage.includes('Error') ? '#991b1b' : '#166534', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>{registerMessage}</div>}
                 
                 <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="form-grid-2" style={{ gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>ID Número</label>
                       <input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.IDNumber} onChange={(e) => handleRegisterChange('IDNumber', e.target.value)} required />
@@ -596,7 +600,7 @@ const Admin = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="form-grid-2" style={{ gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Nombre</label>
                       <input type="text" autoComplete="given-name" autoCapitalize="words" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.FirstName} onChange={(e) => handleRegisterChange('FirstName', e.target.value)} required />
@@ -607,7 +611,7 @@ const Admin = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="form-grid-2" style={{ gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Contraseña</label>
                       <input type="password" autoComplete="new-password" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.Password} onChange={(e) => handleRegisterChange('Password', e.target.value)} required />
@@ -827,7 +831,7 @@ const Admin = () => {
                   <input type="text" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={editForm.idNumber} onChange={(e) => handleEditChange('idNumber', e.target.value)} required />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="form-grid-2" style={{ gap: '16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Nombre</label>
                   <input type="text" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={editForm.firstName} onChange={(e) => handleEditChange('firstName', e.target.value)} required />
@@ -837,7 +841,7 @@ const Admin = () => {
                   <input type="text" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={editForm.lastName} onChange={(e) => handleEditChange('lastName', e.target.value)} required />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="form-grid-2" style={{ gap: '16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Email</label>
                   <input type="email" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={editForm.email} onChange={(e) => handleEditChange('email', e.target.value)} required />

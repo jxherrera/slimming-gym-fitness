@@ -158,10 +158,12 @@ const AdminPagosVerificacion = () => {
                     </div>
                     <div className="receipt-image-wrapper">
                       {selectedPayment.receiptImageUrl ? (
-                        <img 
-                          src={selectedPayment.receiptImageUrl} 
+                        <img
+                          src={selectedPayment.receiptImageUrl}
                           alt={`Comprobante de ${selectedPayment.memberName}`}
                           className="receipt-enlarged"
+                          loading="lazy"
+                          decoding="async"
                           onClick={() => window.open(selectedPayment.receiptImageUrl, '_blank')}
                           title="Click para ver en tamaño completo"
                         />

@@ -16,6 +16,11 @@ const DOMINIO_DEMO = 'demo.slimminggym.com';
 // validators.js (8+ caracteres, al menos una letra y un numero).
 const PASSWORD_DEMO = 'Gimnasio2026';
 
+// Hash bcrypt de PASSWORD_DEMO, pre-calculado a proposito: bcrypt usa una sal
+// aleatoria, y si se generara en cada ejecucion el dataset SQL cambiaria en cada
+// build sin que ningun dato lo hiciera.
+const PASSWORD_HASH_DEMO = '$2b$10$bfI/WHc4TfRFhHkKno5EBucQYqQhJc0rSJNJJYeuerZEoVeMZaUUC';
+
 const COACHES = [
     {
         nombres: 'Andrés',
@@ -34,13 +39,13 @@ const COACHES = [
         apellidos: 'Zambrano Ordóñez',
         especialidad: 'Entrenamiento funcional',
         permisos: { editarRutinasAjenas: 0, gestionarPlanes: 0, enviarMensajes: 0 }
+    },
+    {
+        nombres: 'Paúl',
+        apellidos: 'Mendoza Cárdenas',
+        especialidad: 'Readaptación física y adulto mayor',
+        permisos: { editarRutinasAjenas: 1, gestionarPlanes: 0, enviarMensajes: 1 }
     }
-];
-
-// Administrador adicional (recepcion). Permite probar el panel sin usar la
-// cuenta maestra creada por seedRunner.js.
-const ADMINISTRADORES = [
-    { nombres: 'Daniela', apellidos: 'Cevallos Peña' }
 ];
 
 /**
@@ -69,6 +74,7 @@ const SOCIOS = [
     { nombres: 'Santiago', apellidos: 'Ramírez Cedeño', perfil: 'vigente', renovaciones: 3 },
     { nombres: 'Paola Cristina', apellidos: 'Zurita Benavides', perfil: 'vigente', renovaciones: 1 },
     { nombres: 'Marco Antonio', apellidos: 'Cordero Reinoso', perfil: 'vigente', renovaciones: 0 },
+    { nombres: 'Elena', apellidos: 'Carrión Ludeña', perfil: 'vigente', renovaciones: 2 },
 
     { nombres: 'Jessica', apellidos: 'Manobanda Freire', perfil: 'porVencer', diasRestantes: 3, renovaciones: 2 },
     { nombres: 'Wilson', apellidos: 'Caicedo Angulo', perfil: 'porVencer', diasRestantes: 6, renovaciones: 1 },
@@ -84,9 +90,11 @@ const SOCIOS = [
     { nombres: 'Joel', apellidos: 'Macías Intriago', perfil: 'pendiente' },
 
     { nombres: 'Gustavo', apellidos: 'Tinoco Aguirre', perfil: 'rechazado' },
+    { nombres: 'Lissette', apellidos: 'Barzola Choez', perfil: 'rechazado' },
 
     { nombres: 'Andrea', apellidos: 'Cuenca Robalino', perfil: 'inactivo' },
-    { nombres: 'Patricio', apellidos: 'Endara Lascano', perfil: 'inactivo' }
+    { nombres: 'Patricio', apellidos: 'Endara Lascano', perfil: 'inactivo' },
+    { nombres: 'Rosa Amelia', apellidos: 'Chuquimarca Toaquiza', perfil: 'inactivo' }
 ];
 
 // Objetivos que un entrenador escribiria de verdad en la ficha del socio.
@@ -197,6 +205,21 @@ const PLANTILLAS = [
         ]
     },
     {
+        coach: 3,
+        nombre: 'Readaptación - bajo impacto',
+        objetivo: 'Retomar la actividad física sin carga articular',
+        ejercicios: [
+            { nombre: 'Bicicleta estática', series: 1, reps: 15, peso: null, dia: 'Lunes' },
+            { nombre: 'Prensa de piernas', series: 3, reps: 15, peso: 60, dia: 'Lunes' },
+            { nombre: 'Jalón al pecho', series: 3, reps: 12, peso: 25, dia: 'Lunes' },
+            { nombre: 'Curl femoral acostado', series: 3, reps: 15, peso: 20, dia: 'Miércoles' },
+            { nombre: 'Extensión de cuádriceps', series: 3, reps: 15, peso: 25, dia: 'Miércoles' },
+            { nombre: 'Plancha abdominal', series: 3, reps: 20, peso: null, dia: 'Miércoles' },
+            { nombre: 'Remo en polea baja', series: 3, reps: 12, peso: 20, dia: 'Viernes' },
+            { nombre: 'Aperturas en polea', series: 3, reps: 15, peso: 10, dia: 'Viernes' }
+        ]
+    },
+    {
         coach: 0,
         nombre: 'Fuerza básica 5x5',
         objetivo: 'Progresión de carga en movimientos compuestos',
@@ -211,22 +234,31 @@ const PLANTILLAS = [
 ];
 
 // Clases grupales. `hora` es hora local de Ecuador en formato 24h.
+//
+// Cada clase cae dentro del horario laboral de su entrenador (HORARIOS_COACH):
+// classController rechaza una clase fuera de ese rango, asi que un dato que lo
+// incumpliera no se habria podido crear desde la aplicacion.
 const CLASES = [
     { nombre: 'Spinning matutino', coach: 1, hora: 6, duracionMin: 50, cupo: 20, descripcion: 'Ciclo indoor de alta intensidad con música. Trae toalla y botella de agua.' },
-    { nombre: 'Zumba', coach: 1, hora: 18, duracionMin: 60, cupo: 30, descripcion: 'Baile aeróbico para quemar calorías. Apto para todo nivel.' },
+    { nombre: 'Zumba', coach: 1, hora: 12, duracionMin: 60, cupo: 30, descripcion: 'Baile aeróbico para quemar calorías. Apto para todo nivel.' },
     { nombre: 'CrossTraining', coach: 2, hora: 7, duracionMin: 60, cupo: 15, descripcion: 'Circuito funcional de fuerza y resistencia. Nivel intermedio.' },
-    { nombre: 'Funcional express', coach: 2, hora: 12, duracionMin: 45, cupo: 18, descripcion: 'Sesión corta de cuerpo completo en la hora del almuerzo.' },
-    { nombre: 'Yoga y estiramiento', coach: 1, hora: 19, duracionMin: 60, cupo: 25, descripcion: 'Movilidad, respiración y relajación al cierre del día.' },
+    { nombre: 'Funcional express', coach: 2, hora: 13, duracionMin: 45, cupo: 18, descripcion: 'Sesión corta de cuerpo completo antes del cierre de la mañana.' },
+    { nombre: 'Movilidad para adulto mayor', coach: 3, hora: 10, duracionMin: 45, cupo: 14, descripcion: 'Trabajo articular suave y equilibrio. Bajo impacto.' },
+    { nombre: 'Rehabilitación guiada', coach: 3, hora: 15, duracionMin: 50, cupo: 10, descripcion: 'Readaptación post lesión con seguimiento individual.' },
     { nombre: 'Fuerza guiada', coach: 0, hora: 17, duracionMin: 60, cupo: 12, descripcion: 'Técnica de sentadilla, press y peso muerto con corrección personalizada.' },
-    { nombre: 'GAP (glúteo, abdomen y pierna)', coach: 1, hora: 20, duracionMin: 45, cupo: 22, descripcion: 'Tonificación localizada del tren inferior.' },
-    { nombre: 'HIIT nocturno', coach: 2, hora: 20, duracionMin: 40, cupo: 16, descripcion: 'Intervalos de alta intensidad. No apto para principiantes.' }
+    { nombre: 'Yoga y estiramiento', coach: 0, hora: 19, duracionMin: 60, cupo: 25, descripcion: 'Movilidad, respiración y relajación al cierre del día.' },
+    { nombre: 'GAP (glúteo, abdomen y pierna)', coach: 0, hora: 20, duracionMin: 45, cupo: 22, descripcion: 'Tonificación localizada del tren inferior.' },
+    { nombre: 'HIIT nocturno', coach: 0, hora: 21, duracionMin: 40, cupo: 16, descripcion: 'Intervalos de alta intensidad. No apto para principiantes.' }
 ];
 
-// Horario laboral de cada entrenador (indice = COACHES).
+// Horario laboral de cada entrenador (indice = COACHES). Las clases grupales
+// solo pueden programarse dentro de estas franjas: classController valida el
+// horario del coach antes de crear la clase.
 const HORARIOS_COACH = [
     { coach: 0, dias: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'], inicio: '14:00', fin: '22:00' },
     { coach: 1, dias: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'], inicio: '05:30', fin: '13:30' },
-    { coach: 2, dias: ['Lunes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'], inicio: '06:00', fin: '14:00' }
+    { coach: 2, dias: ['Lunes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'], inicio: '06:00', fin: '14:00' },
+    { coach: 3, dias: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Sábado'], inicio: '09:00', fin: '17:00' }
 ];
 
 const NOTIFICACIONES = [
@@ -238,12 +270,16 @@ const NOTIFICACIONES = [
     { titulo: 'Cupo confirmado', mensaje: 'Tu reserva para la clase grupal quedó registrada. Llega 10 minutos antes.', tipo: 'Clase' }
 ];
 
+// Tipos de correo que registra emailService.sendEmailAndLog.
+const TIPOS_CORREO = ['Bienvenida', 'Pago', 'Clase', 'Vencimiento'];
+
 module.exports = {
     DOMINIO_DEMO,
     PASSWORD_DEMO,
+    PASSWORD_HASH_DEMO,
     COACHES,
-    ADMINISTRADORES,
     SOCIOS,
+    TIPOS_CORREO,
     OBJETIVOS,
     NOMBRES_RUTINA,
     EJERCICIOS,

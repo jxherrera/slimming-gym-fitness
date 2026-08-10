@@ -8,6 +8,7 @@
     "seed": "node seeders/seedRunner.js",
     "seed:demo": "node seeders/demoDataSeeder.js",
     "seed:demo:limpiar": "node seeders/demoDataSeeder.js --limpiar",
+    "dataset:sql": "node scripts/generar-dataset-sql.js",
     "test": "node --test utils/*.test.js",
     "diagnostico:db": "node scripts/diagnostico-db.js",
     "inspeccionar:esquema": "node scripts/inspeccionar-esquema.js",

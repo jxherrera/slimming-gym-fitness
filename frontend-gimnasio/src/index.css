@@ -1,12 +1,11 @@
 /* src/index.css */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
+/* Los colores (--bg-dark, --text-light, --primary-red, --secondary-gray y
+   --card-bg) viven en styles/tokens.css, que es la única fuente de verdad.
+   Aquí se redefinían con los mismos valores y, al cargarse después, ganaban
+   sobre los tokens: se eliminaron para que la escala de diseño sea real. */
 :root {
-  --bg-dark: #121212; /* Fondo principal */
-  --text-light: #ffffff;
-  --primary-red: #e63946; /* Tu rojo de "Únete" */
-  --secondary-gray: #f5f5f5; /* El fondo claro de abajo */
-  --card-bg: #ffffff;
   --font-main: 'Poppins', sans-serif;
 }
 

@@ -165,7 +165,7 @@
 
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 20px;
 }
 
@@ -281,4 +281,63 @@
   border-color: #444;
   color: #666;
   cursor: default;
+}
+
+/* RESPONSIVE MÓVIL */
+@media (max-width: 768px) {
+  .subscription-container {
+    gap: 22px;
+  }
+
+  .subscription-card,
+  .plan-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .card-header-sub {
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .header-icon {
+    font-size: 1.6rem;
+  }
+
+  .card-header-sub h3 {
+    font-size: 1.1rem;
+  }
+
+  /* Nombre del plan y estado en dos líneas, no comprimidos en una */
+  .plan-summary-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .plan-name-tag {
+    font-size: 1.2rem;
+  }
+
+  .progress-section {
+    padding: 14px;
+  }
+
+  .catalog-title h2 {
+    font-size: 1.25rem;
+  }
+
+  .catalog-plan-price .amount {
+    font-size: 1.9rem;
+  }
+
+  .select-plan-btn {
+    min-height: 48px;
+  }
+
+  /* La insignia "plan actual" se salía por el borde derecho */
+  .current-badge {
+    right: 12px;
+  }
 }

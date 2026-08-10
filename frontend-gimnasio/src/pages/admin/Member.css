@@ -61,11 +61,52 @@
 }
 
 @media (max-width: 768px) {
+  /* El contenedor del panel (.admin-content-inner) ya aporta su propio
+     margen lateral: aquí solo hace falta el vertical, si no se acumulan */
   .member-dashboard {
+    padding: 0.5rem 0 1.5rem;
+  }
+
+  /* Título y subtítulo apilados, no repartidos a lados opuestos */
+  .member-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .member-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .member-header p {
+    font-size: 0.92rem;
+  }
+
+  .member-tabs-bar {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .tab-btn {
+    padding: 9px 14px;
+    font-size: 0.85rem;
+    border-radius: 10px;
+  }
+
+  .routine-item {
     padding: 1rem;
   }
-  .member-header h1 {
-    font-size: 1.8rem;
+
+  /* Nombre de la rutina y entrenador en dos líneas */
+  .routine-title-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .routine-name {
+    font-size: 1.1rem;
   }
 }
 

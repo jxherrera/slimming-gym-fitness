@@ -152,3 +152,61 @@
 .stat-value.diff-positive {
   color: #ff3b3b;
 }
+
+/* RESPONSIVE MÓVIL */
+@media (max-width: 768px) {
+  .progress-card-container {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .progress-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    gap: 12px;
+  }
+
+  .progress-icon {
+    font-size: 1.7rem;
+    flex-shrink: 0;
+  }
+
+  .progress-header h3 {
+    font-size: 1.1rem;
+  }
+
+  /* El botón de registrar medida a ancho completo bajo el título */
+  .btn-add-progress {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--tap-min);
+  }
+
+  .metrics-selector {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .metric-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: var(--tap-min);
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+
+  .chart-wrapper {
+    padding: 10px 4px;
+    border-radius: 12px;
+  }
+
+  .progress-summary-bar {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.05rem;
+  }
+}

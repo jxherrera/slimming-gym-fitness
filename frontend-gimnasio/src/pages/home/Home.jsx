@@ -88,7 +88,15 @@ const Home = () => {
       {/* 1. HERO SECTION */}
       <section className="hero-section">
         <div className="hero-overlay">
-          <img className="hero-bg-img" src={heroImg} alt="Slimming Gym Fitness Hero" />
+          {/* Imagen visible al entrar: se carga con prioridad, nunca diferida */}
+          <img
+            className="hero-bg-img"
+            src={heroImg}
+            alt="Slimming Gym Fitness Hero"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
         </div>
 
         <div className="hero-content">

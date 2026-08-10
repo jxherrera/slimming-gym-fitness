@@ -11,10 +11,11 @@
 .hero-section {
   position: relative;
   min-height: 92vh;
+  min-height: 92dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: clamp(3rem, 10vw, 4rem) clamp(1.25rem, 5vw, 2rem);
   overflow: hidden;
 }
 
@@ -80,15 +81,15 @@
 
 .hero-tagline {
   color: #ff7300;
-  font-size: 1.1rem;
+  font-size: clamp(0.85rem, 3vw, 1.1rem);
   font-weight: 800;
-  letter-spacing: 3px;
+  letter-spacing: clamp(1.5px, 0.6vw, 3px);
   margin: 0;
   text-transform: uppercase;
 }
 
 .hero-title {
-  font-size: 3.6rem;
+  font-size: var(--fs-3xl);
   font-weight: 900;
   line-height: 1.15;
   margin: 0;
@@ -99,7 +100,7 @@
 }
 
 .hero-subtext {
-  font-size: 1.2rem;
+  font-size: clamp(0.98rem, 2.6vw, 1.2rem);
   color: #cbd5e1;
   max-width: 750px;
   line-height: 1.6;
@@ -200,7 +201,7 @@
 
 /* 3. SERVICIOS & CARACTERÍSTICAS */
 .services-section {
-  padding: 6rem 2rem;
+  padding: clamp(3rem, 9vw, 6rem) clamp(1rem, 4vw, 2rem);
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -219,7 +220,7 @@
 }
 
 .section-title {
-  font-size: 2.4rem;
+  font-size: clamp(1.6rem, 5.5vw, 2.4rem);
   font-weight: 800;
   margin: 8px 0;
   color: #ffffff;
@@ -235,8 +236,9 @@
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 2rem;
+  /* min() evita que la columna mínima (260px) desborde en pantallas de 320px */
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: clamp(1rem, 3vw, 2rem);
 }
 
 .service-card {
@@ -293,7 +295,7 @@
 /* 4. PLANES BASE PREVIEW */
 .plans-preview-section {
   background: #0d1220;
-  padding: 6rem 2rem;
+  padding: clamp(3rem, 9vw, 6rem) clamp(1rem, 4vw, 2rem);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -301,8 +303,8 @@
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: clamp(1.5rem, 4vw, 2.5rem);
   align-items: center;
 }
 
@@ -454,15 +456,15 @@
 
 /* 5. TESTIMONIOS */
 .testimonials-section {
-  padding: 6rem 2rem;
+  padding: clamp(3rem, 9vw, 6rem) clamp(1rem, 4vw, 2rem);
   max-width: 1100px;
   margin: 0 auto;
 }
 
 .testimonials-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: clamp(1rem, 3vw, 2rem);
 }
 
 .testimonial-card {
@@ -524,16 +526,17 @@
 .home-footer {
   background: #070a12;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 4rem 2rem 2rem 2rem;
+  padding: clamp(2.5rem, 8vw, 4rem) clamp(1rem, 4vw, 2rem) 2rem;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
 }
 
 .footer-container {
   max-width: 1100px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 3rem;
-  margin-bottom: 3rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: clamp(1.75rem, 5vw, 3rem);
+  margin-bottom: clamp(1.75rem, 5vw, 3rem);
 }
 
 .footer-logo {
@@ -577,23 +580,118 @@
 
 /* RESPONSIVE MÓVIL */
 @media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.3rem;
-  }
-
-  .hero-subtext {
-    font-size: 1rem;
-  }
-
   .stat-divider {
     display: none;
   }
 
+  /* La tarjeta destacada se agranda un 4%: en móvil eso la saca del ancho
+     de pantalla y provoca scroll horizontal */
   .plan-card.featured {
     transform: none;
   }
 
   .plan-card.featured:hover {
     transform: translateY(-6px);
+  }
+
+  .stats-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem 1rem;
+    justify-items: center;
+  }
+
+  .stat-card h3 {
+    font-size: 2rem;
+  }
+
+  .stat-card p {
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+  }
+
+  .section-header {
+    margin-bottom: 2.25rem;
+  }
+
+  .service-card {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .service-icon-wrapper {
+    width: 58px;
+    height: 58px;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .plan-card {
+    padding: 2.25rem 1.25rem 2rem;
+  }
+
+  .plan-price {
+    font-size: 2.6rem;
+  }
+
+  .testimonial-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .home-footer {
+    text-align: center;
+  }
+
+  .footer-col p {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  /* En pantallas estrechas los botones del hero apilados y a ancho completo
+     son mucho más fáciles de acertar con el pulgar */
+  .hero-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-hero-primary,
+  .btn-hero-secondary {
+    width: 100%;
+    justify-content: center;
+    font-size: 1rem;
+    padding: 15px 24px;
+  }
+
+  .hero-badge {
+    font-size: 0.75rem;
+    padding: 7px 14px;
+  }
+
+  .hero-content {
+    gap: 0.9rem;
+  }
+
+  .stats-section {
+    padding: 2rem 1rem;
+  }
+
+  .btn-plan-select,
+  .btn-book-class {
+    min-height: 48px;
+  }
+
+  .plan-features li,
+  .testimonial-text {
+    font-size: 0.9rem;
+  }
+}
+
+/* La animación de zoom continuo del fondo del hero repinta una imagen a
+   pantalla completa sin parar: en móvil se nota en la batería y el scroll */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .hero-bg-img {
+    animation: none;
+    transform: scale(1.02);
   }
 }

@@ -6,8 +6,11 @@
 }
 
 @media (max-width: 1024px) {
+  /* minmax(0, 1fr) y no 1fr: el mínimo implícito de `1fr` es el ancho
+     min-content del contenido, y aquí eso hacía la columna más ancha que el
+     contenedor (341px dentro de 308px) desbordando la página en móvil. */
   .horarios-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -395,4 +398,65 @@
   font-size: 1.2rem;
   color: var(--admin-text);
   font-weight: 500;
+}
+
+/* ==========================================================================
+   RESPONSIVE MÓVIL
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* En vista de agenda (lista vertical) el calendario no necesita los 650px
+     mínimos: puede ocupar el ancho real de la pantalla sin scroll lateral */
+  .rbc-calendar.vista-agenda {
+    min-width: 0;
+  }
+
+  .calendar-container {
+    padding: 8px;
+  }
+
+  /* La barra de herramientas se reparte en dos filas en vez de obligar a
+     arrastrar de lado para llegar a los botones de vista */
+  .custom-calendar-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .toolbar-nav,
+  .toolbar-views {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-btn {
+    flex: 1 1 auto;
+    min-height: var(--tap-min);
+    padding: 8px 12px;
+  }
+
+  .toolbar-label {
+    text-align: center;
+    font-size: 1rem;
+  }
+
+  .calendar-legend {
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.8rem;
+  }
+
+  .rbc-agenda-view table.rbc-agenda-table {
+    font-size: 0.85rem;
+  }
+
+  .horarios-submit-btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .download-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--tap-min);
+  }
 }

@@ -1219,3 +1219,141 @@ input:checked + .slider:before {
   border-color: #4b4552 !important;
   color: #f1f5f9 !important;
 }
+
+/* ==========================================================================
+   FASE 4/5 · Modales del panel en móvil
+   Los modales propios del admin (.modal-backdrop + .modal-card) se comportan
+   como hoja inferior, igual que el componente común Modal.jsx.
+   ========================================================================== */
+@media (max-width: 600px) {
+  .modal-backdrop {
+    padding: 0;
+    place-items: end center;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 100% !important;
+    max-height: 92dvh;
+    overflow-y: auto;
+    padding: 20px 16px !important;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    /* !important porque estas tarjetas traen maxWidth/padding/borderRadius
+       en línea desde el JSX y de otro modo ganarían ellos */
+    border-radius: 20px 20px 0 0 !important;
+    animation: adminSheetSlide 0.28s cubic-bezier(0.175, 0.885, 0.32, 1) forwards;
+  }
+
+  @keyframes adminSheetSlide {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .modal-close {
+    width: var(--tap-min);
+    height: var(--tap-min);
+    flex-shrink: 0;
+  }
+
+  .modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Botones de acción apilados y a ancho completo: el orden inverso deja la
+     acción principal arriba, al alcance del pulgar */
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-actions button {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+/* Glassmorphism más ligero en móvil: el blur de 16-20px sobre superficies
+   grandes hace tirones al hacer scroll en gamas medias. Va al final del
+   archivo para ganar a los bloques .theme-light / .theme-dark de arriba. */
+@media (max-width: 768px) {
+  :root,
+  body.theme-light,
+  body.theme-dark,
+  .admin-page.theme-light,
+  .admin-page.theme-dark {
+    --glass-blur: blur(6px);
+  }
+
+  .modal-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Dos tarjetas de indicador por fila en vez de una gigante */
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 14px 12px;
+    gap: 8px;
+  }
+
+  .stat-card h3 {
+    font-size: 1.35rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.4px;
+  }
+
+  .stat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .settings-main-card {
+    padding: 18px 14px;
+    border-radius: 18px;
+  }
+
+  .settings-main-card h2.settings-title {
+    font-size: 1.5rem;
+    margin-bottom: 18px;
+  }
+
+  .settings-sub-header {
+    margin-top: 26px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 340px) {
+  /* Solo en pantallas realmente diminutas volvemos a una columna */
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Recuperamos ancho útil: entre .admin-content-inner, .admin-page y la
+     tarjeta se perdían 44px de los 375 disponibles */
+  .admin-page {
+    padding: 10px 4px 20px;
+  }
+
+  .tab-content {
+    padding-left: 0;
+  }
+
+  .settings-main-card {
+    padding: 16px 12px;
+  }
+}

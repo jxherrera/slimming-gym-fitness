@@ -133,3 +133,32 @@
   from { transform: scaleX(1); }
   to { transform: scaleX(0); }
 }
+
+/* RESPONSIVE MÓVIL */
+@media (max-width: 600px) {
+  .toast-container {
+    top: calc(70px + env(safe-area-inset-top));
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+  }
+
+  /* La entrada lateral hacía asomar la tarjeta fuera de la pantalla durante
+     la animación; en móvil entra desde arriba */
+  .toast-card {
+    padding: 12px 14px;
+    animation: toastSlideDown 0.3s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+  }
+
+  @keyframes toastSlideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-16px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}

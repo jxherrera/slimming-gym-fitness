@@ -19,7 +19,8 @@
   align-items: center;
   gap: 14px;
   flex: 1;
-  min-width: 280px;
+  /* min() para que en pantallas de 320px no fuerce un ancho mayor al hueco */
+  min-width: min(280px, 100%);
 }
 
 .notification-icon-wrapper {

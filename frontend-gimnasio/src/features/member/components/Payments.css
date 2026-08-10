@@ -233,3 +233,63 @@
 .remove-file-btn:hover {
   text-decoration: underline;
 }
+
+/* RESPONSIVE MÓVIL */
+@media (max-width: 768px) {
+  .payments-card-container {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .payments-header {
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+  }
+
+  .payments-icon-title {
+    font-size: 1.7rem;
+    flex-shrink: 0;
+  }
+
+  .payments-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .payments-form {
+    gap: 14px;
+  }
+
+  /* .flex-1 tenía min-width: 240px: dos campos en una fila desbordaban */
+  .form-row {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .flex-1 {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .drag-drop-zone {
+    padding: 22px 14px;
+  }
+
+  .drag-drop-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+
+  .receipt-image-preview {
+    max-height: 180px;
+  }
+
+  .payments-submit-btn {
+    min-height: 50px;
+  }
+
+  .remove-file-btn {
+    min-height: var(--tap-min);
+    padding: 0 8px;
+  }
+}

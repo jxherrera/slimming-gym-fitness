@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  FaBars, FaTimes, FaHome, FaUser, FaDumbbell, 
+import {
+  FaBars, FaTimes, FaHome, FaUser, FaDumbbell,
   FaCalendarAlt, FaMoneyBillWave, FaClipboardList,
   FaChevronDown, FaChevronUp, FaEnvelope, FaDoorOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useDrawer } from '../../hooks/useDrawer';
+import { useEsMovil } from '../../hooks/useMediaQuery';
 import './AdminSidebar.css';
+
+/* El colapso por hover solo tiene sentido con ratón: en una pantalla táctil
+   el propio toque dispara mouseenter y el menú se abre y cierra solo. */
+const tienePunteroFino = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,13 +26,24 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
     setIsOpen(!isOpen);
   };
 
+  const closeMobileSidebar = useCallback(() => setIsOpen(false), []);
+  const esMovil = useEsMovil();
+
+  /* El modo colapsado (solo iconos) es una función de escritorio. En móvil el
+     sidebar es un panel deslizante que se ve completo, así que se ignora: si
+     no, el logo aparecía como "G", desaparecían las categorías y los
+     submenús no se podían desplegar. */
+  const estaColapsado = isCollapsed && !esMovil;
+
+  useDrawer(isOpen, closeMobileSidebar);
+
   const toggleSubmenu = (itemName, e) => {
     e.preventDefault();
     setExpandedMenus(prev => ({
       ...prev,
       [itemName]: !prev[itemName]
     }));
-    if (isCollapsed && toggleCollapse) {
+    if (estaColapsado && toggleCollapse) {
       toggleCollapse();
     }
   };
@@ -147,27 +166,35 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
 
   return (
     <>
-      <div className={isOpen ? "sidebar-backdrop active" : "sidebar-backdrop"} onClick={toggleMobileSidebar}></div>
+      <div className={isOpen ? "sidebar-backdrop active" : "sidebar-backdrop"} onClick={closeMobileSidebar}></div>
       <div className="mobile-admin-topbar">
-        <div className="mobile-toggle" onClick={toggleMobileSidebar}>
+        <button
+          type="button"
+          className="mobile-toggle"
+          onClick={toggleMobileSidebar}
+          aria-label={isOpen ? 'Cerrar menú lateral' : 'Abrir menú lateral'}
+          aria-expanded={isOpen}
+          aria-controls="admin-sidebar-menu"
+        >
           {isOpen ? <FaTimes /> : <FaBars />}
-        </div>
+        </button>
         <div className="mobile-topbar-title">SLIMMING GYM</div>
       </div>
-      
-      <div 
-        className={`admin-sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}`}
-        onMouseEnter={() => isCollapsed && toggleCollapse()}
-        onMouseLeave={() => !isCollapsed && toggleCollapse()}
+
+      <div
+        id="admin-sidebar-menu"
+        className={`admin-sidebar ${isOpen ? 'open' : ''} ${estaColapsado ? 'collapsed' : ''}`}
+        onMouseEnter={() => tienePunteroFino() && isCollapsed && toggleCollapse()}
+        onMouseLeave={() => tienePunteroFino() && !isCollapsed && toggleCollapse()}
       >
         <div className="sidebar-header">
-          <h2 className="main-logo">{isCollapsed ? (role === 'admin' ? 'G' : role === 'coach' ? 'C' : 'U') : role === 'admin' ? 'GYM ADMIN' : role === 'coach' ? 'PANEL COACH' : 'MI PERFIL'}</h2>
+          <h2 className="main-logo">{estaColapsado ? (role === 'admin' ? 'G' : role === 'coach' ? 'C' : 'U') : role === 'admin' ? 'GYM ADMIN' : role === 'coach' ? 'PANEL COACH' : 'MI PERFIL'}</h2>
         </div>
         
         <div className="sidebar-menu">
           {currentMenu.map((group, groupIndex) => (
             <div key={groupIndex} className="sidebar-group">
-              {!isCollapsed && <div className="sidebar-category">{group.category}</div>}
+              {!estaColapsado && <div className="sidebar-category">{group.category}</div>}
               {group.items.map((item, index) => {
                 const hasSubItems = item.subItems && item.subItems.length > 0;
                 const isExpanded = expandedMenus[item.name];
@@ -191,14 +218,14 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
                     >
                       <div className="icon">{item.icon}</div>
                       <div className="link-text">{item.name}</div>
-                      {hasSubItems && !isCollapsed && (
+                      {hasSubItems && !estaColapsado && (
                         <div className="submenu-arrow">
                           {isExpanded ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
                         </div>
                       )}
                     </NavLink>
                     
-                    {hasSubItems && isExpanded && !isCollapsed && (
+                    {hasSubItems && isExpanded && !estaColapsado && (
                       <div className="submenu">
                         {item.subItems.map((subItem, subIndex) => {
                           const isActiveSub = location.pathname + location.search === subItem.path;
@@ -223,7 +250,7 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
         </div>
         
         <div className="sidebar-footer">
-          <NavLink to="/" className="menu-item exit-link">
+          <NavLink to="/" className="menu-item exit-link" onClick={closeMobileSidebar}>
             <div className="icon"><FaTimes /></div>
             <div className="link-text">Salir al sitio</div>
           </NavLink>

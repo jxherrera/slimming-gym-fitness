@@ -80,7 +80,7 @@
 
 .classes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 20px;
 }
 
@@ -241,4 +241,65 @@
   padding: 30px;
   color: #888;
   font-style: italic;
+}
+
+/* RESPONSIVE MÓVIL */
+@media (max-width: 768px) {
+  .schedule-card-container {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .schedule-header {
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+  }
+
+  .schedule-icon {
+    font-size: 1.7rem;
+  }
+
+  .schedule-header h3 {
+    font-size: 1.1rem;
+  }
+
+  /* La etiqueta "Filtrar por día" arriba y los días debajo: así los botones
+     aprovechan todo el ancho en vez de partirse a mitad de fila */
+  .days-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .days-btn-group {
+    gap: 6px;
+  }
+
+  .day-btn {
+    flex: 1 1 auto;
+    min-height: var(--tap-min);
+    padding: 8px 12px;
+  }
+
+  .class-card {
+    padding: 16px;
+  }
+
+  .btn-book-class,
+  .btn-cancel-reservation {
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .class-title {
+    font-size: 1.05rem;
+  }
+
+  .detail-item,
+  .class-day {
+    font-size: 0.82rem;
+  }
 }

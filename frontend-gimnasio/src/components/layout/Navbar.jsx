@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes, FaUserCircle, FaSignOutAlt, FaTachometerAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { useDrawer } from '../../hooks/useDrawer';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -12,8 +13,10 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
 
   const handleClick = () => setClick(!click);
-  const closeMenu = () => setClick(false);
-  
+  const closeMenu = useCallback(() => setClick(false), []);
+
+  useDrawer(click, closeMenu);
+
   const goToLogin = () => {
     navigate('/login');
     closeMenu();
@@ -49,7 +52,7 @@ const Navbar = () => {
       {!isLoginPage && (
         <>
           <div className={click ? "nav-backdrop active" : "nav-backdrop"} onClick={closeMenu}></div>
-          <ul className={click ? "nav-menu active" : "nav-menu"}>
+          <ul id="nav-menu-principal" className={click ? "nav-menu active" : "nav-menu"}>
             <li><Link to="/" onClick={closeMenu}>Inicio</Link></li>
             <li><Link to="/sobre-nosotros" onClick={closeMenu}>Sobre Nosotros</Link></li>
             <li><Link to="/planes" onClick={closeMenu}>Planes</Link></li>
@@ -95,13 +98,20 @@ const Navbar = () => {
             )}
           </div>
 
-          <div className="hamburger" onClick={handleClick}>
+          <button
+            type="button"
+            className="hamburger"
+            onClick={handleClick}
+            aria-label={click ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'}
+            aria-expanded={click}
+            aria-controls="nav-menu-principal"
+          >
             {click ? (
               <FaTimes size={24} style={{ color: '#fff' }} />
             ) : (
               <FaBars size={24} style={{ color: '#fff' }} />
             )}
-          </div>
+          </button>
         </>
       )}
     </div>

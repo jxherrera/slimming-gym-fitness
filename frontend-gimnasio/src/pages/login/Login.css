@@ -1,27 +1,8 @@
 /* --- CONTENEDOR PRINCIPAL --- */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 10%; 
-  width: 100%;
-  height: 90px;
-  box-sizing: border-box; 
-  
-  position: fixed; 
-  top: 0;
-  left: 0;
-  background-color: transparent;
-  z-index: 100;
-  
-  transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out, background-color 0.3s ease;
-}
-
-.header.hidden {
-  transform: translateY(-100%);
-  opacity: 0;
-  pointer-events: none;
-}
+/* Nota: aquí vivía un `.header` global duplicado del de Navbar.css. Ninguna
+   pantalla lo usaba (App.jsx oculta el Navbar en /login) y chocaba con la
+   cabecera del sitio, así que se eliminó junto con el renombrado a
+   `.main-header` de la fase 1. */
 
 .login-page {
   min-height: calc(100vh - 80px);
@@ -151,5 +132,16 @@
   }
   .login-btn {
     min-height: 48px;
+  }
+
+  /* La regla táctil global le da 44px de alto: le damos el mismo ancho para
+     que el círculo no se deforme en óvalo */
+  .back-arrow {
+    width: var(--tap-min);
+    height: var(--tap-min);
+  }
+
+  .form-header h2 {
+    font-size: 1.5rem;
   }
 }

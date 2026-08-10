@@ -5,7 +5,16 @@ const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
 
 router.use(authMiddleware);
 
-// Lectura del listado y de la configuracion propia: Administrador o Entrenador
+// Listado reducido (nombre y carga de trabajo), sin correos ni permisos:
+// cualquier usuario autenticado. Es el que consulta el socio para elegir
+// entrenador desde su perfil. Va antes de '/:id/settings' porque Express
+// resuelve las rutas en orden y 'disponibles' encajaria en ':id'.
+router.get('/disponibles', coachController.getAvailableCoaches);
+
+// Entrenador asignado a quien hace la peticion, resuelto desde el token.
+router.get('/mi-entrenador', coachController.getMyCoach);
+
+// Lectura del listado completo y de la configuracion propia: Administrador o Entrenador
 router.get('/', checkRole(['Admin', 'Coach']), coachController.getAllCoaches);
 router.get('/:id/settings', checkRole(['Admin', 'Coach']), coachController.getCoachSettings);
 

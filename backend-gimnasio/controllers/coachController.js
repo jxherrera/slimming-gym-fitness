@@ -14,8 +14,9 @@ exports.getAllCoaches = async (req, res) => {
                 u.RoleID,
                 ISNULL(cp.CanEditOthersRoutines, 0) AS CanEditOthersRoutines
             FROM Users u
+            INNER JOIN Roles r ON r.RoleID = u.RoleID
             LEFT JOIN CoachPermissions cp ON u.UserID = cp.CoachID
-            WHERE u.RoleID = 2 AND u.Status = 'A'
+            WHERE r.RoleName = 'Coach' AND u.Status = 'A'
         `);
         res.status(200).json(result.recordset);
     } catch (err) {
@@ -133,7 +134,7 @@ exports.assignMember = async (req, res) => {
 };
 
 // GET /api/coaches/unassigned-members
-// Fetch all active members (RoleID = 1) who do not have a coach assigned
+// Socios activos sin entrenador asignado.
 exports.getUnassignedMembers = async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -150,8 +151,9 @@ exports.getUnassignedMembers = async (req, res) => {
                     ORDER BY r.RoutineID DESC
                 ) AS Goal
             FROM Users u
+            INNER JOIN Roles ro ON ro.RoleID = u.RoleID
             LEFT JOIN CoachAssignments ca ON u.UserID = ca.MemberID
-            WHERE u.RoleID = 1 AND u.Status = 'A' AND ca.CoachID IS NULL
+            WHERE ro.RoleName = 'Member' AND u.Status = 'A' AND ca.CoachID IS NULL
         `);
         res.status(200).json({ success: true, members: result.recordset });
     } catch (err) {
@@ -188,9 +190,10 @@ exports.getMembersWithCoaches = async (req, res) => {
                 u.FirstName + ' ' + u.LastName AS name,
                 c.FirstName + ' ' + c.LastName AS coachName
             FROM Users u
+            INNER JOIN Roles r ON r.RoleID = u.RoleID
             LEFT JOIN CoachAssignments ca ON u.UserID = ca.MemberID
             LEFT JOIN Users c ON ca.CoachID = c.UserID
-            WHERE u.RoleID = 1 AND u.Status = 'A'
+            WHERE r.RoleName = 'Member' AND u.Status = 'A'
         `);
         res.status(200).json({ success: true, members: result.recordset });
     } catch (err) {
@@ -346,5 +349,65 @@ exports.updateCoachSettings = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Error updating coach settings', error: err.message });
+    }
+};
+
+// GET /api/coaches/disponibles
+//
+// Version reducida de la lista de entrenadores, accesible a cualquier usuario
+// autenticado. La necesita el socio para elegir entrenador desde su perfil:
+// getAllCoaches queda restringido a Admin y Coach porque devuelve correos y
+// permisos de gestion, datos que un socio no debe ver.
+exports.getAvailableCoaches = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT
+                u.UserID,
+                u.FirstName,
+                u.LastName,
+                (SELECT COUNT(*) FROM CoachAssignments ca WHERE ca.CoachID = u.UserID) AS SociosAsignados
+            FROM Users u
+            INNER JOIN Roles r ON r.RoleID = u.RoleID
+            WHERE r.RoleName = 'Coach' AND u.Status = 'A'
+            ORDER BY u.FirstName, u.LastName
+        `);
+
+        res.status(200).json({ success: true, coaches: result.recordset });
+    } catch (err) {
+        console.error('Error al obtener los entrenadores disponibles:', err);
+        res.status(500).json({ success: false, message: 'Error al obtener los entrenadores' });
+    }
+};
+
+// GET /api/coaches/mi-entrenador
+//
+// Entrenador asignado al usuario que hace la peticion. Existe porque
+// /coaches/assignments devuelve el mapa completo de asignaciones del gimnasio y
+// esta reservado al administrador: sin esta ruta, el socio no tenia forma de
+// saber quien es su entrenador y su perfil mostraba siempre "sin asignar".
+//
+// El identificador sale del token, nunca de la URL, para que nadie pueda
+// consultar la asignacion de otro socio.
+exports.getMyCoach = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('MemberID', sql.Int, req.user.userId)
+            .query(`
+                SELECT
+                    c.UserID,
+                    c.FirstName,
+                    c.LastName,
+                    ca.AssignedAt
+                FROM CoachAssignments ca
+                INNER JOIN Users c ON c.UserID = ca.CoachID
+                WHERE ca.MemberID = @MemberID
+            `);
+
+        res.status(200).json({ success: true, coach: result.recordset[0] || null });
+    } catch (err) {
+        console.error('Error al obtener el entrenador asignado:', err);
+        res.status(500).json({ success: false, message: 'Error al obtener el entrenador asignado' });
     }
 };

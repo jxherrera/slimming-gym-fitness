@@ -52,16 +52,14 @@ export const memberService = {
     }
   },
 
-  // Obtener entrenadores disponibles
+  // Obtener entrenadores disponibles.
+  //
+  // Usa /coaches/disponibles, la unica ruta que un socio puede consultar:
+  // /coaches y /users/role/Coach exigen rol Admin o Coach, asi que desde el
+  // perfil del socio ambas respondian 403 y el desplegable quedaba vacio.
   getCoaches: async () => {
-    try {
-      const response = await api.get('/coaches');
-      return response.data;
-    } catch (error) {
-      console.warn('Error fetching coaches direct route, falling back to role query:', error);
-      const response = await api.get('/users/role/Coach');
-      return response.data;
-    }
+    const response = await api.get('/coaches/disponibles');
+    return response.data.coaches || [];
   },
 
   // Asignar o solicitar Entrenador

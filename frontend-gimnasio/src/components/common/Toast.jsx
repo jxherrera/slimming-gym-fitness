@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaInfoCircle, FaTimes } from 'react-icons/fa';
-import { useToast } from '../../hooks/useToast';
+import { useToastList } from '../../hooks/useToast';
 import './Toast.css';
 
 const ToastItem = ({ toast, onRemove }) => {
@@ -40,7 +40,8 @@ const ToastItem = ({ toast, onRemove }) => {
 };
 
 export const ToastContainer = () => {
-  const { toasts, removeToast } = useToast();
+  // Este es el unico componente que se suscribe a la lista de avisos.
+  const { toasts, removeToast } = useToastList();
 
   if (!toasts.length) return null;
 

@@ -54,17 +54,18 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
         const list = Array.isArray(data) ? data : (data.coaches || []);
         setCoaches(list);
 
-        // Buscar si hay un entrenador asignado en la base de datos
+        // Entrenador asignado. Se consulta /coaches/mi-entrenador y no
+        // /coaches/assignments: esa ruta devuelve el mapa completo del gimnasio
+        // y solo la puede leer un administrador, por lo que desde el perfil del
+        // socio respondia 403 y siempre parecia no tener entrenador.
         try {
-          const assignRes = await api.get('/coaches/assignments');
-          const assignData = assignRes.data;
-          const myAssignment = Array.isArray(assignData) ? assignData.find(a => String(a.MemberID) === String(userId)) : null;
-          if (myAssignment) {
-            const current = list.find(c => String(c.UserID || c.id) === String(myAssignment.CoachID));
-            if (current) setAssignedCoach(current);
+          const { data } = await api.get('/coaches/mi-entrenador');
+          if (data?.coach) {
+            const current = list.find(c => String(c.UserID || c.id) === String(data.coach.UserID));
+            setAssignedCoach(current || data.coach);
           }
         } catch (err) {
-          console.error("Error obteniendo asignaciones", err);
+          console.error('Error obteniendo el entrenador asignado', err);
         }
 
         if (!assignedCoach && (user?.coachId || user?.assignedCoach)) {

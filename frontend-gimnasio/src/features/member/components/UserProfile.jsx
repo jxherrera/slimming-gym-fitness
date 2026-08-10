@@ -167,8 +167,8 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
       return;
     }
     try {
-      await memberService.assignCoach(selectedCoachId, userId, true);
-      toast.success('Solicitud de entrenador enviada exitosamente.');
+      const respuesta = await memberService.assignCoach(selectedCoachId);
+      toast.success(respuesta?.message || 'Entrenador asignado correctamente.');
       const coachObj = coaches.find(c => String(c.UserID || c.id) === String(selectedCoachId));
       if (coachObj) {
         setAssignedCoach(coachObj);

@@ -43,14 +43,14 @@ const RoutinePdfExporter = ({ routines = [], user, onRoutineAssigned }) => {
       
       try {
           setIsAssigning(true);
-          const payload = {
-              userId: user?.id || user?.userId,
-              coachId: tpl.CoachID, // Asignamos el ID del coach que creó la plantilla
-              goal: tpl.Goal || 'General',
-              exercises: tpl.exercises || []
-          };
-          
-          const response = await api.post('/routines/assign', payload);
+          // Solo viaja el identificador de la plantilla: /routines/assign
+          // exige rol Admin o Coach porque acepta el socio y los ejercicios en
+          // el cuerpo de la peticion. La ruta de abajo lee la plantilla en el
+          // servidor y toma el socio del token, asi que puede usarla el propio
+          // interesado.
+          const response = await api.post('/routines/aplicar-plantilla', {
+              templateId: tpl.TemplateID
+          });
           const data = response.data;
           if (data.success) {
               toast.success('¡Rutina aplicada con éxito!');
@@ -64,8 +64,11 @@ const RoutinePdfExporter = ({ routines = [], user, onRoutineAssigned }) => {
               toast.error(data.message || 'Error al aplicar la rutina');
           }
       } catch (error) {
-          console.error("Error asignando plantilla:", error);
-          toast.error('Error de conexión.');
+          console.error('Error asignando plantilla:', error);
+          // Mostrar el motivo real y no un generico: "Error de conexion" hacia
+          // parecer un problema de red lo que en realidad era un 403 del
+          // servidor, y costo dar con la causa.
+          toast.error(error.response?.data?.message || 'No se pudo aplicar la rutina.');
       } finally {
           setIsAssigning(false);
       }

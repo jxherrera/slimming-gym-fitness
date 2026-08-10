@@ -60,10 +60,12 @@ jobs:
           # Reconstruir las imagenes tarda mas que el limite de 10 minutos que
           # trae la accion por defecto.
           command_timeout: 20m
-          # Sin esto, un fallo del git pull no detiene el resto y la VM se
-          # reconstruiria con el codigo anterior, aparentando un despliegue bueno.
-          script_stop: true
           script: |
+            # Sin esto, un fallo del git pull no detiene el resto y la VM se
+            # reconstruiria con el codigo anterior, aparentando un despliegue
+            # bueno. La accion ya no acepta la opcion script_stop.
+            set -e
+
             # Entra a la carpeta del proyecto en la VM
             cd /opt/slimming
 

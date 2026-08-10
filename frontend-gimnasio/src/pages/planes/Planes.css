@@ -1,7 +1,11 @@
 /* Estilos de la página pública de Planes */
 
 .planes-page-container {
-  padding: 4rem 2rem;
+  /* La cabecera del sitio mide 90px y es fija: sin reservar ese alto el
+     título quedaba tapado por ella (se veía cortado a la mitad) */
+  padding: calc(90px + env(safe-area-inset-top) + clamp(1.5rem, 5vw, 3rem))
+           clamp(1rem, 4vw, 2rem)
+           clamp(2rem, 8vw, 4rem);
   max-width: 1200px;
   margin: 0 auto;
   font-family: 'Outfit', 'Inter', sans-serif;
@@ -10,7 +14,7 @@
 
 .planes-hero-header {
   text-align: center;
-  margin-bottom: 4rem;
+  margin-bottom: clamp(2rem, 7vw, 4rem);
 }
 
 .planes-badge {
@@ -28,23 +32,25 @@
 }
 
 .planes-hero-header h1 {
-  font-size: 3rem;
+  font-size: clamp(1.9rem, 7vw, 3rem);
   font-weight: 800;
   margin: 0 0 10px 0;
   background: linear-gradient(135deg, #ffffff, #ff3b3b);
+  -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .planes-hero-header p {
   color: #9ca3af;
-  font-size: 1.1rem;
+  font-size: clamp(0.95rem, 2.5vw, 1.1rem);
   margin: 0;
 }
 
 .planes-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: clamp(1.5rem, 4vw, 2.5rem);
   align-items: center;
 }
 
@@ -154,4 +160,43 @@
 .btn-featured:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(255, 59, 59, 0.6);
+}
+
+/* RESPONSIVE MÓVIL */
+@media (max-width: 768px) {
+  /* El scale(1.04) del plan destacado desborda el ancho en móvil */
+  .planes-card.featured {
+    transform: none;
+  }
+
+  .planes-card {
+    padding: 2rem 1.25rem;
+  }
+
+  .planes-card-title {
+    font-size: 1.4rem;
+  }
+
+  .planes-card-price {
+    font-size: 2.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .planes-card-features {
+    margin-bottom: 1.5rem;
+  }
+
+  .planes-card-btn {
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .planes-badge {
+    font-size: 0.78rem;
+  }
+
+  .planes-card-features li {
+    font-size: 0.88rem;
+  }
 }

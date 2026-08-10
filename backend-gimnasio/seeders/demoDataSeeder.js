@@ -20,16 +20,16 @@
  * de modo que `--limpiar` jamas toca informacion de produccion.
  */
 
-const bcrypt = require('bcrypt');
 const { sql, poolPromise } = require('../config/db');
 const datos = require('./demoData');
 
 const {
     DOMINIO_DEMO,
     PASSWORD_DEMO,
+    PASSWORD_HASH_DEMO,
     COACHES,
-    ADMINISTRADORES,
     SOCIOS,
+    TIPOS_CORREO,
     OBJETIVOS,
     NOMBRES_RUTINA,
     EJERCICIOS,
@@ -38,6 +38,9 @@ const {
     HORARIOS_COACH,
     NOTIFICACIONES
 } = datos;
+
+// Nombres de dia tal como los escribe la aplicacion (classController.js).
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 // Subconsulta reutilizada por el borrado: identifica a los usuarios generados.
 const USUARIOS_DEMO = `SELECT UserID FROM dbo.Users WHERE Email LIKE '%@${DOMINIO_DEMO}'`;
@@ -191,8 +194,9 @@ const contarUsuariosDemo = async (pool) => {
 const sembrarUsuarios = async (pool, roles, planes) => {
     console.log('\n👥 Creando usuarios...');
 
-    const passwordHash = await bcrypt.hash(PASSWORD_DEMO, 10);
-    const creados = { coaches: [], socios: [], admins: [] };
+    // Hash pre-calculado: ver PASSWORD_HASH_DEMO en demoData.js.
+    const passwordHash = PASSWORD_HASH_DEMO;
+    const creados = { coaches: [], socios: [] };
 
     // Provincia y secuencia arrancan fijas para que las cedulas sean estables
     // entre ejecuciones.
@@ -254,19 +258,8 @@ const sembrarUsuarios = async (pool, roles, planes) => {
         console.log(`  [+] Coach ${coach.nombres} ${coach.apellidos} (${usuario.email})`);
     }
 
-    for (let i = 0; i < ADMINISTRADORES.length; i++) {
-        const admin = ADMINISTRADORES[i];
-        const usuario = await insertarUsuario({
-            nombres: admin.nombres,
-            apellidos: admin.apellidos,
-            email: generarEmail(admin.nombres, admin.apellidos, i + 1),
-            roleId: roles.Admin,
-            estado: 'A',
-            creadoHace: conHora(sumarDias(hoy(), -entero(300, 500)), entero(8, 18))
-        });
-        creados.admins.push(usuario);
-        console.log(`  [+] Admin ${admin.nombres} ${admin.apellidos} (${usuario.email})`);
-    }
+    // No se generan administradores: el unico que debe existir es el maestro
+    // que crea seedRunner.js, para no repartir accesos de gestion.
 
     // Socios: la antiguedad depende del perfil. Uno con tres renovaciones no
     // pudo haberse inscrito la semana pasada.
@@ -381,11 +374,12 @@ const sembrarCoaches = async (pool, { coaches, socios }, tablas) => {
  * Se replica lo que hace paymentController al aprobar: el pago pasa a 'A' y la
  * suscripcion a 'P' con las fechas recalculadas segun la duracion del plan.
  */
-const sembrarSuscripciones = async (pool, { socios, admins }, tablas) => {
+const sembrarSuscripciones = async (pool, { socios }, tablas) => {
     console.log('\n💳 Generando suscripciones y pagos...');
 
+    // LastModifiedBy queda en NULL, igual que cuando el pago lo aprueba el
+    // webhook automatico en vez de un administrador (paymentController.js).
     const tieneAuditor = await existeColumna(pool, 'Payments', 'LastModifiedBy');
-    const auditor = admins.length > 0 ? admins[0].userId : null;
     let totalSuscripciones = 0;
     let totalPagos = 0;
 
@@ -422,10 +416,8 @@ const sembrarSuscripciones = async (pool, { socios, admins }, tablas) => {
             .input('ReferenceNumber', sql.VarChar(100), referencia)
             .input('Status', sql.Char(1), estado);
 
-        // Los pagos aprobados guardan quien los reviso; los pendientes aun no
-        // tienen auditor.
         if (tieneAuditor) {
-            peticion.input('LastModifiedBy', sql.Int, estado === 'A' ? auditor : null);
+            peticion.input('LastModifiedBy', sql.Int, null);
             await peticion.query(`
                 INSERT INTO dbo.Payments
                     (SubscriptionID, AmountPaid, PaymentDate, PaymentMethod, ReferenceNumber, Status, LastModifiedBy)
@@ -864,13 +856,46 @@ const sembrarClases = async (pool, { coaches, socios }, tablas) => {
     let totalClases = 0;
     let totalReservas = 0;
 
+    // Dias en los que cada entrenador trabaja, para no programarle una clase un
+    // dia libre: classController valida el horario laboral antes de crearla.
+    const diasLaborables = {};
+    for (const horario of HORARIOS_COACH) {
+        diasLaborables[coaches[horario.coach].userId] = horario.dias;
+    }
+
+    /**
+     * Busca la fecha habil mas cercana a `desplazamiento` dias de hoy en la que
+     * el entrenador trabaje y que esa clase no ocupe ya. Devuelve null si no
+     * encuentra ninguna en 10 dias.
+     */
+    const fechaHabil = (coachId, desplazamiento, usadas) => {
+        const dias = diasLaborables[coachId];
+        const avance = desplazamiento < 0 ? -1 : 1;
+
+        for (let i = 0; i < 10; i++) {
+            const fecha = sumarDias(hoy(), desplazamiento + i * avance);
+            const trabaja = !dias || dias.includes(DIAS_SEMANA[fecha.getDay()]);
+
+            if (trabaja && !usadas.has(fechaSQL(fecha))) {
+                usadas.add(fechaSQL(fecha));
+                return fecha;
+            }
+        }
+        return null;
+    };
+
     for (const clase of CLASES) {
         const coach = coaches[clase.coach];
+        // Una misma clase no puede repetirse dos veces el mismo dia.
+        const usadas = new Set();
 
         // Una ocurrencia pasada (para el historial) y dos proximas (para que la
         // cartelera no aparezca vacia).
         for (const desplazamiento of [-3, 1, 4]) {
-            const inicio = conHora(sumarDias(hoy(), desplazamiento), clase.hora, 0);
+            const dia = fechaHabil(coach.userId, desplazamiento, usadas);
+            if (!dia) continue;
+
+            const inicio = conHora(dia, clase.hora, 0);
             const fin = new Date(inicio.getTime() + clase.duracionMin * 60000);
 
             const resultado = await pool.request()
@@ -990,6 +1015,61 @@ const sembrarNotificaciones = async (pool, socios) => {
     }
 
     console.log(`  [+] ${total} notificaciones.`);
+    return total;
+};
+
+// ============================================================================
+// 10. Bitacora de correos
+// ============================================================================
+
+/**
+ * Refleja lo que deja emailService.sendEmailAndLog: un registro por correo
+ * enviado. Se derivan de hechos que ya ocurrieron (alta del socio, pago
+ * aprobado, aviso de vencimiento, reserva de clase) para que la bitacora
+ * concuerde con el resto de los datos.
+ */
+const sembrarCorreos = async (pool, socios, tablas) => {
+    if (!tablas.has('EmailLogs')) return 0;
+
+    console.log('\n📧 Registrando bitácora de correos...');
+
+    let total = 0;
+
+    const registrar = async (userId, tipo, estado) => {
+        await pool.request()
+            .input('UserID', sql.Int, userId)
+            .input('EmailType', sql.VarChar(50), tipo)
+            .input('Status', sql.VarChar(20), estado)
+            .query(`
+                INSERT INTO dbo.EmailLogs (UserID, EmailType, Status)
+                VALUES (@UserID, @EmailType, @Status)
+            `);
+        total++;
+    };
+
+    for (const socio of socios) {
+        // Todos reciben la bienvenida al registrarse. Un pequeno porcentaje
+        // falla: correos mal escritos o buzones llenos, como en produccion.
+        await registrar(socio.userId, 'Bienvenida', azar() > 0.05 ? 'Éxito' : 'Fallo');
+
+        // Un correo por cada pago aprobado.
+        if (!['pendiente', 'rechazado'].includes(socio.perfil)) {
+            const aprobados = (socio.renovaciones || 0) + 1;
+            for (let i = 0; i < aprobados; i++) {
+                await registrar(socio.userId, 'Pago', 'Éxito');
+            }
+        }
+
+        if (socio.perfil === 'porVencer') {
+            await registrar(socio.userId, 'Vencimiento', 'Éxito');
+        }
+
+        if (['vigente', 'porVencer'].includes(socio.perfil) && azar() > 0.5) {
+            await registrar(socio.userId, 'Clase', 'Éxito');
+        }
+    }
+
+    console.log(`  [+] ${total} correos en la bitácora.`);
     return total;
 };
 
@@ -1182,7 +1262,7 @@ const ejecutar = async () => {
     console.log(`   Contraseña de todas las cuentas: ${PASSWORD_DEMO}`);
 
     const roles = await obtenerRoles(pool);
-    for (const rol of ['Admin', 'Coach', 'Member']) {
+    for (const rol of ['Coach', 'Member']) {
         if (!roles[rol]) {
             throw new Error(`Falta el rol '${rol}'. Ejecuta primero: npm run seed`);
         }
@@ -1204,13 +1284,13 @@ const ejecutar = async () => {
     await sembrarEvaluaciones(pool, usuarios.socios, tablas);
     await sembrarClases(pool, usuarios, tablas);
     await sembrarNotificaciones(pool, usuarios.socios);
+    await sembrarCorreos(pool, usuarios.socios, tablas);
 
     await mostrarResumen(pool);
 
     console.log('\n✅ Datos de demostración generados.');
     console.log('\n   Cuentas para probar la aplicación:');
     console.log(`   Coach  → ${usuarios.coaches[0].email}`);
-    console.log(`   Admin  → ${usuarios.admins[0].email}`);
     console.log(`   Socio  → ${usuarios.socios[0].email}`);
     console.log(`   Contraseña en todas: ${PASSWORD_DEMO}\n`);
 };

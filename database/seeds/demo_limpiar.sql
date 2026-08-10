@@ -21,7 +21,7 @@ BEGIN
         WHERE TableName = ''Payments''
           AND EntityID IN (SELECT p.PaymentID FROM dbo.Payments p
                            JOIN dbo.Subscriptions s ON s.SubscriptionID = p.SubscriptionID
-                           WHERE s.UserID IN (SELECT UserID FROM dbo.Users WHERE Email LIKE '%@demo.slimminggym.com'));';
+                           WHERE s.UserID IN (SELECT UserID FROM dbo.Users WHERE Email LIKE ''%@demo.slimminggym.com''));';
 END
 GO
 IF OBJECT_ID('dbo.WorkoutSessionDetails','U') IS NOT NULL AND OBJECT_ID('dbo.WorkoutSessions','U') IS NOT NULL AND OBJECT_ID('dbo.Users','U') IS NOT NULL

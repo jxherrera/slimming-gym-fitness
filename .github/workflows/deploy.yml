@@ -1,0 +1,28 @@
+name: Despliegue automatico a la VM
+
+on:
+  push:
+    branches:
+      - main # Se ejecuta solo cuando hay cambios en main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Conectar a la VM y actualizar Docker
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            # Entra a la carpeta del proyecto en la VM
+            cd /opt/slimming
+
+            # Descarga los ultimos cambios de GitHub
+            git pull origin main
+
+            # Reconstruye y reinicia los contenedores en segundo plano
+            docker compose down
+            docker compose up -d --build

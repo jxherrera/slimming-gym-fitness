@@ -50,17 +50,9 @@
   --secondary-gray: #f5f5f5;
   --card-bg: var(--surface-white);
 
-  /* Alias Admin (admin-core.css Base / Light Theme Defaults) */
-  --admin-bg: #f8fafc;
-  --admin-surface: rgba(255, 255, 255, 0.75);
-  --admin-surface-alt: rgba(241, 245, 249, 0.85);
-  --admin-border: rgba(203, 213, 225, 0.6);
-  --admin-text: #0f172a;
-  --admin-heading: #020617;
-  --admin-muted: #64748b;
-  --admin-accent: var(--brand-red-dark);
-  --admin-accent-dark: #7f1d1d;
-  --admin-accent-soft: rgba(220, 38, 38, 0.1);
-  --glass-blur: blur(16px);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
+
+/* Las variables --admin-* NO se declaran aquí a propósito: viven en
+   pages/admin/shared/admin-core.css, que es quien define sus dos variantes
+   (.theme-light y .theme-dark). Duplicarlas en este archivo hacía que la
+   versión de admin-core, al cargarse después, ganara siempre la cascada. */

@@ -14,14 +14,35 @@ img, svg, video, canvas {
   height: auto;
 }
 
+/* Bloqueo de scroll del fondo cuando hay un drawer o modal abierto.
+   Lo activan Navbar.jsx y AdminSidebar.jsx mediante document.body.classList */
+body.no-scroll {
+  overflow: hidden;
+  touch-action: none;
+}
+
 /* Interacción táctil para inputs (Evitar zoom en iOS) y botones */
 @media (max-width: 767px) {
   input, select, textarea {
-    font-size: 16px !important; 
+    font-size: 16px !important;
   }
 
   button, a, [role="button"], .tab-btn, .nav-btn, .menu-item {
     min-height: var(--tap-min);
+  }
+
+  /* Los campos también son objetivos táctiles: había <select> de 22px de alto.
+     Se excluyen las casillas y los deslizadores, que se tratan aparte. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    min-height: var(--tap-min);
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 22px;
+    height: 22px;
   }
 }
 
@@ -31,8 +52,81 @@ img, svg, video, canvas {
   outline-offset: 2px;
 }
 
-/* Envolver efectos hover (para que no se queden "pegados" en móvil) */
-@media (hover: hover) and (pointer: fine) {
-  /* Se recomienda que a futuro las clases con :hover puramente visuales se envuelvan aquí, pero
-     por ahora definimos este bloque como guía para las siguientes fases */
+/* Los anclajes no deben quedar tapados por las cabeceras fijas */
+:target,
+h1, h2, h3 {
+  scroll-margin-top: 100px;
+}
+
+/* ==========================================================================
+   FASE 5 · Pulido táctil y rendimiento
+   ========================================================================== */
+
+/* En pantallas táctiles el estado :hover se queda "pegado" tras el tap: el
+   elemento se levanta y no vuelve a su sitio hasta que tocas otra cosa.
+   Neutralizamos únicamente el desplazamiento, conservando color y sombra. */
+@media (hover: none) {
+  .assign-btn:hover,
+  .btn-action:hover,
+  .btn-book-class:hover:not(:disabled),
+  .btn-cta:hover,
+  .btn-export-pdf:hover,
+  .btn-featured:hover,
+  .btn-giant-done:hover,
+  .btn-hero-primary:hover,
+  .btn-hero-secondary:hover,
+  .btn-panel:hover,
+  .btn-primary-modal:hover,
+  .btn-save:hover:not(:disabled),
+  .btn-submit:hover:not(:disabled),
+  .btn-verify-approve:hover,
+  .btn-verify-reject:hover,
+  .card:hover,
+  .class-card:hover,
+  .download-btn:hover,
+  .horarios-submit-btn.class-btn:hover,
+  .horarios-submit-btn.schedule-btn:hover,
+  .notification-action-btn:hover,
+  .payments-submit-btn:hover,
+  .plan-card:hover,
+  .planes-card:hover,
+  .profile-save-btn:hover,
+  .service-card:hover,
+  .setting-row:hover,
+  .stat-card:hover,
+  .btn-login:hover,
+  .nav-btn-login:hover,
+  .btn-remove-student:hover,
+  .modal-close-btn:hover {
+    transform: none;
+  }
+
+  /* El icono de servicio gira al pasar el cursor: en táctil se queda torcido */
+  .service-card:hover .service-icon-wrapper {
+    transform: none;
+  }
+}
+
+/* El desenfoque de fondo (glassmorphism) es caro en móviles de gama media/baja:
+   en pantallas pequeñas lo reducimos para no perder fluidez al hacer scroll.
+   El equivalente para el panel de administración está al final de
+   pages/admin/shared/admin-core.css, donde viven sus variables de tema. */
+@media (max-width: 768px) {
+  .hero-badge,
+  .btn-hero-secondary {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
+/* Respeta la preferencia del sistema de reducir movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

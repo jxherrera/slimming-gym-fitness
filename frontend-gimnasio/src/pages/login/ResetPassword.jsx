@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useToast } from '../../hooks/useToast';
+import PasswordInput from '../../components/common/PasswordInput';
 import './Login.css';
 
 const ResetPassword = () => {
@@ -88,8 +89,7 @@ const ResetPassword = () => {
           <>
             <div className="form-group">
               <label htmlFor="new-password">Nueva Contraseña:</label>
-              <input 
-                type="password" 
+              <PasswordInput 
                 autoComplete="new-password"
                 id="new-password" 
                 value={password} 
@@ -102,8 +102,7 @@ const ResetPassword = () => {
 
             <div className="form-group">
               <label htmlFor="confirm-new-password">Confirmar Contraseña:</label>
-              <input 
-                type="password" 
+              <PasswordInput 
                 autoComplete="new-password"
                 id="confirm-new-password" 
                 value={confirmPassword} 

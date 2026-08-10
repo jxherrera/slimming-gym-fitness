@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FaChartLine, FaUserTie, FaUsers, FaUserPlus, FaDollarSign, FaUserShield } from 'react-icons/fa';
+import PasswordInput from '../../../components/common/PasswordInput';
 import '../shared/admin-core.css';
 import { useTheme } from '../../../context/ThemeContext';
 import { useEsMovil } from '../../../hooks/useMediaQuery';
@@ -591,7 +592,7 @@ const Admin = () => {
                 <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div className="form-grid-2" style={{ gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>ID Número</label>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Número de cédula o pasaporte</label>
                       <input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.IDNumber} onChange={(e) => handleRegisterChange('IDNumber', e.target.value)} required />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -614,7 +615,7 @@ const Admin = () => {
                   <div className="form-grid-2" style={{ gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Contraseña</label>
-                      <input type="password" autoComplete="new-password" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.Password} onChange={(e) => handleRegisterChange('Password', e.target.value)} required />
+                      <PasswordInput autoComplete="new-password" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.Password} onChange={(e) => handleRegisterChange('Password', e.target.value)} required />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Teléfono</label>
@@ -827,7 +828,7 @@ const Admin = () => {
             <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>ID / Cédula</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Número de cédula o pasaporte</label>
                   <input type="text" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={editForm.idNumber} onChange={(e) => handleEditChange('idNumber', e.target.value)} required />
                 </div>
               </div>
@@ -875,13 +876,11 @@ const Admin = () => {
             <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Nueva Contraseña</label>
-                <input 
-                  type="password" 
-                  style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} 
+                <PasswordInput 
+                  style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none', width: '100%' }} 
                   value={passwordForm.newPassword} 
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} 
                   required 
-                  minLength="6"
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>

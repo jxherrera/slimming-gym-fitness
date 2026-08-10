@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FaTimes } from 'react-icons/fa';
 import './Modal.css';
 
@@ -35,7 +36,7 @@ const Modal = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" onClick={handleBackdropClick}>
       <div className={`modal-container modal-${size}`}>
         <div className="modal-header">
@@ -53,7 +54,8 @@ const Modal = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

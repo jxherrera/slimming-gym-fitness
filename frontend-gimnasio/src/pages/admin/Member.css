@@ -1,13 +1,17 @@
 /* Hoja de estilos para el panel del socio (Member.jsx) */
+.member-dashboard-wrapper {
+  background-color: #0b0f19;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  color: #f3f4f6;
+  width: 100%;
+}
+
 .member-dashboard {
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  font-family: 'Outfit', 'Inter', sans-serif;
-  color: #f3f4f6;
-  background-color: #0b0f19;
-  min-height: 100vh;
-  min-height: 100dvh;
 }
 
 .member-header {

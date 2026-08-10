@@ -112,8 +112,9 @@ const Member = () => {
   }
 
   return (
-    <div className="member-dashboard">
-      <AlertModal 
+    <div className="member-dashboard-wrapper">
+      <div className="member-dashboard">
+        <AlertModal 
         isOpen={showAlertModal} 
         onClose={() => setShowAlertModal(false)}
         reason={alertReason}
@@ -210,6 +211,7 @@ const Member = () => {
             onUpdateSuccess={fetchData}
           />
         )}
+      </div>
       </div>
     </div>
   );

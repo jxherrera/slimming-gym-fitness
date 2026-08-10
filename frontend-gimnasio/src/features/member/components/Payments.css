@@ -37,6 +37,8 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .form-row {

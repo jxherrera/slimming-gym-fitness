@@ -62,9 +62,14 @@ export const memberService = {
     return response.data.coaches || [];
   },
 
-  // Asignar o solicitar Entrenador
-  assignCoach: async (coachId, memberId, userInitiated = false) => {
-    const response = await api.post(`/coaches/${coachId}/assign`, { MemberID: memberId, userInitiated });
+  // Elegir el propio entrenador.
+  //
+  // Usa /coaches/mi-entrenador y no /coaches/:id/assign: esa ruta permite
+  // asignar a cualquier socio y esta reservada al administrador, por lo que
+  // desde el perfil respondia 403. El socio se identifica con su token, asi que
+  // no hace falta enviar su id.
+  assignCoach: async (coachId) => {
+    const response = await api.post('/coaches/mi-entrenador', { coachId });
     return response.data;
   },
 

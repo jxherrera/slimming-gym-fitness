@@ -14,6 +14,10 @@ router.get('/disponibles', coachController.getAvailableCoaches);
 // Entrenador asignado a quien hace la peticion, resuelto desde el token.
 router.get('/mi-entrenador', coachController.getMyCoach);
 
+// El socio elige su propio entrenador. El resto de asignaciones (sobre otros
+// usuarios) siguen siendo exclusivas del administrador, mas abajo.
+router.post('/mi-entrenador', coachController.chooseMyCoach);
+
 // Lectura del listado completo y de la configuracion propia: Administrador o Entrenador
 router.get('/', checkRole(['Admin', 'Coach']), coachController.getAllCoaches);
 router.get('/:id/settings', checkRole(['Admin', 'Coach']), coachController.getCoachSettings);

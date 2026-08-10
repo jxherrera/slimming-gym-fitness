@@ -411,3 +411,86 @@ exports.getMyCoach = async (req, res) => {
         res.status(500).json({ success: false, message: 'Error al obtener el entrenador asignado' });
     }
 };
+
+// POST /api/coaches/mi-entrenador
+//
+// El socio elige su propio entrenador. Va aparte de assignMember, que sigue
+// reservado al administrador: alli el socio llega en el cuerpo de la peticion y
+// cualquiera podria reasignar a otra persona. Aqui el socio sale del token.
+//
+// Se conserva la regla de negocio que ya existia para las solicitudes hechas
+// por el propio usuario: un cambio de entrenador al mes.
+exports.chooseMyCoach = async (req, res) => {
+    const { coachId } = req.body;
+    const memberId = req.user.userId;
+
+    if (!coachId) {
+        return res.status(400).json({ success: false, message: 'Debes seleccionar un entrenador.' });
+    }
+
+    try {
+        const pool = await poolPromise;
+
+        // El destino tiene que ser un entrenador activo de verdad, no un socio
+        // ni una cuenta dada de baja.
+        const entrenador = await pool.request()
+            .input('CoachID', sql.Int, coachId)
+            .query(`
+                SELECT u.UserID, u.FirstName, u.LastName
+                FROM Users u
+                INNER JOIN Roles r ON r.RoleID = u.RoleID
+                WHERE u.UserID = @CoachID AND r.RoleName = 'Coach' AND u.Status = 'A'
+            `);
+
+        if (entrenador.recordset.length === 0) {
+            return res.status(404).json({ success: false, message: 'El entrenador seleccionado no está disponible.' });
+        }
+
+        const asignacion = await pool.request()
+            .input('MemberID', sql.Int, memberId)
+            .query('SELECT CoachID, AssignedAt FROM CoachAssignments WHERE MemberID = @MemberID');
+
+        if (asignacion.recordset.length > 0) {
+            const actual = asignacion.recordset[0];
+
+            if (String(actual.CoachID) === String(coachId)) {
+                return res.status(200).json({ success: true, message: 'Ese ya es tu entrenador.' });
+            }
+
+            const haceUnMes = new Date();
+            haceUnMes.setMonth(haceUnMes.getMonth() - 1);
+
+            if (new Date(actual.AssignedAt) > haceUnMes) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Solo puedes cambiar de entrenador una vez al mes.'
+                });
+            }
+
+            await pool.request()
+                .input('CoachID', sql.Int, coachId)
+                .input('MemberID', sql.Int, memberId)
+                .query(`
+                    UPDATE CoachAssignments
+                    SET CoachID = @CoachID, AssignedAt = GETDATE()
+                    WHERE MemberID = @MemberID
+                `);
+        } else {
+            await pool.request()
+                .input('CoachID', sql.Int, coachId)
+                .input('MemberID', sql.Int, memberId)
+                .query('INSERT INTO CoachAssignments (CoachID, MemberID) VALUES (@CoachID, @MemberID)');
+        }
+
+        const { FirstName, LastName } = entrenador.recordset[0];
+
+        res.status(200).json({
+            success: true,
+            message: `${FirstName} ${LastName} es ahora tu entrenador.`,
+            coach: entrenador.recordset[0]
+        });
+    } catch (err) {
+        console.error('Error al elegir entrenador:', err);
+        res.status(500).json({ success: false, message: 'No se pudo asignar el entrenador.' });
+    }
+};

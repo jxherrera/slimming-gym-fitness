@@ -14,6 +14,10 @@ router.get('/coach/:coachId/clients', soloPersonal, routineController.getClients
 router.get('/coach/:coachId/schedule', soloPersonal, routineController.getCoachSchedule);
 router.post('/assign', soloPersonal, routineController.assignRoutine);
 
+// El socio adopta una plantilla publicada. No lleva soloPersonal: actua sobre
+// si mismo y el controlador toma su identificador del token, nunca del cuerpo.
+router.post('/aplicar-plantilla', routineController.applyTemplateToMyProfile);
+
 // El socio consulta sus propias rutinas
 router.get('/user/:userId', routineController.getUserRoutines);
 router.get('/user/:userId/current', routineController.getCurrentRoutine);

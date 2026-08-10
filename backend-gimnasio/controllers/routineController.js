@@ -232,9 +232,110 @@ const getUniqueExercises = async (req, res) => {
     }
 };
 
+/**
+ * POST /api/routines/aplicar-plantilla
+ *
+ * Permite que un socio adopte una plantilla publicada por un entrenador sin
+ * pasar por el panel de gestion. Existe aparte de assignRoutine porque aquel
+ * recibe userId y la lista completa de ejercicios en el cuerpo de la peticion,
+ * algo que no puede quedar en manos del propio socio: podria asignarse una
+ * rutina a otra persona o inventarse los ejercicios.
+ *
+ * Aqui solo llega el identificador de la plantilla. El socio sale del token y
+ * los ejercicios se leen de la base, no del cliente.
+ */
+const applyTemplateToMyProfile = async (req, res) => {
+    const { templateId } = req.body;
+    const userId = req.user.userId;
+
+    if (!templateId) {
+        return res.status(400).json({ success: false, message: 'Falta el identificador de la plantilla.' });
+    }
+
+    try {
+        const pool = await poolPromise;
+
+        const plantilla = await pool.request()
+            .input('TemplateID', sql.Int, templateId)
+            .query(`
+                SELECT TemplateID, CoachID, TemplateName, Goal
+                FROM dbo.RoutineTemplates
+                WHERE TemplateID = @TemplateID
+            `);
+
+        if (plantilla.recordset.length === 0) {
+            return res.status(404).json({ success: false, message: 'La plantilla ya no existe.' });
+        }
+
+        const { CoachID, TemplateName, Goal } = plantilla.recordset[0];
+
+        const ejercicios = await pool.request()
+            .input('TemplateID', sql.Int, templateId)
+            .query(`
+                SELECT ExerciseName, Sets, Reps, Weight, DayOfWeek
+                FROM dbo.RoutineTemplateExercises
+                WHERE TemplateID = @TemplateID
+            `);
+
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+
+        try {
+            // La pantalla advierte al socio de que esto reemplaza su rutina. Las
+            // anteriores se archivan en vez de borrarse: getCurrentRoutine solo
+            // mira las activas, y el historial sirve para el seguimiento.
+            await new sql.Request(transaction)
+                .input('UserID', sql.Int, userId)
+                .query("UPDATE dbo.Routines SET Status = 'I' WHERE UserID = @UserID AND Status = 'A'");
+
+            const rutina = await new sql.Request(transaction)
+                .input('UserID', sql.Int, userId)
+                .input('CoachID', sql.Int, CoachID)
+                .input('RoutineName', sql.VarChar(100), TemplateName)
+                .input('Goal', sql.NVarChar(255), Goal || 'General')
+                .query(`
+                    INSERT INTO dbo.Routines (UserID, CoachID, RoutineName, Goal, Status)
+                    OUTPUT INSERTED.RoutineID, INSERTED.Goal
+                    VALUES (@UserID, @CoachID, @RoutineName, @Goal, 'A')
+                `);
+
+            const routineId = rutina.recordset[0].RoutineID;
+
+            for (const ej of ejercicios.recordset) {
+                await new sql.Request(transaction)
+                    .input('RoutineID', sql.Int, routineId)
+                    .input('ExerciseName', sql.NVarChar(150), ej.ExerciseName)
+                    .input('Sets', sql.Int, ej.Sets)
+                    .input('Reps', sql.Int, ej.Reps)
+                    .input('Weight', sql.Decimal(5, 2), ej.Weight)
+                    .input('DayOfWeek', sql.NVarChar(20), ej.DayOfWeek)
+                    .query(`
+                        INSERT INTO dbo.RoutineExercises (RoutineID, ExerciseName, Sets, Reps, Weight, DayOfWeek)
+                        VALUES (@RoutineID, @ExerciseName, @Sets, @Reps, @Weight, @DayOfWeek)
+                    `);
+            }
+
+            await transaction.commit();
+
+            res.status(201).json({
+                success: true,
+                message: 'Rutina aplicada a tu perfil.',
+                routine: { routineId, name: TemplateName, exercises: ejercicios.recordset.length }
+            });
+        } catch (errorInterno) {
+            await transaction.rollback();
+            throw errorInterno;
+        }
+    } catch (error) {
+        console.error('Error al aplicar la plantilla al perfil:', error);
+        res.status(500).json({ success: false, message: 'No se pudo aplicar la rutina.' });
+    }
+};
+
 module.exports = {
     getClientsByCoach,
     assignRoutine,
+    applyTemplateToMyProfile,
     getCoachSchedule,
     getUserRoutines,
     getCurrentRoutine,

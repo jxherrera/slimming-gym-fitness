@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import PasswordInput from '../../components/common/PasswordInput';
 import './Login.css';
 
 const INITIAL_FORM_STATE = {
@@ -119,7 +120,7 @@ const Login = () => {
         </div>
         <div className="form-group">
           <label>Contraseña:</label>
-          <input type="password" autoComplete={isLogin ? "current-password" : "new-password"} name="password" value={formData.password} onChange={handleChange} required enterKeyHint="done" />
+          <PasswordInput autoComplete={isLogin ? "current-password" : "new-password"} name="password" value={formData.password} onChange={handleChange} required enterKeyHint="done" />
         </div>
 
         {isLogin && (

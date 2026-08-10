@@ -4,6 +4,8 @@ import Modal from '@/components/common/Modal';
 import { scheduleService } from '@/services/scheduleService';
 import { memberService } from '@/services/memberService';
 import { useToast } from '@/hooks/useToast';
+import PasswordInput from '../../../components/common/PasswordInput';
+import Spinner from '../../../components/common/Spinner';
 import './UserProfile.css';
 import api from '@/services/api';
 
@@ -433,8 +435,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
         <form onSubmit={handleChangePassword} className="profile-form">
           <div className="form-group">
             <label>Contraseña Actual</label>
-            <input
-              type="password"
+            <PasswordInput
               className="profile-input"
               value={passwordData.current}
               onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
@@ -443,8 +444,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
           </div>
           <div className="form-group">
             <label>Nueva Contraseña</label>
-            <input
-              type="password"
+            <PasswordInput
               className="profile-input"
               value={passwordData.new}
               onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
@@ -453,8 +453,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
           </div>
           <div className="form-group">
             <label>Confirmar Nueva Contraseña</label>
-            <input
-              type="password"
+            <PasswordInput
               className="profile-input"
               value={passwordData.confirm}
               onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}

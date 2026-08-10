@@ -3,6 +3,7 @@ import { FaChartLine, FaWeight, FaPercentage, FaDumbbell, FaPlus, FaCalendarAlt,
 import { progressService } from '@/services/progressService';
 import { memberService } from '@/services/memberService';
 import { useToast } from '@/hooks/useToast';
+import { useEsMovil } from '@/hooks/useMediaQuery';
 import Modal from '@/components/common/Modal';
 import Spinner from '@/components/common/Spinner';
 import { jsPDF } from 'jspdf';
@@ -11,6 +12,7 @@ import './ProgressChart.css';
 
 const ProgressChart = ({ userId }) => {
   const toast = useToast();
+  const esMovil = useEsMovil();
   const [history, setHistory] = useState([]);
   const [metric, setMetric] = useState('weight'); // 'weight' | 'bodyFat' | 'muscleMass'
   const [loading, setLoading] = useState(true);
@@ -205,9 +207,9 @@ const ProgressChart = ({ userId }) => {
       </div>
 
       {/* Gráfico Recharts Interactivo y Responsivo */}
-      <div className="chart-wrapper" style={{ minHeight: '260px', width: '100%', marginTop: '10px' }}>
-        <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+      <div className="chart-wrapper" style={{ minHeight: esMovil ? '210px' : '260px', width: '100%', marginTop: '10px' }}>
+        <ResponsiveContainer width="100%" height={esMovil ? 210 : 260}>
+          <AreaChart data={chartData} margin={esMovil ? { top: 10, right: 10, left: -18, bottom: 0 } : { top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={`colorMetric-${metric}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={currentConfig.color} stopOpacity={0.4} />
@@ -215,8 +217,23 @@ const ProgressChart = ({ userId }) => {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-            <XAxis dataKey="name" stroke="#888" tickLine={false} style={{ fontSize: '11px' }} />
-            <YAxis stroke="#888" tickLine={false} domain={['auto', 'auto']} style={{ fontSize: '11px' }} />
+            <XAxis
+              dataKey="name"
+              stroke="#888"
+              tickLine={false}
+              style={{ fontSize: esMovil ? '10px' : '11px' }}
+              /* En móvil se pintan como mucho 4 etiquetas: con más se solapan */
+              interval={esMovil ? 'preserveStartEnd' : 0}
+              minTickGap={esMovil ? 24 : 5}
+            />
+            <YAxis
+              stroke="#888"
+              tickLine={false}
+              domain={['auto', 'auto']}
+              style={{ fontSize: esMovil ? '10px' : '11px' }}
+              width={esMovil ? 34 : 60}
+              tickCount={esMovil ? 4 : 6}
+            />
             <Tooltip
               contentStyle={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
               labelStyle={{ fontWeight: 'bold', color: '#ff3b3b' }}

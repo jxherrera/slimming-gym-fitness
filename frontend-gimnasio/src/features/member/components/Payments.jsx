@@ -219,6 +219,8 @@ const Payments = ({ userId, plans = [], onPaymentSuccess, initialPlanId }) => {
                 src={previewUrl}
                 alt="Vista previa de comprobante"
                 className="receipt-image-preview"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           )}

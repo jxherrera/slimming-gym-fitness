@@ -6,7 +6,8 @@
 
 .profile-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  /* Sin min() la columna mínima de 320px desbordaba en cualquier móvil */
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 24px;
 }
 
@@ -251,4 +252,60 @@
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+/* RESPONSIVE MÓVIL */
+@media (max-width: 768px) {
+  .profile-container,
+  .profile-grid {
+    gap: 16px;
+  }
+
+  .profile-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .profile-header {
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .profile-avatar-circle,
+  .coach-avatar-circle {
+    width: 46px;
+    height: 46px;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .profile-header h3 {
+    font-size: 1.05rem;
+  }
+
+  .profile-input {
+    padding: 12px 14px;
+  }
+
+  .profile-save-btn,
+  .assign-btn {
+    min-height: 48px;
+  }
+
+  .assigned-coach-box,
+  .coach-details-section {
+    padding: 14px;
+  }
+
+  /* Foto, nombre y estado del entrenador apilados: en una fila el nombre
+     largo empujaba la etiqueta fuera de la tarjeta */
+  .coach-info {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .coach-status-tag {
+    order: 3;
+  }
 }

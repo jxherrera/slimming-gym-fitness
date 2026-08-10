@@ -35,3 +35,4 @@ cloud-sql-proxy
 npm-debug.log*
 backups/*
 !backups/.gitkeep
+.claude/

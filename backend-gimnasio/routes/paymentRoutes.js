@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const paymentController = require('../controllers/paymentController');
+const paypalController = require('../controllers/paypalController');
 const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
 
 const upload = multer({
@@ -15,6 +16,20 @@ const upload = multer({
 // autenticarse con un JWT. Se valida con el secreto compartido WEBHOOK_SECRET
 // dentro del propio controlador.
 router.post('/webhook', paymentController.webhookPayment);
+
+// --- PayPal ---
+// Configuracion publica: el navegador necesita el Client ID para cargar el boton.
+// Solo se expone lo publico; el secret nunca sale del servidor.
+router.get('/paypal/config', paypalController.getConfig);
+
+// Webhook de PayPal: publico por necesidad, autenticado por firma dentro del
+// controlador contra la propia API de PayPal.
+router.post('/paypal/webhook', paypalController.webhook);
+
+// Creacion y cobro de la orden: exigen sesion. El importe se resuelve en el
+// servidor a partir del plan, nunca se acepta del cliente.
+router.post('/paypal/order', authMiddleware, paypalController.createOrder);
+router.post('/paypal/capture', authMiddleware, paypalController.captureOrder);
 
 // Cualquier usuario autenticado puede subir su comprobante de pago.
 router.post('/upload', authMiddleware, upload.single('receipt'), paymentController.uploadPayment);

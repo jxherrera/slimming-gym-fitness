@@ -83,6 +83,13 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       UPLOADS_DIR: /app/uploads
       TZ: ${TZ:-America/Guayaquil}
+      # PayPal. Si faltan, el pago en linea queda deshabilitado y el pago
+      # manual con comprobante sigue funcionando: no se detiene el servidor.
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_WEBHOOK_ID: ${PAYPAL_WEBHOOK_ID:-}
+      PAYPAL_CURRENCY: ${PAYPAL_CURRENCY:-USD}
       # Las replicas NO ejecutan tareas programadas: si lo hicieran, cada socio
       # recibiria un aviso de vencimiento por replica.
       ENABLE_CRON: "false"
@@ -118,6 +125,13 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       UPLOADS_DIR: /app/uploads
       TZ: ${TZ:-America/Guayaquil}
+      # PayPal. Si faltan, el pago en linea queda deshabilitado y el pago
+      # manual con comprobante sigue funcionando: no se detiene el servidor.
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_WEBHOOK_ID: ${PAYPAL_WEBHOOK_ID:-}
+      PAYPAL_CURRENCY: ${PAYPAL_CURRENCY:-USD}
       ENABLE_CRON: "true"
     # No debe escalarse nunca por encima de una replica.
     deploy:

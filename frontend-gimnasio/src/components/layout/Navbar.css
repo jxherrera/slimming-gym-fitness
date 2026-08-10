@@ -2,7 +2,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 10%; 
+  padding: 0 10%;
   width: 100%;
   height: 90px;
   box-sizing: border-box;
@@ -11,6 +11,10 @@
   left: 0;
   background-color: #1a0b0b;
   z-index: 100;
+  /* Con viewport-fit=cover el contenido llega hasta el borde: reservamos el
+     alto de la barra de estado / notch para que el logo no quede debajo */
+  padding-top: env(safe-area-inset-top);
+  height: calc(90px + env(safe-area-inset-top));
 }
 
 .main-logo {
@@ -72,13 +76,20 @@
   box-shadow: 0px 0px 10px rgba(255, 59, 59, 0.5);
 }
 
-.btn-mobile, 
+.btn-mobile,
 .hamburger {
-  display: none; 
+  display: none;
 }
 
 .hamburger {
   cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  margin-right: -8px;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }
 
 @media screen and (max-width: 940px) {
@@ -109,19 +120,25 @@
   .nav-menu {
     flex-direction: column;
     justify-content: center;
-    width: 280px;
+    width: min(280px, 82vw);
     height: 100vh;
     height: 100dvh;
     background: #1a0b0b;
     position: fixed;
     top: 0;
-    left: -100%;
+    left: 0;
     z-index: 100;
-    transition: left 0.4s ease-in-out;
+    /* Animamos transform y no left: el navegador lo resuelve en la GPU y
+       el panel entra sin tirones en gamas medias */
+    transform: translateX(-100%);
+    transition: transform 0.35s ease-in-out;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow-y: auto;
   }
 
   .nav-menu.active {
-    left: 0; 
+    transform: translateX(0);
   }
 
   .nav-menu li {
@@ -161,7 +178,7 @@
   }
 
   .hamburger {
-    display: block;
+    display: flex;
     z-index: 101;
   }
 }

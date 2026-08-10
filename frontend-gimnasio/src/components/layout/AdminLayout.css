@@ -28,13 +28,27 @@
 }
 
 @media (max-width: 768px) {
-  .admin-content {
+  /* Hay que repetir el selector `.admin-layout.collapsed .admin-content`:
+     una media query no añade especificidad, así que con solo `.admin-content`
+     el margen de 80px del sidebar colapsado seguía aplicándose en móvil y el
+     contenido perdía 80px de ancho (arrancaba en x=80 sobre 375). */
+  .admin-content,
+  .admin-layout.collapsed .admin-content {
     margin-left: 0;
     width: 100%;
   }
-  
+
   .admin-content-inner {
-    padding: 20px;
-    padding-top: 60px; /* Para hacer espacio al botón del menú hamburguesa */
+    padding: 12px;
+    /* Deja libre la barra superior móvil (60px) más el notch */
+    padding-top: calc(72px + env(safe-area-inset-top));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-content-inner {
+    padding-left: 10px;
+    padding-right: 10px;
   }
 }

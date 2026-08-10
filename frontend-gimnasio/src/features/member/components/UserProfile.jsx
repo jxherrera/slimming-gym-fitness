@@ -217,7 +217,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
 
           <form onSubmit={handleProfileSubmit} className="profile-form">
             <div className="form-group">
-              <label><FaIdCard /> Número de Identificación (DNI / Cédula)</label>
+              <label><FaIdCard /> Número de cédula o pasaporte</label>
               <input
                 type="text"
                 className="profile-input disabled"

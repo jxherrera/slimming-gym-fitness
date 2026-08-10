@@ -591,7 +591,7 @@ const Admin = () => {
                 <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div className="form-grid-2" style={{ gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>ID Número</label>
+                      <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Número de cédula o pasaporte</label>
                       <input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.IDNumber} onChange={(e) => handleRegisterChange('IDNumber', e.target.value)} required />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -827,7 +827,7 @@ const Admin = () => {
             <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>ID / Cédula</label>
+                  <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Número de cédula o pasaporte</label>
                   <input type="text" style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={editForm.idNumber} onChange={(e) => handleEditChange('idNumber', e.target.value)} required />
                 </div>
               </div>

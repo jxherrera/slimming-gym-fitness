@@ -94,7 +94,7 @@ const Login = () => {
         {!isLogin && (
           <>
             <div className="form-group">
-              <label>ID Número:</label>
+              <label>Número de cédula o pasaporte:</label>
               <input type="text" inputMode="numeric" autoComplete="off" name="IDNumber" value={formData.IDNumber} onChange={handleChange} required enterKeyHint="next" />
             </div>
             <div className="form-group">

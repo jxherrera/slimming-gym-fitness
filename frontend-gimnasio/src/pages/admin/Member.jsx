@@ -158,7 +158,7 @@ const Member = () => {
           className={`tab-btn ${activeTab === 'pdf' ? 'active' : ''}`}
           onClick={() => handleTabChange('pdf')}
         >
-          <FaFilePdf /> Rutina en PDF
+          <FaFilePdf /> Rutina
         </button>
         <button 
           className={`tab-btn ${activeTab === 'payments' ? 'active' : ''}`}

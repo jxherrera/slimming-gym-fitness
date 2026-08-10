@@ -13,6 +13,23 @@ Si necesitas levantar el esquema desde cero en un nuevo entorno, debes ejecutar 
 
 *Nota: El script `backend-gimnasio/seeders/seedRunner.js` puede estar configurado para correr estos archivos. Verifica las rutas en ese script si lo utilizas.*
 
+## Datos de Demostración
+
+Para revisar los paneles o preparar una demostración con información realista (socios con distintos estados de membresía, pagos aprobados y pendientes, asistencias, rutinas, clases y evaluaciones), desde `backend-gimnasio/`:
+
+```bash
+npm run seed          # datos maestros: roles, planes y administrador
+npm run seed:demo     # gimnasio completo de demostración
+```
+
+Todas las cuentas generadas usan el dominio `@demo.slimminggym.com` y la contraseña `Gimnasio2026`. Ese dominio es el único marcador que las distingue de los usuarios reales, y es lo que permite borrarlas sin tocar producción:
+
+```bash
+npm run seed:demo:limpiar
+```
+
+Los datos son deterministas: dos ejecuciones producen exactamente las mismas cifras. Detalle de los perfiles generados en `backend-gimnasio/seeders/demoData.js`.
+
 ## Archivos y Documentación
 
 - `DICCIONARIO_DATOS.md`: Contiene las reglas del dominio, restricciones de los estados y estructura de cada tabla.

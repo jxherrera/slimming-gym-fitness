@@ -1,168 +1,219 @@
-const PAYPAL_MODE = process.env.PAYPAL_MODE || 'sandbox';
-const PAYPAL_API = PAYPAL_MODE === 'live' 
-    ? 'https://api-m.paypal.com' 
+/**
+ * Comunicacion con la API de PayPal (Orders v2).
+ *
+ * Encapsula todo el trato con la pasarela para que los controladores no conozcan
+ * el proveedor: si se cambiara de pasarela, se sustituye este modulo.
+ *
+ * Se usa `fetch` nativo de Node 22: no se agregan dependencias.
+ */
+require('dotenv').config();
+
+const MODO = process.env.PAYPAL_MODE === 'live' ? 'live' : 'sandbox';
+
+const PAYPAL_API = MODO === 'live'
+    ? 'https://api-m.paypal.com'
     : 'https://api-m.sandbox.paypal.com';
 
-let cachedToken = null;
-let tokenExpiry = null;
+const CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+const CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+const WEBHOOK_ID = process.env.PAYPAL_WEBHOOK_ID;
+const MONEDA = process.env.PAYPAL_CURRENCY || 'USD';
 
-function isPaypalConfigured() {
-    return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
-}
+const TIMEOUT_MS = 15000;
+
+/**
+ * A diferencia de JWT_SECRET, la ausencia de credenciales de PayPal NO detiene
+ * el servidor: el pago manual con comprobante debe seguir funcionando. El modulo
+ * queda deshabilitado y el frontend simplemente no muestra el boton.
+ */
+const isPaypalConfigured = () => Boolean(CLIENT_ID && CLIENT_SECRET);
 
 if (!isPaypalConfigured()) {
-    console.warn('⚠️  PayPal credentials not found. PayPal integration is disabled.');
+    console.warn('[PayPal] PAYPAL_CLIENT_ID o PAYPAL_CLIENT_SECRET no definidos: el pago en línea queda deshabilitado.');
+} else if (MODO === 'sandbox') {
+    console.log('[PayPal] Operando en modo SANDBOX: los cobros no son reales.');
 }
 
-async function obtenerToken() {
-    if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
-        return cachedToken;
+/** Petición con límite de tiempo: una pasarela lenta no debe colgar la API. */
+const peticion = async (ruta, opciones = {}) => {
+    const control = new AbortController();
+    const temporizador = setTimeout(() => control.abort(), TIMEOUT_MS);
+
+    try {
+        const respuesta = await fetch(`${PAYPAL_API}${ruta}`, { ...opciones, signal: control.signal });
+        const cuerpo = await respuesta.json().catch(() => ({}));
+
+        if (!respuesta.ok) {
+            const detalle = cuerpo?.message || cuerpo?.error_description || respuesta.statusText;
+            const error = new Error(`PayPal respondió ${respuesta.status}: ${detalle}`);
+            error.statusCode = 502;
+            throw error;
+        }
+
+        return cuerpo;
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            const error = new Error('PayPal no respondió a tiempo. Intenta de nuevo.');
+            error.statusCode = 504;
+            throw error;
+        }
+        throw err;
+    } finally {
+        clearTimeout(temporizador);
+    }
+};
+
+// El token de acceso dura unas 9 horas. Se conserva en memoria para no pedir uno
+// nuevo en cada operación; se renueva un minuto antes de expirar por margen.
+let tokenEnCache = null;
+let tokenExpiraEn = 0;
+
+const obtenerToken = async () => {
+    if (!isPaypalConfigured()) {
+        const error = new Error('PayPal no está configurado en el servidor.');
+        error.statusCode = 503;
+        throw error;
     }
 
-    const clientId = process.env.PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-    
-    const response = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+    if (tokenEnCache && Date.now() < tokenExpiraEn) {
+        return tokenEnCache;
+    }
+
+    const credenciales = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+
+    const datos = await peticion('/v1/oauth2/token', {
         method: 'POST',
         headers: {
-            'Authorization': `Basic ${auth}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: `Basic ${credenciales}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: 'grant_type=client_credentials'
     });
 
-    if (!response.ok) {
-        const err = await response.text();
-        throw new Error(`Failed to obtain PayPal token: ${err}`);
-    }
+    tokenEnCache = datos.access_token;
+    tokenExpiraEn = Date.now() + (Number(datos.expires_in || 32000) - 60) * 1000;
 
-    const data = await response.json();
-    cachedToken = data.access_token;
-    // expires_in is in seconds, buffer of 5 minutes (300000 ms)
-    tokenExpiry = Date.now() + (data.expires_in * 1000) - 300000; 
+    return tokenEnCache;
+};
 
-    return cachedToken;
-}
+const cabecerasAutenticadas = async () => ({
+    Authorization: `Bearer ${await obtenerToken()}`,
+    'Content-Type': 'application/json'
+});
 
-async function crearOrden(planId, price) {
-    if (!isPaypalConfigured()) throw new Error('PayPal no configurado');
-    const token = await obtenerToken();
-    const currency = process.env.PAYPAL_CURRENCY || 'USD';
-    
-    const response = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
+/**
+ * Crea una orden de pago.
+ *
+ * El importe lo recibe ya resuelto desde la base de datos: este modulo no lo
+ * calcula ni lo acepta del cliente.
+ *
+ * @param {{planId: number, planName: string, precio: number}} plan
+ * @returns {Promise<string>} identificador de la orden
+ */
+const crearOrden = async ({ planId, planName, precio }) => {
+    const datos = await peticion('/v2/checkout/orders', {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
+        headers: await cabecerasAutenticadas(),
         body: JSON.stringify({
             intent: 'CAPTURE',
             purchase_units: [{
-                custom_id: planId.toString(),
+                // custom_id permite contrastar despues que la orden capturada
+                // corresponde al plan que el socio dijo estar comprando.
+                custom_id: String(planId),
+                description: `Membresía ${planName}`.slice(0, 127),
                 amount: {
-                    currency_code: currency,
-                    value: price.toString()
+                    currency_code: MONEDA,
+                    value: Number(precio).toFixed(2)
                 }
-            }]
+            }],
+            application_context: {
+                brand_name: 'Slimming Gym Fitness',
+                shipping_preference: 'NO_SHIPPING',
+                user_action: 'PAY_NOW'
+            }
         })
     });
 
-    if (!response.ok) {
-        const err = await response.text();
-        throw new Error(`Failed to create PayPal order: ${err}`);
-    }
+    return datos.id;
+};
 
-    const data = await response.json();
-    return data.id;
-}
-
-async function capturarOrden(orderId) {
-    if (!isPaypalConfigured()) throw new Error('PayPal no configurado');
-    const token = await obtenerToken();
-    
-    const response = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderId}/capture`, {
+/**
+ * Captura (cobra) una orden previamente aprobada por el socio.
+ *
+ * @param {string} orderId
+ * @returns {Promise<{status: string, captureId: string, amount: string, currency: string, customId: string}>}
+ */
+const capturarOrden = async (orderId) => {
+    const datos = await peticion(`/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            // Prefer: return=representation indicates to paypal to return the full object
-            'Prefer': 'return=representation'
-        }
+        headers: await cabecerasAutenticadas()
     });
 
-    if (!response.ok) {
-        const err = await response.text();
-        throw new Error(`Failed to capture PayPal order: ${err}`);
-    }
-
-    const data = await response.json();
-    
-    let status = data.status;
-    let captureId = null;
-    let amountCaptured = null;
-    let customId = null;
-
-    if (data.purchase_units && data.purchase_units.length > 0) {
-        const unit = data.purchase_units[0];
-        customId = unit.custom_id;
-        
-        if (unit.payments && unit.payments.captures && unit.payments.captures.length > 0) {
-            const capture = unit.payments.captures[0];
-            captureId = capture.id;
-            amountCaptured = capture.amount.value;
-            status = capture.status;
-        }
-    }
+    const captura = datos?.purchase_units?.[0]?.payments?.captures?.[0] || {};
 
     return {
-        status,
-        captureId,
-        amountCaptured,
-        customId
+        status: captura.status || datos.status,
+        captureId: captura.id,
+        amount: captura.amount?.value,
+        currency: captura.amount?.currency_code,
+        customId: captura.custom_id
     };
-}
+};
 
-async function verificarFirmaWebhook(headers, body) {
-    if (!isPaypalConfigured()) return false;
-    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
-    if (!webhookId) {
-        console.warn('⚠️  PAYPAL_WEBHOOK_ID not found, cannot verify webhook.');
+/**
+ * Verifica que un evento de webhook provenga realmente de PayPal.
+ *
+ * Sin esta comprobacion el endpoint seria un mecanismo para activar membresias
+ * sin pagar: bastaria enviar un JSON falso.
+ *
+ * @returns {Promise<boolean>}
+ */
+const verificarFirmaWebhook = async (cabeceras, cuerpo) => {
+    if (!WEBHOOK_ID) {
+        console.error('[PayPal] PAYPAL_WEBHOOK_ID no definido: no se puede verificar la firma del webhook.');
         return false;
     }
 
-    const token = await obtenerToken();
-    
-    const response = await fetch(`${PAYPAL_API}/v1/notifications/verify-webhook-signature`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            auth_algo: headers['paypal-auth-algo'],
-            cert_url: headers['paypal-cert-url'],
-            transmission_id: headers['paypal-transmission-id'],
-            transmission_sig: headers['paypal-transmission-sig'],
-            transmission_time: headers['paypal-transmission-time'],
-            webhook_id: webhookId,
-            webhook_event: typeof body === 'string' ? JSON.parse(body) : body
-        })
-    });
+    const requeridas = [
+        'paypal-transmission-id',
+        'paypal-transmission-time',
+        'paypal-transmission-sig',
+        'paypal-cert-url',
+        'paypal-auth-algo'
+    ];
 
-    if (!response.ok) {
-        const err = await response.text();
-        console.error(`Failed to verify webhook signature: ${err}`);
+    if (requeridas.some((c) => !cabeceras[c])) {
         return false;
     }
 
-    const data = await response.json();
-    return data.verification_status === 'SUCCESS';
-}
+    try {
+        const datos = await peticion('/v1/notifications/verify-webhook-signature', {
+            method: 'POST',
+            headers: await cabecerasAutenticadas(),
+            body: JSON.stringify({
+                auth_algo: cabeceras['paypal-auth-algo'],
+                cert_url: cabeceras['paypal-cert-url'],
+                transmission_id: cabeceras['paypal-transmission-id'],
+                transmission_sig: cabeceras['paypal-transmission-sig'],
+                transmission_time: cabeceras['paypal-transmission-time'],
+                webhook_id: WEBHOOK_ID,
+                webhook_event: cuerpo
+            })
+        });
+
+        return datos.verification_status === 'SUCCESS';
+    } catch (error) {
+        console.error('[PayPal] Error verificando la firma del webhook:', error.message);
+        return false;
+    }
+};
 
 module.exports = {
     isPaypalConfigured,
+    obtenerToken,
     crearOrden,
     capturarOrden,
-    verificarFirmaWebhook
+    verificarFirmaWebhook,
+    MODO,
+    MONEDA
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaMoneyBillWave, FaCamera, FaCreditCard, FaReceipt, FaCheckCircle, FaImage, FaUpload } from 'react-icons/fa';
 import { memberService } from '@/services/memberService';
 import { useToast } from '@/hooks/useToast';
+import PaypalCheckout from './PaypalCheckout';
 import './Payments.css';
 
 const Payments = ({ userId, plans = [], onPaymentSuccess, initialPlanId }) => {
@@ -236,6 +237,11 @@ const Payments = ({ userId, plans = [], onPaymentSuccess, initialPlanId }) => {
           {isSubmitting ? 'Enviando comprobante...' : <><FaCheckCircle /> Confirmar y Registrar Pago</>}
         </button>
       </form>
+
+      {/* Pago en linea. Va fuera del formulario a proposito: los botones de
+          PayPal no deben disparar el envio del comprobante. Si el servidor
+          informa que PayPal no esta configurado, no renderiza nada. */}
+      <PaypalCheckout plan={selectedPlan} onPaymentSuccess={onPaymentSuccess} />
     </div>
   );
 };

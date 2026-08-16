@@ -90,11 +90,17 @@ exports.assignMember = async (req, res) => {
     try {
         const coachId = req.params.id;
         const { MemberID, userInitiated } = req.body;
-        
+
         if (!MemberID) {
             return res.status(400).json({ message: 'MemberID is required' });
         }
-        
+
+        // Un entrenador solo puede reclutar alumnos para si mismo: sin esto
+        // bastaria con cambiar el :id de la URL para asignarlos a otro.
+        if (req.user.role === 'Coach' && String(req.user.userId) !== String(coachId)) {
+            return res.status(403).json({ success: false, message: 'Solo puedes asignarte alumnos a ti mismo.' });
+        }
+
         const pool = await poolPromise;
         
         // Check if member is already assigned somewhere (since MemberID is UNIQUE)
@@ -167,12 +173,23 @@ exports.removeAssignment = async (req, res) => {
     try {
         const { memberId } = req.params;
         const pool = await poolPromise;
-        
-        await pool.request()
-            .input('MemberID', sql.Int, memberId)
-            .query('DELETE FROM CoachAssignments WHERE MemberID = @MemberID');
-            
-        res.status(200).json({ message: 'Assignment removed successfully' });
+
+        const request = pool.request().input('MemberID', sql.Int, memberId);
+        let query = 'DELETE FROM CoachAssignments WHERE MemberID = @MemberID';
+
+        // El entrenador solo puede quitar alumnos de su propia lista.
+        if (req.user.role === 'Coach') {
+            request.input('CoachID', sql.Int, req.user.userId);
+            query += ' AND CoachID = @CoachID';
+        }
+
+        const result = await request.query(query);
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ success: false, message: 'No se encontró una asignación tuya para ese alumno.' });
+        }
+
+        res.status(200).json({ success: true, message: 'Assignment removed successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Error removing assignment', error: err.message });

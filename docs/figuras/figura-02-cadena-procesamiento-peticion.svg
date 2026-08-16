@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1020" height="660" viewBox="0 0 1020 660">
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; fill: #111827; }
+    .obj   { font-size: 13.5px; font-weight: bold; text-anchor: middle; }
+    .objsub{ font-size: 10.5px; fill: #64748b; text-anchor: middle; }
+    .msg   { font-size: 11.5px; }
+    .msgb  { font-size: 11.5px; font-weight: bold; }
+    .ret   { font-size: 11.5px; fill: #166534; }
+    .err   { font-size: 11.5px; fill: #b91c1c; font-weight: bold; }
+    .guard { font-size: 11.5px; font-style: italic; fill: #1e3a8a; }
+    .frag  { font-size: 11.5px; font-weight: bold; fill: #1e3a8a; }
+    .pie   { font-size: 11px; fill: #475569; font-style: italic; }
+    .num   { font-size: 10.5px; font-weight: bold; fill: #1e3a8a; }
+  </style>
+  <defs>
+    <marker id="fll" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#111827"/>
+    </marker>
+    <marker id="fret" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#166534"/>
+    </marker>
+    <marker id="ferr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#b91c1c"/>
+    </marker>
+  </defs>
+
+  <rect width="1020" height="660" fill="#ffffff"/>
+
+  <!-- ===== objetos y lineas de vida ===== -->
+  <g>
+    <rect x="30"  y="26" width="170" height="52" rx="4" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <text class="obj"    x="115" y="48">:Navegador</text>
+    <text class="objsub" x="115" y="66">SPA React del socio</text>
+    <line x1="115" y1="78" x2="115" y2="600" stroke="#64748b" stroke-dasharray="6 5"/>
+
+    <rect x="227" y="26" width="170" height="52" rx="4" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <text class="obj"    x="312" y="48">:Nginx</text>
+    <text class="objsub" x="312" y="66">contenedor proxy</text>
+    <line x1="312" y1="78" x2="312" y2="600" stroke="#64748b" stroke-dasharray="6 5"/>
+
+    <rect x="425" y="26" width="170" height="52" rx="4" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <text class="obj"    x="510" y="48">:Middleware</text>
+    <text class="objsub" x="510" y="66">contenedor api-2</text>
+    <line x1="510" y1="78" x2="510" y2="600" stroke="#64748b" stroke-dasharray="6 5"/>
+
+    <rect x="622" y="26" width="170" height="52" rx="4" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <text class="obj"    x="707" y="48">:Controlador</text>
+    <text class="objsub" x="707" y="66">contenedor api-2</text>
+    <line x1="707" y1="78" x2="707" y2="600" stroke="#64748b" stroke-dasharray="6 5"/>
+
+    <rect x="820" y="26" width="170" height="52" rx="4" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <text class="obj"    x="905" y="48">:SQL Server</text>
+    <text class="objsub" x="905" y="66">contenedor db</text>
+    <line x1="905" y1="78" x2="905" y2="600" stroke="#64748b" stroke-dasharray="6 5"/>
+  </g>
+
+  <!-- ===== barras de activacion ===== -->
+  <rect x="109" y="110" width="12" height="470" fill="#f1f5f9" stroke="#334155"/>
+  <rect x="306" y="152" width="12" height="392" fill="#f1f5f9" stroke="#334155"/>
+  <rect x="504" y="192" width="12" height="330" fill="#f1f5f9" stroke="#334155"/>
+  <rect x="701" y="300" width="12" height="128" fill="#f1f5f9" stroke="#334155"/>
+  <rect x="899" y="338" width="12" height="44"  fill="#f1f5f9" stroke="#334155"/>
+
+  <!-- ===== 1. navegador -> nginx ===== -->
+  <line x1="121" y1="110" x2="304" y2="110" stroke="#111827" stroke-width="1.6" marker-end="url(#fll)"/>
+  <text class="num"  x="128" y="96">1</text>
+  <text class="msgb" x="142" y="96">GET /api/payments/pending</text>
+  <text class="msg"  x="142" y="128">Authorization: Bearer &lt;JWT&gt;   ·   HTTPS 443</text>
+
+  <!-- ===== 2. nginx -> middleware ===== -->
+  <line x1="318" y1="152" x2="502" y2="152" stroke="#111827" stroke-width="1.6" marker-end="url(#fll)"/>
+  <text class="num"  x="325" y="138">2</text>
+  <text class="msgb" x="339" y="138">proxy_pass http://api:5001</text>
+  <text class="msg"  x="339" y="170">reparto round-robin entre las réplicas activas</text>
+
+  <!-- ===== 3. auto-mensaje: verificación del token ===== -->
+  <path d="M516,192 L566,192 L566,214 L520,214" fill="none" stroke="#111827" stroke-width="1.6" marker-end="url(#fll)"/>
+  <text class="num"  x="574" y="196">3</text>
+  <text class="msgb" x="588" y="196">jwt.verify(token, JWT_SECRET)</text>
+  <text class="msg"  x="588" y="214">req.user = { userId, role }</text>
+
+  <!-- ===== marco alt ===== -->
+  <rect x="52" y="238" width="946" height="322" fill="none" stroke="#1e3a8a" stroke-width="1.4"/>
+  <path d="M52,238 L120,238 L120,258 L108,270 L52,270 z" fill="#dbeafe" stroke="#1e3a8a" stroke-width="1.4"/>
+  <text class="frag"  x="66" y="256">alt</text>
+  <text class="guard" x="132" y="258">[ token válido y rol autorizado ]</text>
+
+  <!-- 4. next() -->
+  <line x1="516" y1="300" x2="699" y2="300" stroke="#111827" stroke-width="1.6" marker-end="url(#fll)"/>
+  <text class="num"  x="523" y="288">4</text>
+  <text class="msgb" x="537" y="288">next()  ·  checkRole(['Admin'])</text>
+
+  <!-- 5. consulta -->
+  <line x1="713" y1="338" x2="897" y2="338" stroke="#111827" stroke-width="1.6" marker-end="url(#fll)"/>
+  <text class="num"  x="720" y="326">5</text>
+  <text class="msgb" x="734" y="326">consulta parametrizada</text>
+  <text class="msg"  x="734" y="356">request.input('Status', sql.Char, 'P')</text>
+
+  <!-- 6. recordset -->
+  <line x1="897" y1="382" x2="715" y2="382" stroke="#166534" stroke-width="1.6" stroke-dasharray="7 4" marker-end="url(#fret)"/>
+  <text class="num" x="734" y="374">6</text>
+  <text class="ret" x="748" y="374">conjunto de resultados (recordset)</text>
+
+  <!-- 7. controlador -> nginx -->
+  <line x1="699" y1="428" x2="320" y2="428" stroke="#166534" stroke-width="1.6" stroke-dasharray="7 4" marker-end="url(#fret)"/>
+  <text class="num" x="404" y="420">7</text>
+  <text class="ret" x="418" y="420">200 OK  ·  { success: true, data: [...] }</text>
+
+  <!-- 8. nginx -> navegador -->
+  <line x1="304" y1="472" x2="123" y2="472" stroke="#166534" stroke-width="1.6" stroke-dasharray="7 4" marker-end="url(#fret)"/>
+  <text class="num" x="143" y="464">8</text>
+  <text class="ret" x="157" y="464">200 OK  ·  application/json</text>
+
+  <!-- separador del alt -->
+  <line x1="52" y1="496" x2="998" y2="496" stroke="#1e3a8a" stroke-width="1.2" stroke-dasharray="8 5"/>
+  <text class="guard" x="66" y="516">[ token ausente, inválido o rol sin permiso ]</text>
+
+  <!-- 9. error -->
+  <line x1="502" y1="544" x2="123" y2="544" stroke="#b91c1c" stroke-width="1.6" stroke-dasharray="7 4" marker-end="url(#ferr)"/>
+  <text class="num" x="200" y="536">9</text>
+  <text class="err" x="214" y="536">401 Acceso denegado  /  403 Sin permisos  —  la cadena se corta antes del controlador</text>
+
+  <!-- ===== pie ===== -->
+  <text class="pie" x="30" y="622">Los valores de la consulta viajan como parámetros con tipo declarado y nunca concatenados al texto SQL, lo que impide la inyección de código.</text>
+  <text class="pie" x="30" y="642">Nginx resuelve el nombre 'api' en cada petición, por lo que los pasos 2 a 8 pueden ejecutarse en una réplica distinta en cada llamada.</text>
+</svg>

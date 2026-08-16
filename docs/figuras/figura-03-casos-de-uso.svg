@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1090" height="1475" viewBox="0 0 1090 1475">
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; fill: #111827; }
+    .uc     { font-size: 12.5px; text-anchor: middle; }
+    .ucs    { font-size: 12.5px; text-anchor: middle; fill: #1e3a8a; }
+    .act    { font-size: 13px; font-weight: bold; text-anchor: middle; }
+    .sist   { font-size: 14px; font-weight: bold; text-anchor: middle; fill: #334155; letter-spacing: 0.5px; }
+    .este   { font-size: 10.5px; text-anchor: middle; fill: #1e3a8a; font-style: italic; }
+    .leg    { font-size: 11px; fill: #475569; }
+    .legb   { font-size: 11px; fill: #475569; font-weight: bold; }
+  </style>
+  <defs>
+    <marker id="abierta" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto">
+      <path d="M1,1 L11,5 L1,9" fill="none" stroke="#1e3a8a" stroke-width="1.4"/>
+    </marker>
+    <marker id="hueca" markerWidth="14" markerHeight="12" refX="13" refY="6" orient="auto">
+      <path d="M1,1 L13,6 L1,11 z" fill="#ffffff" stroke="#111827" stroke-width="1.2"/>
+    </marker>
+  </defs>
+
+  <rect width="1090" height="1475" fill="#ffffff"/>
+
+  <!-- ================== LIMITE DEL SISTEMA ================== -->
+  <rect x="250" y="40" width="810" height="1360" rx="6" fill="#fcfcfd" stroke="#334155" stroke-width="1.8"/>
+  <text class="sist" x="655" y="70">SISTEMA WEB DE GESTIÓN SLIMMING GYM &amp; FITNESS</text>
+
+  <!-- ================== ACTORES ================== -->
+  <!-- Usuario (generalizacion) -->
+  <g stroke="#111827" stroke-width="1.8" fill="none">
+    <circle cx="100" cy="110" r="15" fill="#ffffff"/>
+    <line x1="100" y1="125" x2="100" y2="172"/>
+    <line x1="70"  y1="142" x2="130" y2="142"/>
+    <line x1="100" y1="172" x2="78"  y2="210"/>
+    <line x1="100" y1="172" x2="122" y2="210"/>
+  </g>
+  <text class="act" x="100" y="232">Usuario</text>
+
+  <!-- Administrador -->
+  <g stroke="#111827" stroke-width="1.8" fill="none">
+    <circle cx="100" cy="430" r="15" fill="#ffffff"/>
+    <line x1="100" y1="445" x2="100" y2="492"/>
+    <line x1="70"  y1="462" x2="130" y2="462"/>
+    <line x1="100" y1="492" x2="78"  y2="530"/>
+    <line x1="100" y1="492" x2="122" y2="530"/>
+  </g>
+  <text class="act" x="100" y="552">Administrador</text>
+
+  <!-- Entrenador -->
+  <g stroke="#111827" stroke-width="1.8" fill="none">
+    <circle cx="100" cy="810" r="15" fill="#ffffff"/>
+    <line x1="100" y1="825" x2="100" y2="872"/>
+    <line x1="70"  y1="842" x2="130" y2="842"/>
+    <line x1="100" y1="872" x2="78"  y2="910"/>
+    <line x1="100" y1="872" x2="122" y2="910"/>
+  </g>
+  <text class="act" x="100" y="932">Entrenador</text>
+
+  <!-- Socio -->
+  <g stroke="#111827" stroke-width="1.8" fill="none">
+    <circle cx="100" cy="1180" r="15" fill="#ffffff"/>
+    <line x1="100" y1="1195" x2="100" y2="1242"/>
+    <line x1="70"  y1="1212" x2="130" y2="1212"/>
+    <line x1="100" y1="1242" x2="78"  y2="1280"/>
+    <line x1="100" y1="1242" x2="122" y2="1280"/>
+  </g>
+  <text class="act" x="100" y="1302">Socio</text>
+
+  <!-- ================== GENERALIZACION ================== -->
+  <g stroke="#111827" stroke-width="1.4" fill="none">
+    <path d="M85,1180 L30,1180 L30,290 L100,290 L100,266" marker-end="url(#hueca)"/>
+    <path d="M30,430 L85,430"/>
+    <path d="M30,810 L85,810"/>
+  </g>
+
+  <!-- ================== CASOS DE USO PRINCIPALES (columna A) ================== -->
+  <g fill="#f1f5f9" stroke="#334155" stroke-width="1.4">
+    <ellipse cx="430" cy="130"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="210"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="300"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="380"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="460"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="540"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="620"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="700"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="780"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="860"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="940"  rx="140" ry="32"/>
+    <ellipse cx="430" cy="1020" rx="140" ry="32"/>
+    <ellipse cx="430" cy="1100" rx="140" ry="32"/>
+    <ellipse cx="430" cy="1180" rx="140" ry="32"/>
+    <ellipse cx="430" cy="1260" rx="140" ry="32"/>
+    <ellipse cx="430" cy="1340" rx="140" ry="32"/>
+  </g>
+  <text class="uc" x="430" y="135">Iniciar sesión</text>
+  <text class="uc" x="430" y="215">Consultar notificaciones</text>
+  <text class="uc" x="430" y="305">Gestionar socios</text>
+  <text class="uc" x="430" y="385">Gestionar planes y membresías</text>
+  <text class="uc" x="430" y="465">Verificar comprobante de pago</text>
+  <text class="uc" x="430" y="545">Registrar ingreso al gimnasio</text>
+  <text class="uc" x="430" y="625">Consultar reportes e indicadores</text>
+  <text class="uc" x="430" y="705">Gestionar alumnos asignados</text>
+  <text class="uc" x="430" y="785">Crear y asignar rutina</text>
+  <text class="uc" x="430" y="865">Registrar evaluación física</text>
+  <text class="uc" x="430" y="945">Gestionar clases y horario</text>
+  <text class="uc" x="430" y="1025">Consultar rutina asignada</text>
+  <text class="uc" x="430" y="1105">Registrar entrenamiento completado</text>
+  <text class="uc" x="430" y="1185">Registrar medidas corporales</text>
+  <text class="uc" x="430" y="1265">Reservar clase grupal</text>
+  <text class="uc" x="430" y="1345">Pagar membresía</text>
+
+  <!-- ================== CASOS DE USO SECUNDARIOS (columna B) ================== -->
+  <g fill="#eef2ff" stroke="#4f46e5" stroke-width="1.2" stroke-dasharray="0">
+    <ellipse cx="850" cy="130"  rx="170" ry="30"/>
+    <ellipse cx="850" cy="300"  rx="170" ry="30"/>
+    <ellipse cx="850" cy="460"  rx="170" ry="30"/>
+    <ellipse cx="850" cy="540"  rx="170" ry="30"/>
+    <ellipse cx="850" cy="780"  rx="170" ry="30"/>
+    <ellipse cx="850" cy="940"  rx="170" ry="30"/>
+    <ellipse cx="850" cy="1020" rx="170" ry="30"/>
+    <ellipse cx="850" cy="1180" rx="170" ry="30"/>
+    <ellipse cx="850" cy="1260" rx="170" ry="30"/>
+    <ellipse cx="850" cy="1340" rx="170" ry="30"/>
+  </g>
+  <text class="ucs" x="850" y="135">Recuperar contraseña</text>
+  <text class="ucs" x="850" y="305">Asignar entrenador a un socio</text>
+  <text class="ucs" x="850" y="465">Aprobar o rechazar el comprobante</text>
+  <text class="ucs" x="850" y="545">Notificar por correo electrónico</text>
+  <text class="ucs" x="850" y="785">Aplicar una plantilla de rutina</text>
+  <text class="ucs" x="850" y="945">Publicar la agenda semanal</text>
+  <text class="ucs" x="850" y="1025">Descargar la rutina en PDF</text>
+  <text class="ucs" x="850" y="1185">Consultar la gráfica de progreso</text>
+  <text class="ucs" x="850" y="1265">Confirmar el cupo disponible</text>
+  <text class="ucs" x="850" y="1345">Pagar con PayPal</text>
+
+  <!-- ================== ASOCIACIONES ACTOR - CASO DE USO ================== -->
+  <g stroke="#111827" stroke-width="1.3" fill="none">
+    <!-- Usuario -->
+    <line x1="130" y1="142" x2="292" y2="130"/>
+    <line x1="130" y1="142" x2="292" y2="207"/>
+    <!-- Administrador -->
+    <line x1="130" y1="462" x2="292" y2="303"/>
+    <line x1="130" y1="462" x2="292" y2="380"/>
+    <line x1="130" y1="462" x2="292" y2="458"/>
+    <line x1="130" y1="462" x2="292" y2="536"/>
+    <line x1="130" y1="462" x2="292" y2="614"/>
+    <!-- Entrenador -->
+    <line x1="130" y1="842" x2="292" y2="702"/>
+    <line x1="130" y1="842" x2="292" y2="779"/>
+    <line x1="130" y1="842" x2="292" y2="858"/>
+    <line x1="130" y1="842" x2="292" y2="936"/>
+    <!-- Socio -->
+    <line x1="130" y1="1212" x2="292" y2="1022"/>
+    <line x1="130" y1="1212" x2="292" y2="1099"/>
+    <line x1="130" y1="1212" x2="292" y2="1178"/>
+    <line x1="130" y1="1212" x2="292" y2="1257"/>
+    <line x1="130" y1="1212" x2="292" y2="1336"/>
+  </g>
+
+  <!-- ================== INCLUDE / EXTEND ================== -->
+  <g stroke="#1e3a8a" stroke-width="1.3" stroke-dasharray="7 4" fill="none" marker-end="url(#abierta)">
+    <line x1="678" y1="130"  x2="572" y2="130"/>
+    <line x1="678" y1="300"  x2="572" y2="300"/>
+    <line x1="572" y1="460"  x2="678" y2="460"/>
+    <line x1="572" y1="470"  x2="678" y2="536"/>
+    <line x1="678" y1="780"  x2="572" y2="780"/>
+    <line x1="572" y1="940"  x2="678" y2="940"/>
+    <line x1="678" y1="1020" x2="572" y2="1020"/>
+    <line x1="572" y1="1180" x2="678" y2="1180"/>
+    <line x1="572" y1="1260" x2="678" y2="1260"/>
+    <line x1="678" y1="1340" x2="572" y2="1340"/>
+  </g>
+  <text class="este" x="625" y="122">&#171;extend&#187;</text>
+  <text class="este" x="625" y="292">&#171;extend&#187;</text>
+  <text class="este" x="625" y="452">&#171;include&#187;</text>
+  <text class="este" x="646" y="496">&#171;include&#187;</text>
+  <text class="este" x="625" y="772">&#171;extend&#187;</text>
+  <text class="este" x="625" y="932">&#171;include&#187;</text>
+  <text class="este" x="625" y="1012">&#171;extend&#187;</text>
+  <text class="este" x="625" y="1172">&#171;include&#187;</text>
+  <text class="este" x="625" y="1252">&#171;include&#187;</text>
+  <text class="este" x="625" y="1332">&#171;extend&#187;</text>
+
+  <!-- ================== LEYENDA ================== -->
+  <rect x="250" y="1418" width="810" height="44" rx="4" fill="#f8fafc" stroke="#cbd5e1"/>
+  <g stroke="#111827" stroke-width="1.4" fill="none">
+    <line x1="266" y1="1434" x2="306" y2="1434"/>
+  </g>
+  <text class="legb" x="314" y="1438">Asociación</text>
+  <text class="leg"  x="382" y="1438">el actor participa en el caso de uso</text>
+  <g stroke="#111827" stroke-width="1.4" fill="none">
+    <line x1="266" y1="1452" x2="300" y2="1452" marker-end="url(#hueca)"/>
+  </g>
+  <text class="legb" x="314" y="1456">Generalización</text>
+  <text class="leg"  x="400" y="1456">los tres roles heredan los casos de uso comunes</text>
+  <g stroke="#1e3a8a" stroke-width="1.3" stroke-dasharray="7 4" fill="none">
+    <line x1="700" y1="1434" x2="740" y2="1434" marker-end="url(#abierta)"/>
+  </g>
+  <text class="legb" x="750" y="1438">&#171;include&#187;</text>
+  <text class="leg"  x="812" y="1438">comportamiento siempre ejecutado</text>
+  <text class="legb" x="750" y="1456">&#171;extend&#187;</text>
+  <text class="leg"  x="812" y="1456">comportamiento opcional del caso base</text>
+</svg>

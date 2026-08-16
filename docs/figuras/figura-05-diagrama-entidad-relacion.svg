@@ -1,0 +1,416 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1300" viewBox="0 0 1800 1300" xml:space="preserve">
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; fill: #111827; }
+    .tb  { font-size: 12.5px; font-weight: bold; fill: #ffffff; text-anchor: middle; letter-spacing: 0.3px; }
+    .co  { font-family: "Courier New", Courier, monospace; font-size: 10.5px; fill: #1f2937; }
+    .cpk { font-family: "Courier New", Courier, monospace; font-size: 10.5px; fill: #111827; font-weight: bold; }
+    .cfk { font-family: "Courier New", Courier, monospace; font-size: 10.5px; fill: #1d4ed8; }
+    .pk  { font-family: "Courier New", Courier, monospace; font-size: 9.5px; fill: #b45309; font-weight: bold; }
+    .fk  { font-family: "Courier New", Courier, monospace; font-size: 9.5px; fill: #1d4ed8; font-weight: bold; }
+    .mul { font-size: 11px; fill: #b91c1c; font-weight: bold; }
+    .leg { font-size: 12px; fill: #374151; }
+    .legb{ font-size: 12px; fill: #374151; font-weight: bold; }
+    .pie { font-size: 11.5px; fill: #475569; font-style: italic; }
+  </style>
+  <rect width="1800" height="1300" fill="#ffffff"/>
+  <g stroke="#334155" stroke-width="1.4" fill="none">
+    <path d="M30,330 H1480"/>
+    <path d="M900,244 V330"/>
+    <path d="M30,330 V918"/>
+    <path d="M30,416 H55"/>
+    <path d="M30,578 H55"/>
+    <path d="M30,756 H55"/>
+    <path d="M30,918 H55"/>
+    <path d="M320,330 V942"/>
+    <path d="M320,448 H345"/>
+    <path d="M320,618 H345"/>
+    <path d="M320,772 H345"/>
+    <path d="M320,942 H345"/>
+    <path d="M610,330 V820"/>
+    <path d="M610,448 H635"/>
+    <path d="M610,820 H635"/>
+    <path d="M900,330 V432"/>
+    <path d="M900,432 H925"/>
+    <path d="M1190,330 V618"/>
+    <path d="M1190,448 H1215"/>
+    <path d="M1190,618 H1215"/>
+    <path d="M1480,330 V440"/>
+    <path d="M1480,440 H1505"/>
+    <path d="M755,526 V564"/>
+    <path d="M755,882 V920"/>
+    <path d="M1045,494 V532"/>
+    <path d="M1335,526 V564"/>
+    <path d="M1625,510 V548"/>
+    <path d="M1625,274 V370"/>
+    <path d="M295,188 H760"/>
+    <path d="M875,448 H893 V820 H875"/>
+    <path d="M30,918 V1104 H55" stroke-dasharray="6 5"/>
+  </g>
+  <g>
+    <rect x="55" y="150" width="240" height="76" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M55,154 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="55" y="150" width="240" height="76" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="175" y="169">Roles</text>
+    <text class="pk" x="63" y="198">PK</text>
+    <text class="cpk" x="85" y="198">RoleID : int</text>
+    <text class="co" x="85" y="214">RoleName : varchar(50)</text>
+  </g>
+  <g>
+    <rect x="760" y="40" width="240" height="204" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M760,44 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="760" y="40" width="240" height="204" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="880" y="59">Users</text>
+    <text class="pk" x="768" y="88">PK</text>
+    <text class="cpk" x="790" y="88">UserID : int</text>
+    <text class="co" x="790" y="104">IDNumber : varchar(15) (U)</text>
+    <text class="co" x="790" y="120">FirstName : varchar(100)</text>
+    <text class="co" x="790" y="136">LastName : varchar(100)</text>
+    <text class="co" x="790" y="152">Email : varchar(150) (U)</text>
+    <text class="co" x="790" y="168">PasswordHash : varchar(255)</text>
+    <text class="co" x="790" y="184">PhoneNumber : varchar(20)</text>
+    <text class="fk" x="768" y="200">FK</text>
+    <text class="cfk" x="790" y="200">RoleID : int</text>
+    <text class="co" x="790" y="216">Status : char(1)</text>
+    <text class="co" x="790" y="232">CreatedAt : datetime</text>
+  </g>
+  <g>
+    <rect x="1505" y="150" width="240" height="124" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M1505,154 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="1505" y="150" width="240" height="124" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="1625" y="169">Plans</text>
+    <text class="pk" x="1513" y="198">PK</text>
+    <text class="cpk" x="1535" y="198">PlanID : int</text>
+    <text class="co" x="1535" y="214">PlanName : varchar(50)</text>
+    <text class="co" x="1535" y="230">Price : dec(10,2)</text>
+    <text class="co" x="1535" y="246">DurationDays : int</text>
+    <text class="co" x="1535" y="262">Status : char(1)</text>
+  </g>
+  <g>
+    <rect x="55" y="370" width="240" height="92" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M55,374 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="55" y="370" width="240" height="92" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="175" y="389">Attendance</text>
+    <text class="pk" x="63" y="418">PK</text>
+    <text class="cpk" x="85" y="418">AttendanceID : int</text>
+    <text class="fk" x="63" y="434">FK</text>
+    <text class="cfk" x="85" y="434">UserID : int</text>
+    <text class="co" x="85" y="450">CheckInTime : datetime</text>
+  </g>
+  <g>
+    <rect x="55" y="500" width="240" height="156" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M55,504 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="55" y="500" width="240" height="156" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="175" y="519">PhysicalEvaluations</text>
+    <text class="pk" x="63" y="548">PK</text>
+    <text class="cpk" x="85" y="548">EvaluationID : int</text>
+    <text class="fk" x="63" y="564">FK</text>
+    <text class="cfk" x="85" y="564">UserID : int</text>
+    <text class="fk" x="63" y="580">FK</text>
+    <text class="cfk" x="85" y="580">CoachID : int</text>
+    <text class="co" x="85" y="596">WeightKg : dec(5,2)</text>
+    <text class="co" x="85" y="612">BodyFatPercentage : dec(5,2)</text>
+    <text class="co" x="85" y="628">MuscleMassPercentage : dec(5,2)</text>
+    <text class="co" x="85" y="644">EvaluationDate : datetime</text>
+  </g>
+  <g>
+    <rect x="55" y="694" width="240" height="124" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M55,698 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="55" y="694" width="240" height="124" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="175" y="713">CoachWorkHours</text>
+    <text class="pk" x="63" y="742">PK</text>
+    <text class="cpk" x="85" y="742">ID : int</text>
+    <text class="fk" x="63" y="758">FK</text>
+    <text class="cfk" x="85" y="758">CoachID : int</text>
+    <text class="co" x="85" y="774">DayOfWeek : varchar(20)</text>
+    <text class="co" x="85" y="790">StartTime : time</text>
+    <text class="co" x="85" y="806">EndTime : time</text>
+  </g>
+  <g>
+    <rect x="55" y="856" width="240" height="124" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M55,860 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="55" y="856" width="240" height="124" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="175" y="875">EmailLogs</text>
+    <text class="pk" x="63" y="904">PK</text>
+    <text class="cpk" x="85" y="904">EmailLogID : int</text>
+    <text class="fk" x="63" y="920">FK</text>
+    <text class="cfk" x="85" y="920">UserID : int</text>
+    <text class="co" x="85" y="936">EmailType : varchar(50)</text>
+    <text class="co" x="85" y="952">Status : varchar(20)</text>
+    <text class="co" x="85" y="968">SentAt : datetime</text>
+  </g>
+  <g>
+    <rect x="55" y="1018" width="240" height="172" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M55,1022 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="55" y="1018" width="240" height="172" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="175" y="1037">AuditLogs</text>
+    <text class="pk" x="63" y="1066">PK</text>
+    <text class="cpk" x="85" y="1066">AuditID : int</text>
+    <text class="co" x="85" y="1082">TableName : varchar(100)</text>
+    <text class="co" x="85" y="1098">EntityID : int</text>
+    <text class="co" x="85" y="1114">Action : varchar(20)</text>
+    <text class="co" x="85" y="1130">ChangedByUserID : int</text>
+    <text class="co" x="85" y="1146">OldValue : nvarchar(MAX)</text>
+    <text class="co" x="85" y="1162">NewValue : nvarchar(MAX)</text>
+    <text class="co" x="85" y="1178">ChangedAt : datetime</text>
+  </g>
+  <g>
+    <rect x="345" y="370" width="240" height="156" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M345,374 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="345" y="370" width="240" height="156" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="465" y="389">Notifications</text>
+    <text class="pk" x="353" y="418">PK</text>
+    <text class="cpk" x="375" y="418">NotificationID : int</text>
+    <text class="fk" x="353" y="434">FK</text>
+    <text class="cfk" x="375" y="434">UserID : int</text>
+    <text class="co" x="375" y="450">Title : varchar(100)</text>
+    <text class="co" x="375" y="466">Message : varchar(255)</text>
+    <text class="co" x="375" y="482">Type : varchar(50)</text>
+    <text class="co" x="375" y="498">IsRead : bit</text>
+    <text class="co" x="375" y="514">CreatedAt : datetime</text>
+  </g>
+  <g>
+    <rect x="345" y="564" width="240" height="108" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M345,568 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="345" y="564" width="240" height="108" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="465" y="583">CoachAssignments</text>
+    <text class="pk" x="353" y="612">PK</text>
+    <text class="cpk" x="375" y="612">AssignmentID : int</text>
+    <text class="fk" x="353" y="628">FK</text>
+    <text class="cfk" x="375" y="628">CoachID : int</text>
+    <text class="fk" x="353" y="644">FK</text>
+    <text class="cfk" x="375" y="644">MemberID : int (U)</text>
+    <text class="co" x="375" y="660">AssignedAt : datetime</text>
+  </g>
+  <g>
+    <rect x="345" y="710" width="240" height="124" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M345,714 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="345" y="710" width="240" height="124" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="465" y="729">CoachPermissions</text>
+    <text class="pk" x="353" y="758">PK</text>
+    <text class="cpk" x="375" y="758">PermissionID : int</text>
+    <text class="fk" x="353" y="774">FK</text>
+    <text class="cfk" x="375" y="774">CoachID : int (U)</text>
+    <text class="co" x="375" y="790">CanEditOthersRoutines : bit</text>
+    <text class="co" x="375" y="806">CanManagePlans : bit</text>
+    <text class="co" x="375" y="822">CanSendMessages : bit</text>
+  </g>
+  <g>
+    <rect x="345" y="872" width="240" height="140" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M345,876 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="345" y="872" width="240" height="140" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="465" y="891">PasswordResetTokens</text>
+    <text class="pk" x="353" y="920">PK</text>
+    <text class="cpk" x="375" y="920">TokenID : int</text>
+    <text class="fk" x="353" y="936">FK</text>
+    <text class="cfk" x="375" y="936">UserID : int</text>
+    <text class="co" x="375" y="952">TokenHash : varchar(255)</text>
+    <text class="co" x="375" y="968">ExpiresAt : datetime</text>
+    <text class="co" x="375" y="984">UsedAt : datetime</text>
+    <text class="co" x="375" y="1000">CreatedAt : datetime</text>
+  </g>
+  <g>
+    <rect x="635" y="370" width="240" height="156" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M635,374 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="635" y="370" width="240" height="156" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="755" y="389">Routines</text>
+    <text class="pk" x="643" y="418">PK</text>
+    <text class="cpk" x="665" y="418">RoutineID : int</text>
+    <text class="fk" x="643" y="434">FK</text>
+    <text class="cfk" x="665" y="434">UserID : int</text>
+    <text class="fk" x="643" y="450">FK</text>
+    <text class="cfk" x="665" y="450">CoachID : int</text>
+    <text class="co" x="665" y="466">RoutineName : varchar(100)</text>
+    <text class="co" x="665" y="482">Goal : varchar(255)</text>
+    <text class="co" x="665" y="498">Status : char(1)</text>
+    <text class="co" x="665" y="514">AssignedAt : datetime</text>
+  </g>
+  <g>
+    <rect x="635" y="564" width="240" height="156" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M635,568 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="635" y="564" width="240" height="156" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="755" y="583">RoutineExercises</text>
+    <text class="pk" x="643" y="612">PK</text>
+    <text class="cpk" x="665" y="612">ExerciseID : int</text>
+    <text class="fk" x="643" y="628">FK</text>
+    <text class="cfk" x="665" y="628">RoutineID : int</text>
+    <text class="co" x="665" y="644">ExerciseName : nvarchar(150)</text>
+    <text class="co" x="665" y="660">Sets : int</text>
+    <text class="co" x="665" y="676">Reps : int</text>
+    <text class="co" x="665" y="692">Weight : dec(5,2)</text>
+    <text class="co" x="665" y="708">DayOfWeek : nvarchar(20)</text>
+  </g>
+  <g>
+    <rect x="635" y="758" width="240" height="124" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M635,762 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="635" y="758" width="240" height="124" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="755" y="777">WorkoutSessions</text>
+    <text class="pk" x="643" y="806">PK</text>
+    <text class="cpk" x="665" y="806">SessionID : int</text>
+    <text class="fk" x="643" y="822">FK</text>
+    <text class="cfk" x="665" y="822">UserID : int</text>
+    <text class="fk" x="643" y="838">FK</text>
+    <text class="cfk" x="665" y="838">RoutineID : int</text>
+    <text class="co" x="665" y="854">CompletedAt : datetime</text>
+    <text class="co" x="665" y="870">TotalExercisesCompleted : int</text>
+  </g>
+  <g>
+    <rect x="635" y="920" width="240" height="140" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M635,924 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="635" y="920" width="240" height="140" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="755" y="939">WorkoutSessionDetails</text>
+    <text class="pk" x="643" y="968">PK</text>
+    <text class="cpk" x="665" y="968">DetailID : int</text>
+    <text class="fk" x="643" y="984">FK</text>
+    <text class="cfk" x="665" y="984">SessionID : int</text>
+    <text class="co" x="665" y="1000">ExerciseName : nvarchar(150)</text>
+    <text class="co" x="665" y="1016">SetsCompleted : int</text>
+    <text class="co" x="665" y="1032">RepsCompleted : int</text>
+    <text class="co" x="665" y="1048">WeightUsed : dec(10,2)</text>
+  </g>
+  <g>
+    <rect x="925" y="370" width="240" height="124" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M925,374 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="925" y="370" width="240" height="124" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="1045" y="389">RoutineTemplates</text>
+    <text class="pk" x="933" y="418">PK</text>
+    <text class="cpk" x="955" y="418">TemplateID : int</text>
+    <text class="fk" x="933" y="434">FK</text>
+    <text class="cfk" x="955" y="434">CoachID : int</text>
+    <text class="co" x="955" y="450">TemplateName : nvarchar(150)</text>
+    <text class="co" x="955" y="466">Goal : nvarchar(255)</text>
+    <text class="co" x="955" y="482">CreatedAt : datetime</text>
+  </g>
+  <g>
+    <rect x="925" y="532" width="240" height="156" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M925,536 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="925" y="532" width="240" height="156" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="1045" y="551">RoutineTemplateExercises</text>
+    <text class="pk" x="933" y="580">PK</text>
+    <text class="cpk" x="955" y="580">TemplateExerciseID : int</text>
+    <text class="fk" x="933" y="596">FK</text>
+    <text class="cfk" x="955" y="596">TemplateID : int</text>
+    <text class="co" x="955" y="612">ExerciseName : nvarchar(150)</text>
+    <text class="co" x="955" y="628">Sets : int</text>
+    <text class="co" x="955" y="644">Reps : int</text>
+    <text class="co" x="955" y="660">Weight : dec(5,2)</text>
+    <text class="co" x="955" y="676">DayOfWeek : nvarchar(20)</text>
+  </g>
+  <g>
+    <rect x="925" y="726" width="240" height="108" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M925,730 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="925" y="726" width="240" height="108" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="1045" y="745">ExerciseCatalog</text>
+    <text class="pk" x="933" y="774">PK</text>
+    <text class="cpk" x="955" y="774">ExerciseID : int</text>
+    <text class="co" x="955" y="790">Name : nvarchar(150) (U)</text>
+    <text class="co" x="955" y="806">MuscleGroup : nvarchar(100)</text>
+    <text class="co" x="955" y="822">Description : nvarchar(MAX)</text>
+  </g>
+  <g>
+    <rect x="1215" y="370" width="240" height="156" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M1215,374 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="1215" y="370" width="240" height="156" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="1335" y="389">Classes</text>
+    <text class="pk" x="1223" y="418">PK</text>
+    <text class="cpk" x="1245" y="418">ClassID : int</text>
+    <text class="co" x="1245" y="434">ClassName : nvarchar(150)</text>
+    <text class="fk" x="1223" y="450">FK</text>
+    <text class="cfk" x="1245" y="450">CoachID : int</text>
+    <text class="co" x="1245" y="466">StartTime : datetime</text>
+    <text class="co" x="1245" y="482">EndTime : datetime</text>
+    <text class="co" x="1245" y="498">MaxCapacity : int</text>
+    <text class="co" x="1245" y="514">Description : nvarchar(500)</text>
+  </g>
+  <g>
+    <rect x="1215" y="564" width="240" height="108" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M1215,568 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="1215" y="564" width="240" height="108" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="1335" y="583">ClassReservations</text>
+    <text class="pk" x="1223" y="612">PK</text>
+    <text class="cpk" x="1245" y="612">ReservationID : int</text>
+    <text class="fk" x="1223" y="628">FK</text>
+    <text class="cfk" x="1245" y="628">ClassID : int</text>
+    <text class="fk" x="1223" y="644">FK</text>
+    <text class="cfk" x="1245" y="644">UserID : int</text>
+    <text class="co" x="1245" y="660">ReservedAt : datetime</text>
+  </g>
+  <g>
+    <rect x="1505" y="370" width="240" height="140" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M1505,374 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="1505" y="370" width="240" height="140" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="1625" y="389">Subscriptions</text>
+    <text class="pk" x="1513" y="418">PK</text>
+    <text class="cpk" x="1535" y="418">SubscriptionID : int</text>
+    <text class="fk" x="1513" y="434">FK</text>
+    <text class="cfk" x="1535" y="434">UserID : int</text>
+    <text class="fk" x="1513" y="450">FK</text>
+    <text class="cfk" x="1535" y="450">PlanID : int</text>
+    <text class="co" x="1535" y="466">StartDate : date</text>
+    <text class="co" x="1535" y="482">EndDate : date</text>
+    <text class="co" x="1535" y="498">PaymentStatus : char(1)</text>
+  </g>
+  <g>
+    <rect x="1505" y="548" width="240" height="188" rx="4" fill="#ffffff" stroke="#334155" stroke-width="1.6"/>
+    <path d="M1505,552 h240 v24 h-240 z" fill="#1e293b"/>
+    <rect x="1505" y="548" width="240" height="188" rx="4" fill="none" stroke="#334155" stroke-width="1.6"/>
+    <text class="tb" x="1625" y="567">Payments</text>
+    <text class="pk" x="1513" y="596">PK</text>
+    <text class="cpk" x="1535" y="596">PaymentID : int</text>
+    <text class="fk" x="1513" y="612">FK</text>
+    <text class="cfk" x="1535" y="612">SubscriptionID : int</text>
+    <text class="co" x="1535" y="628">AmountPaid : dec(10,2)</text>
+    <text class="co" x="1535" y="644">PaymentDate : datetime</text>
+    <text class="co" x="1535" y="660">PaymentMethod : varchar(50)</text>
+    <text class="co" x="1535" y="676">ReferenceNumber : varchar(100)</text>
+    <text class="co" x="1535" y="692">ReceiptImageUrl : varchar(500)</text>
+    <text class="co" x="1535" y="708">Status : char(1)</text>
+    <text class="co" x="1535" y="724">LastModifiedBy : int</text>
+  </g>
+  <g class="mul">
+    <text x="761" y="540">1</text>
+    <text x="761" y="896">1</text>
+    <text x="1051" y="508">1</text>
+    <text x="1341" y="540">1</text>
+    <text x="1631" y="524">1</text>
+    <text x="1631" y="288">1</text>
+    <text x="303" y="182">1</text>
+    <text x="881" y="442">1</text>
+    <text x="39" y="411">N</text>
+    <text x="39" y="573">N</text>
+    <text x="39" y="751">N</text>
+    <text x="39" y="913">N</text>
+    <text x="329" y="443">N</text>
+    <text x="329" y="613">N</text>
+    <text x="329" y="767">N</text>
+    <text x="329" y="937">N</text>
+    <text x="619" y="443">N</text>
+    <text x="619" y="815">N</text>
+    <text x="909" y="427">N</text>
+    <text x="1199" y="443">N</text>
+    <text x="1199" y="613">N</text>
+    <text x="1489" y="435">N</text>
+    <text x="761" y="558">N</text>
+    <text x="761" y="914">N</text>
+    <text x="1051" y="526">N</text>
+    <text x="1341" y="558">N</text>
+    <text x="1631" y="542">N</text>
+    <text x="1631" y="364">N</text>
+    <text x="742" y="182">N</text>
+    <text x="881" y="814">N</text>
+  </g>
+  <g>
+    <rect x="1215" y="820" width="530" height="150" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text class="legb" x="1235" y="846">Leyenda</text>
+    <text class="pk"   x="1235" y="872">PK</text>
+    <text class="leg"  x="1265" y="872">clave primaria</text>
+    <text class="fk"   x="1235" y="894">FK</text>
+    <text class="leg"  x="1265" y="894">clave foránea</text>
+    <text class="leg"  x="1235" y="916">(U)  restricción de unicidad</text>
+    <text class="mul"  x="1235" y="938">1 : N</text>
+    <text class="leg"  x="1285" y="938">una fila del lado 1 se relaciona con varias del lado N</text>
+    <text class="leg"  x="1235" y="960">Línea discontinua: relación lógica sin llave foránea declarada</text>
+  </g>
+  <text class="pie" x="55" y="1216">Modelo lógico implementado en Microsoft SQL Server 2022: 23 tablas en tercera forma normal. Todas las relaciones dibujadas sobre el bus central parten de Users.</text>
+  <text class="pie" x="55" y="1240">AuditLogs guarda ChangedByUserID sin llave foránea de forma deliberada: la bitácora debe sobrevivir a la baja del usuario cuyo cambio se audita.</text>
+  <text class="pie" x="55" y="1264">Las tablas con dos llaves foráneas hacia Users (Routines, PhysicalEvaluations, Classes, ClassReservations y CoachAssignments) se dibujan con una sola línea por claridad.</text>
+</svg>

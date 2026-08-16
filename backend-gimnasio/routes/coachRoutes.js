@@ -27,9 +27,16 @@ router.put('/:id/permissions', checkRole(['Admin']), coachController.updatePermi
 router.put('/:id/settings', checkRole(['Admin']), coachController.updateCoachSettings);
 
 router.get('/assignments', checkRole(['Admin']), coachController.getAssignments);
-router.get('/unassigned-members', checkRole(['Admin']), coachController.getUnassignedMembers);
 router.get('/members', checkRole(['Admin']), coachController.getMembersWithCoaches);
-router.post('/:id/assign', checkRole(['Admin']), coachController.assignMember);
-router.delete('/assign/:memberId', checkRole(['Admin']), coachController.removeAssignment);
+
+// Socios activos sin entrenador: tambien lo consulta el entrenador desde su
+// panel para reclutarlos. No expone datos de otros entrenadores.
+router.get('/unassigned-members', checkRole(['Admin', 'Coach']), coachController.getUnassignedMembers);
+
+// Alta y baja de asignaciones. El Administrador opera sobre cualquier
+// entrenador; el Entrenador solo sobre si mismo y sobre sus propios alumnos,
+// restriccion que verifica el controlador contra el token.
+router.post('/:id/assign', checkRole(['Admin', 'Coach']), coachController.assignMember);
+router.delete('/assign/:memberId', checkRole(['Admin', 'Coach']), coachController.removeAssignment);
 
 module.exports = router;

@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; fill: #111827; }
+    .ste  { font-size: 10.5px; fill: #64748b; font-style: italic; }
+    .nod  { font-size: 13.5px; font-weight: bold; }
+    .esp  { font-size: 10.5px; fill: #475569; }
+    .art  { font-size: 11px; fill: #1e3a8a; }
+    .fle  { font-size: 10.5px; fill: #1e3a8a; font-weight: bold; }
+    .mon  { font-size: 10px; fill: #7c2d12; font-weight: bold; }
+    .vol  { font-size: 11.5px; font-weight: bold; }
+    .volt { font-size: 10px; fill: #475569; }
+    .pie  { font-size: 11px; fill: #475569; font-style: italic; }
+  </style>
+  <defs>
+    <marker id="fl" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#1e3a8a"/>
+    </marker>
+    <marker id="fl2" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#7c2d12"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="900" fill="#ffffff"/>
+
+  <!-- ================= NODO CLIENTE ================= -->
+  <g>
+    <path d="M40,50 l16,-14 h300 v150 l-16,14 h-300 z" fill="#e2e8f0" stroke="#334155" stroke-width="1.6"/>
+    <path d="M40,50 h300 v150 h-300 z" fill="#f1f5f9" stroke="#334155" stroke-width="1.6"/>
+    <path d="M340,50 l16,-14 v150 l-16,14 z" fill="#cbd5e1" stroke="#334155" stroke-width="1.6"/>
+    <text class="ste" x="54" y="70">&#171;device&#187;</text>
+    <text class="nod" x="54" y="88">Equipo del socio</text>
+    <text class="esp" x="54" y="105">Windows / Android / iOS</text>
+    <rect x="58" y="118" width="264" height="70" rx="4" fill="#ffffff" stroke="#64748b" stroke-width="1.3"/>
+    <text class="ste" x="70" y="136">&#171;execution environment&#187;</text>
+    <text class="nod" x="70" y="154" font-size="12">Navegador web</text>
+    <text class="art" x="70" y="172">&#171;artifact&#187; aplicación React compilada</text>
+  </g>
+
+  <line x1="190" y1="200" x2="190" y2="284" stroke="#1e3a8a" stroke-width="2" marker-end="url(#fl)"/>
+  <text class="fle" x="204" y="228">HTTPS 443  ·  TLS 1.2 / 1.3</text>
+  <text class="fle" x="204" y="246">JSON sobre REST</text>
+  <text class="fle" x="204" y="264">Internet pública</text>
+
+  <!-- ================= NODO MAQUINA VIRTUAL ================= -->
+  <g>
+    <path d="M40,290 l18,-16 h720 v540 l-18,16 h-720 z" fill="#e2e8f0" stroke="#334155" stroke-width="1.8"/>
+    <path d="M40,290 h720 v540 h-720 z" fill="#f8fafc" stroke="#334155" stroke-width="1.8"/>
+    <path d="M760,290 l18,-16 v540 l-18,16 z" fill="#cbd5e1" stroke="#334155" stroke-width="1.8"/>
+    <text class="ste" x="58" y="312">&#171;device&#187;</text>
+    <text class="nod" x="58" y="332" font-size="15">Máquina virtual — Google Cloud Platform (Compute Engine)</text>
+    <text class="esp" x="58" y="352">e2-standard-2  ·  2 vCPU  ·  8 GB RAM  ·  disco pd-balanced 30 GB  ·  Debian 13 (x86_64)  ·  swap 2 GB</text>
+  </g>
+
+  <rect x="62" y="372" width="676" height="436" rx="5" fill="#ffffff" stroke="#64748b" stroke-width="1.5" stroke-dasharray="7 4"/>
+  <text class="ste" x="78" y="392">&#171;execution environment&#187;</text>
+  <text class="nod" x="78" y="410" font-size="13">Docker Engine + Docker Compose</text>
+
+  <!-- ================= CONTENEDORES ================= -->
+  <g>
+    <rect x="84" y="424" width="300" height="96" rx="4" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.5"/>
+    <text class="ste" x="96" y="442">&#171;container&#187;</text>
+    <text class="nod" x="96" y="460" font-size="12.5">proxy</text>
+    <text class="art" x="96" y="478">&#171;artifact&#187; nginx.conf + frontend compilado</text>
+    <text class="esp" x="96" y="494">imagen nginx:1.27-alpine</text>
+    <text class="esp" x="96" y="510">puertos publicados 80 y 443</text>
+  </g>
+  <g>
+    <rect x="416" y="424" width="300" height="96" rx="4" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.5"/>
+    <text class="ste" x="428" y="442">&#171;container&#187;  x 3 réplicas</text>
+    <text class="nod" x="428" y="460" font-size="12.5">api</text>
+    <text class="art" x="428" y="478">&#171;artifact&#187; server.js (Express 5)</text>
+    <text class="esp" x="428" y="494">imagen node:22-alpine  ·  puerto interno 5001</text>
+    <text class="esp" x="428" y="510">sin puertos publicados  ·  ENABLE_CRON = false</text>
+  </g>
+  <g>
+    <rect x="84" y="546" width="300" height="96" rx="4" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.5"/>
+    <text class="ste" x="96" y="564">&#171;container&#187;</text>
+    <text class="nod" x="96" y="582" font-size="12.5">db</text>
+    <text class="art" x="96" y="600">&#171;artifact&#187; GymDatabase (23 tablas)</text>
+    <text class="esp" x="96" y="616">imagen mssql/server:2022-latest (Express)</text>
+    <text class="esp" x="96" y="632">puerto 1433 solo en la red interna</text>
+  </g>
+  <g>
+    <rect x="416" y="546" width="300" height="96" rx="4" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.5"/>
+    <text class="ste" x="428" y="564">&#171;container&#187;  1 instancia fija</text>
+    <text class="nod" x="428" y="582" font-size="12.5">worker</text>
+    <text class="art" x="428" y="600">&#171;artifact&#187; expirationChecker.js</text>
+    <text class="esp" x="428" y="616">misma imagen que la API</text>
+    <text class="esp" x="428" y="632">ENABLE_CRON = true</text>
+  </g>
+
+  <!-- ================= VOLUMENES ================= -->
+  <g>
+    <path d="M179,690 v70 a55,14 0 0 0 110,0 v-70" fill="#fef3c7" stroke="#a16207" stroke-width="1.5"/>
+    <ellipse cx="234" cy="690" rx="55" ry="14" fill="#fde68a" stroke="#a16207" stroke-width="1.5"/>
+    <text class="vol"  x="234" y="722" text-anchor="middle">sqldata</text>
+    <text class="volt" x="234" y="740" text-anchor="middle">/var/opt/mssql</text>
+    <text class="volt" x="234" y="756" text-anchor="middle">volumen persistente</text>
+
+    <path d="M511,690 v70 a55,14 0 0 0 110,0 v-70" fill="#fef3c7" stroke="#a16207" stroke-width="1.5"/>
+    <ellipse cx="566" cy="690" rx="55" ry="14" fill="#fde68a" stroke="#a16207" stroke-width="1.5"/>
+    <text class="vol"  x="566" y="722" text-anchor="middle">uploads</text>
+    <text class="volt" x="566" y="740" text-anchor="middle">/app/uploads</text>
+    <text class="volt" x="566" y="756" text-anchor="middle">volumen persistente</text>
+  </g>
+
+  <g stroke="#7c2d12" stroke-width="1.4" fill="none" marker-end="url(#fl2)">
+    <path d="M234,642 V674"/>
+    <path d="M566,642 V674"/>
+    <path d="M716,470 H726 V700 H627"/>
+    <path d="M384,470 H400 V714 H505"/>
+  </g>
+  <text class="mon" x="242" y="664">escritura</text>
+  <text class="mon" x="574" y="664">escritura</text>
+  <text class="mon" x="632" y="694">api  ·  lectura y escritura</text>
+  <text class="mon" x="406" y="708">proxy  ·  solo lectura</text>
+
+  <!-- ================= SERVICIOS EXTERNOS ================= -->
+  <g>
+    <path d="M870,330 l14,-12 h300 v95 l-14,12 h-300 z" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <path d="M870,330 h300 v95 h-300 z" fill="#f1f5f9" stroke="#334155" stroke-width="1.5"/>
+    <text class="ste" x="882" y="350">&#171;device&#187;  externo</text>
+    <text class="nod" x="882" y="370" font-size="12.5">Servidor SMTP de Gmail</text>
+    <text class="esp" x="882" y="390">avisos de vencimiento y</text>
+    <text class="esp" x="882" y="408">restablecimiento de contraseña</text>
+  </g>
+  <g>
+    <path d="M870,470 l14,-12 h300 v95 l-14,12 h-300 z" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <path d="M870,470 h300 v95 h-300 z" fill="#f1f5f9" stroke="#334155" stroke-width="1.5"/>
+    <text class="ste" x="882" y="490">&#171;device&#187;  externo</text>
+    <text class="nod" x="882" y="510" font-size="12.5">API REST de PayPal</text>
+    <text class="esp" x="882" y="530">creación y captura de la orden</text>
+    <text class="esp" x="882" y="548">notificación por webhook</text>
+  </g>
+  <g>
+    <path d="M870,610 l14,-12 h300 v95 l-14,12 h-300 z" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+    <path d="M870,610 h300 v95 h-300 z" fill="#f1f5f9" stroke="#334155" stroke-width="1.5"/>
+    <text class="ste" x="882" y="630">&#171;device&#187;  externo</text>
+    <text class="nod" x="882" y="650" font-size="12.5">DuckDNS y Let&#39;s Encrypt</text>
+    <text class="esp" x="882" y="670">nombre de dominio y emisión</text>
+    <text class="esp" x="882" y="688">del certificado TLS con Certbot</text>
+  </g>
+
+  <g stroke="#1e3a8a" stroke-width="1.6" fill="none" marker-end="url(#fl)">
+    <path d="M778,378 H864"/>
+    <path d="M778,518 H864"/>
+    <path d="M778,658 H864"/>
+  </g>
+  <text class="fle" x="821" y="370" text-anchor="middle">SMTP 465</text>
+  <text class="fle" x="821" y="510" text-anchor="middle">HTTPS</text>
+  <text class="fle" x="821" y="650" text-anchor="middle">ACME  ·  DNS</text>
+
+  <!-- ================= PIE ================= -->
+  <text class="pie" x="40" y="862">Un único nodo físico aloja los cuatro contenedores. El proxy es el único que publica puertos hacia Internet; la base de datos no es alcanzable desde fuera de la red interna.</text>
+  <text class="pie" x="40" y="882">Los dos volúmenes con nombre conservan los datos aunque los contenedores se destruyan y se vuelvan a crear en cada despliegue.</text>
+</svg>

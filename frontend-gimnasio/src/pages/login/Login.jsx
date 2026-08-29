@@ -24,9 +24,10 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: name === 'IDNumber' ? soloDigitosCedula(value) : value
     }));
   };
 
@@ -39,10 +40,10 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
-    setIsSubmitting(true);
 
     try {
       if (isLogin) {
+        setIsSubmitting(true);
         const result = await login(formData.email, formData.password);
         const role = (result.user?.role || 'member').toString().trim().toLowerCase();
         
@@ -60,6 +61,25 @@ const Login = () => {
           navigate(redirectPath);
         }, 300);
       } else {
+        const errorCedula = validarCedulaEC(formData.IDNumber);
+        if (errorCedula) {
+          setMessage(errorCedula);
+          return;
+        }
+
+        const errorEmail = validarEmail(formData.email);
+        if (errorEmail) {
+          setMessage(errorEmail);
+          return;
+        }
+
+        const errorPassword = validarPassword(formData.password);
+        if (errorPassword) {
+          setMessage(errorPassword);
+          return;
+        }
+
+        setIsSubmitting(true);
         const resData = await register(formData);
         if (resData.success) {
           setMessage(resData.message || 'Usuario registrado con éxito. Ahora puedes iniciar sesión.');

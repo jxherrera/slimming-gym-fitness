@@ -1,6 +1,7 @@
 const userService = require('../services/userService');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
+const { validarEmail } = require('../utils/validators');
 
 const roleNames = {
   admin: 'Admin',
@@ -38,6 +39,11 @@ exports.updateUser = asyncHandler(async (req, res) => {
 
   if (!userId || !firstName || !lastName || !email) {
     throw new AppError('Faltan campos obligatorios para actualizar el usuario.', 400);
+  }
+
+  const errorEmail = validarEmail(email);
+  if (errorEmail) {
+    throw new AppError(errorEmail, 400);
   }
 
   await userService.updateUser(userId, { firstName, lastName, email, phone });

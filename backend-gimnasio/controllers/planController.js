@@ -1,4 +1,5 @@
 const { sql, poolPromise } = require('../config/db');
+const { validarNumero } = require('../utils/validators');
 
 // GET /api/plans
 exports.getPlans = async (req, res) => {
@@ -30,6 +31,16 @@ exports.createPlan = async (req, res) => {
         if (!PlanName || Price == null || !DurationDays) {
             return res.status(400).json({ message: 'PlanName, Price, and DurationDays are required' });
         }
+
+        const errorPrecio = validarNumero(Price, { campo: 'El precio', min: 0.01, max: 99999.99 });
+        if (errorPrecio) {
+            return res.status(400).json({ message: errorPrecio });
+        }
+
+        const errorDuracion = validarNumero(DurationDays, { campo: 'La duración', min: 1, max: 3650, entero: true });
+        if (errorDuracion) {
+            return res.status(400).json({ message: errorDuracion });
+        }
         
         const pool = await poolPromise;
         const result = await pool.request()
@@ -54,6 +65,20 @@ exports.updatePlan = async (req, res) => {
     try {
         const { id } = req.params;
         const { PlanName, Price, DurationDays, Status } = req.body;
+
+        if (Price !== undefined) {
+            const errorPrecio = validarNumero(Price, { campo: 'El precio', min: 0.01, max: 99999.99 });
+            if (errorPrecio) {
+                return res.status(400).json({ message: errorPrecio });
+            }
+        }
+
+        if (DurationDays !== undefined) {
+            const errorDuracion = validarNumero(DurationDays, { campo: 'La duración', min: 1, max: 3650, entero: true });
+            if (errorDuracion) {
+                return res.status(400).json({ message: errorDuracion });
+            }
+        }
         
         const pool = await poolPromise;
         

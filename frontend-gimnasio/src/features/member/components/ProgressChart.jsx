@@ -4,6 +4,7 @@ import { progressService } from '@/services/progressService';
 import { memberService } from '@/services/memberService';
 import { useToast } from '@/hooks/useToast';
 import { useEsMovil } from '@/hooks/useMediaQuery';
+import { validarNumero } from '@/utils/validaciones';
 import Modal from '@/components/common/Modal';
 import Spinner from '@/components/common/Spinner';
 import { jsPDF } from 'jspdf';
@@ -39,9 +40,24 @@ const ProgressChart = ({ userId }) => {
 
   const handleAddRecord = async (e) => {
     e.preventDefault();
-    if (!newWeight) {
-      toast.warning('Ingresa al menos el peso en kg.');
+    const errorPeso = validarNumero(newWeight, { campo: 'El peso', min: 20, max: 400 });
+    if (errorPeso) {
+      toast.warning(errorPeso);
       return;
+    }
+    if (newFat) {
+      const errorGrasa = validarNumero(newFat, { campo: 'El porcentaje de grasa', min: 1, max: 70 });
+      if (errorGrasa) {
+        toast.warning(errorGrasa);
+        return;
+      }
+    }
+    if (newMuscle) {
+      const errorMasa = validarNumero(newMuscle, { campo: 'La masa muscular', min: 1, max: 200 });
+      if (errorMasa) {
+        toast.warning(errorMasa);
+        return;
+      }
     }
     try {
       await progressService.addProgressRecord(userId, {
@@ -284,6 +300,8 @@ const ProgressChart = ({ userId }) => {
             <input
               type="number"
               step="0.1"
+              min="20"
+              max="400"
               className="profile-input"
               placeholder="Ej: 75.5"
               value={newWeight}
@@ -296,6 +314,8 @@ const ProgressChart = ({ userId }) => {
             <input
               type="number"
               step="0.1"
+              min="1"
+              max="70"
               className="profile-input"
               placeholder="Ej: 18.5"
               value={newFat}
@@ -307,6 +327,8 @@ const ProgressChart = ({ userId }) => {
             <input
               type="number"
               step="0.1"
+              min="1"
+              max="200"
               className="profile-input"
               placeholder="Ej: 36.0"
               value={newMuscle}

@@ -6,6 +6,7 @@ import '../shared/admin-core.css';
 import { useTheme } from '../../../context/ThemeContext';
 import { useEsMovil } from '../../../hooks/useMediaQuery';
 import api from '../../../services/api';
+import { soloDigitosCedula, validarCedulaEC, validarEmail, validarPassword } from '../../../utils/validaciones';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 // Configuracion estatica de pestanas: se define fuera del componente para que
@@ -207,7 +208,7 @@ const Admin = () => {
   const handleRegisterChange = (field, value) => {
     setRegisterForm(prev => ({
       ...prev,
-      [field]: value
+      [field]: field === 'IDNumber' ? soloDigitosCedula(value) : value
     }));
   };
 
@@ -416,6 +417,25 @@ const Admin = () => {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setRegisterMessage('');
+
+    const errCedula = validarCedulaEC(registerForm.IDNumber);
+    if (errCedula) {
+      setRegisterMessage(`Error: ${errCedula}`);
+      return;
+    }
+
+    const errEmail = validarEmail(registerForm.Email);
+    if (errEmail) {
+      setRegisterMessage(`Error: ${errEmail}`);
+      return;
+    }
+
+    const errPass = validarPassword(registerForm.Password);
+    if (errPass) {
+      setRegisterMessage(`Error: ${errPass}`);
+      return;
+    }
+
     setIsRegisterLoading(true);
 
     const payload = {

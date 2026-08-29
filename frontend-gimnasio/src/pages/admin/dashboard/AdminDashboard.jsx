@@ -5,6 +5,7 @@ import '../shared/admin-core.css';
 import { useTheme } from '../../../context/ThemeContext';
 import { useEsMovil } from '../../../hooks/useMediaQuery';
 import api from '../../../services/api';
+import { soloDigitosCedula, validarCedulaEC, validarEmail, validarPassword } from '../../../utils/validaciones';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 // Configuracion estatica de pestanas: se define fuera del componente para que
@@ -206,7 +207,7 @@ const Admin = () => {
   const handleRegisterChange = (field, value) => {
     setRegisterForm(prev => ({
       ...prev,
-      [field]: value
+      [field]: field === 'IDNumber' ? soloDigitosCedula(value) : value
     }));
   };
 
@@ -415,6 +416,25 @@ const Admin = () => {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setRegisterMessage('');
+
+    const errCedula = validarCedulaEC(registerForm.IDNumber);
+    if (errCedula) {
+      setRegisterMessage(`Error: ${errCedula}`);
+      return;
+    }
+
+    const errEmail = validarEmail(registerForm.Email);
+    if (errEmail) {
+      setRegisterMessage(`Error: ${errEmail}`);
+      return;
+    }
+
+    const errPass = validarPassword(registerForm.Password);
+    if (errPass) {
+      setRegisterMessage(`Error: ${errPass}`);
+      return;
+    }
+
     setIsRegisterLoading(true);
 
     const payload = {
@@ -592,7 +612,7 @@ const Admin = () => {
                   <div className="form-grid-2" style={{ gap: '16px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>ID Número</label>
-                      <input type="text" inputMode="numeric" autoComplete="off" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.IDNumber} onChange={(e) => handleRegisterChange('IDNumber', e.target.value)} required />
+                      <input type="text" inputMode="numeric" maxLength={10} autoComplete="off" enterKeyHint="next" style={{ background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', outline: 'none' }} value={registerForm.IDNumber} onChange={(e) => handleRegisterChange('IDNumber', e.target.value)} required />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Email</label>

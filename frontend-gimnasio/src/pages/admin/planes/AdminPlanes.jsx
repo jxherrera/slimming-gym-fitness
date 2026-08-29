@@ -196,6 +196,8 @@ const AdminPlanes = () => {
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
+                  max="99999.99"
                   name="Price"
                   value={formData.Price}
                   onChange={handleChange}
@@ -208,6 +210,9 @@ const AdminPlanes = () => {
                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280' }}>Duración en Días</label>
                 <input
                   type="number"
+                  step="1"
+                  min="1"
+                  max="3650"
                   name="DurationDays"
                   value={formData.DurationDays}
                   onChange={handleChange}

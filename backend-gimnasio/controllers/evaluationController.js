@@ -1,4 +1,5 @@
 const { sql, poolPromise } = require('../config/db');
+const { validarNumero } = require('../utils/validators');
 
 const addEvaluation = async (req, res) => {
     try {
@@ -6,6 +7,25 @@ const addEvaluation = async (req, res) => {
 
         if (!userId || !coachId || !weightKg) {
             return res.status(400).json({ success: false, message: 'Faltan datos obligatorios (Usuario, Entrenador o Peso).' });
+        }
+
+        const errorPeso = validarNumero(weightKg, { campo: 'El peso', min: 20, max: 400 });
+        if (errorPeso) {
+            return res.status(400).json({ success: false, message: errorPeso });
+        }
+
+        if (bodyFatPercentage !== undefined && bodyFatPercentage !== null && String(bodyFatPercentage).trim() !== '') {
+            const errorGrasa = validarNumero(bodyFatPercentage, { campo: 'El porcentaje de grasa', min: 1, max: 70 });
+            if (errorGrasa) {
+                return res.status(400).json({ success: false, message: errorGrasa });
+            }
+        }
+
+        if (muscleMassPercentage !== undefined && muscleMassPercentage !== null && String(muscleMassPercentage).trim() !== '') {
+            const errorMasa = validarNumero(muscleMassPercentage, { campo: 'La masa muscular', min: 1, max: 200 });
+            if (errorMasa) {
+                return res.status(400).json({ success: false, message: errorMasa });
+            }
         }
 
         const pool = await poolPromise;

@@ -2,7 +2,7 @@ const { poolPromise, sql } = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/jwt');
-const { validarPassword, camposFaltantes } = require('../utils/validators');
+const { validarPassword, camposFaltantes, validarCedulaEC, validarEmail } = require('../utils/validators');
 const emailService = require('../services/emailService');
 
 const ROLE_MAPPING = {
@@ -27,6 +27,16 @@ const createUser = async (req, res, roleIdForzado) => {
                 success: false,
                 message: `Faltan campos obligatorios: ${faltantes.join(', ')}.`
             });
+        }
+
+        const errorCedula = validarCedulaEC(IDNumber);
+        if (errorCedula) {
+            return res.status(400).json({ success: false, message: errorCedula });
+        }
+
+        const errorEmail = validarEmail(Email);
+        if (errorEmail) {
+            return res.status(400).json({ success: false, message: errorEmail });
         }
 
         const errorPassword = validarPassword(Password);

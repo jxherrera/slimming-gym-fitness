@@ -206,7 +206,7 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
                   <div key={index} className="menu-item-wrapper">
                     <NavLink
                       to={item.path}
-                      end={!hasSubItems}
+                      end
                       className={({ isActive }) => isActive ? 'menu-item active' : 'menu-item'}
                       onClick={(e) => {
                         if (hasSubItems) {

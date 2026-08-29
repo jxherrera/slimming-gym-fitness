@@ -14,8 +14,9 @@ exports.getAllCoaches = async (req, res) => {
                 u.RoleID,
                 ISNULL(cp.CanEditOthersRoutines, 0) AS CanEditOthersRoutines
             FROM Users u
+            INNER JOIN Roles r ON r.RoleID = u.RoleID
             LEFT JOIN CoachPermissions cp ON u.UserID = cp.CoachID
-            WHERE u.RoleID = 2 AND u.Status = 'A'
+            WHERE r.RoleName = 'Coach' AND u.Status = 'A'
         `);
         res.status(200).json(result.recordset);
     } catch (err) {
@@ -89,11 +90,17 @@ exports.assignMember = async (req, res) => {
     try {
         const coachId = req.params.id;
         const { MemberID, userInitiated } = req.body;
-        
+
         if (!MemberID) {
             return res.status(400).json({ message: 'MemberID is required' });
         }
-        
+
+        // Un entrenador solo puede reclutar alumnos para si mismo: sin esto
+        // bastaria con cambiar el :id de la URL para asignarlos a otro.
+        if (req.user.role === 'Coach' && String(req.user.userId) !== String(coachId)) {
+            return res.status(403).json({ success: false, message: 'Solo puedes asignarte alumnos a ti mismo.' });
+        }
+
         const pool = await poolPromise;
         
         // Check if member is already assigned somewhere (since MemberID is UNIQUE)
@@ -133,7 +140,7 @@ exports.assignMember = async (req, res) => {
 };
 
 // GET /api/coaches/unassigned-members
-// Fetch all active members (RoleID = 1) who do not have a coach assigned
+// Socios activos sin entrenador asignado.
 exports.getUnassignedMembers = async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -150,8 +157,9 @@ exports.getUnassignedMembers = async (req, res) => {
                     ORDER BY r.RoutineID DESC
                 ) AS Goal
             FROM Users u
+            INNER JOIN Roles ro ON ro.RoleID = u.RoleID
             LEFT JOIN CoachAssignments ca ON u.UserID = ca.MemberID
-            WHERE u.RoleID = 1 AND u.Status = 'A' AND ca.CoachID IS NULL
+            WHERE ro.RoleName = 'Member' AND u.Status = 'A' AND ca.CoachID IS NULL
         `);
         res.status(200).json({ success: true, members: result.recordset });
     } catch (err) {
@@ -165,12 +173,23 @@ exports.removeAssignment = async (req, res) => {
     try {
         const { memberId } = req.params;
         const pool = await poolPromise;
-        
-        await pool.request()
-            .input('MemberID', sql.Int, memberId)
-            .query('DELETE FROM CoachAssignments WHERE MemberID = @MemberID');
-            
-        res.status(200).json({ message: 'Assignment removed successfully' });
+
+        const request = pool.request().input('MemberID', sql.Int, memberId);
+        let query = 'DELETE FROM CoachAssignments WHERE MemberID = @MemberID';
+
+        // El entrenador solo puede quitar alumnos de su propia lista.
+        if (req.user.role === 'Coach') {
+            request.input('CoachID', sql.Int, req.user.userId);
+            query += ' AND CoachID = @CoachID';
+        }
+
+        const result = await request.query(query);
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ success: false, message: 'No se encontró una asignación tuya para ese alumno.' });
+        }
+
+        res.status(200).json({ success: true, message: 'Assignment removed successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Error removing assignment', error: err.message });
@@ -188,9 +207,10 @@ exports.getMembersWithCoaches = async (req, res) => {
                 u.FirstName + ' ' + u.LastName AS name,
                 c.FirstName + ' ' + c.LastName AS coachName
             FROM Users u
+            INNER JOIN Roles r ON r.RoleID = u.RoleID
             LEFT JOIN CoachAssignments ca ON u.UserID = ca.MemberID
             LEFT JOIN Users c ON ca.CoachID = c.UserID
-            WHERE u.RoleID = 1 AND u.Status = 'A'
+            WHERE r.RoleName = 'Member' AND u.Status = 'A'
         `);
         res.status(200).json({ success: true, members: result.recordset });
     } catch (err) {
@@ -346,5 +366,148 @@ exports.updateCoachSettings = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Error updating coach settings', error: err.message });
+    }
+};
+
+// GET /api/coaches/disponibles
+//
+// Version reducida de la lista de entrenadores, accesible a cualquier usuario
+// autenticado. La necesita el socio para elegir entrenador desde su perfil:
+// getAllCoaches queda restringido a Admin y Coach porque devuelve correos y
+// permisos de gestion, datos que un socio no debe ver.
+exports.getAvailableCoaches = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT
+                u.UserID,
+                u.FirstName,
+                u.LastName,
+                (SELECT COUNT(*) FROM CoachAssignments ca WHERE ca.CoachID = u.UserID) AS SociosAsignados
+            FROM Users u
+            INNER JOIN Roles r ON r.RoleID = u.RoleID
+            WHERE r.RoleName = 'Coach' AND u.Status = 'A'
+            ORDER BY u.FirstName, u.LastName
+        `);
+
+        res.status(200).json({ success: true, coaches: result.recordset });
+    } catch (err) {
+        console.error('Error al obtener los entrenadores disponibles:', err);
+        res.status(500).json({ success: false, message: 'Error al obtener los entrenadores' });
+    }
+};
+
+// GET /api/coaches/mi-entrenador
+//
+// Entrenador asignado al usuario que hace la peticion. Existe porque
+// /coaches/assignments devuelve el mapa completo de asignaciones del gimnasio y
+// esta reservado al administrador: sin esta ruta, el socio no tenia forma de
+// saber quien es su entrenador y su perfil mostraba siempre "sin asignar".
+//
+// El identificador sale del token, nunca de la URL, para que nadie pueda
+// consultar la asignacion de otro socio.
+exports.getMyCoach = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('MemberID', sql.Int, req.user.userId)
+            .query(`
+                SELECT
+                    c.UserID,
+                    c.FirstName,
+                    c.LastName,
+                    ca.AssignedAt
+                FROM CoachAssignments ca
+                INNER JOIN Users c ON c.UserID = ca.CoachID
+                WHERE ca.MemberID = @MemberID
+            `);
+
+        res.status(200).json({ success: true, coach: result.recordset[0] || null });
+    } catch (err) {
+        console.error('Error al obtener el entrenador asignado:', err);
+        res.status(500).json({ success: false, message: 'Error al obtener el entrenador asignado' });
+    }
+};
+
+// POST /api/coaches/mi-entrenador
+//
+// El socio elige su propio entrenador. Va aparte de assignMember, que sigue
+// reservado al administrador: alli el socio llega en el cuerpo de la peticion y
+// cualquiera podria reasignar a otra persona. Aqui el socio sale del token.
+//
+// Se conserva la regla de negocio que ya existia para las solicitudes hechas
+// por el propio usuario: un cambio de entrenador al mes.
+exports.chooseMyCoach = async (req, res) => {
+    const { coachId } = req.body;
+    const memberId = req.user.userId;
+
+    if (!coachId) {
+        return res.status(400).json({ success: false, message: 'Debes seleccionar un entrenador.' });
+    }
+
+    try {
+        const pool = await poolPromise;
+
+        // El destino tiene que ser un entrenador activo de verdad, no un socio
+        // ni una cuenta dada de baja.
+        const entrenador = await pool.request()
+            .input('CoachID', sql.Int, coachId)
+            .query(`
+                SELECT u.UserID, u.FirstName, u.LastName
+                FROM Users u
+                INNER JOIN Roles r ON r.RoleID = u.RoleID
+                WHERE u.UserID = @CoachID AND r.RoleName = 'Coach' AND u.Status = 'A'
+            `);
+
+        if (entrenador.recordset.length === 0) {
+            return res.status(404).json({ success: false, message: 'El entrenador seleccionado no está disponible.' });
+        }
+
+        const asignacion = await pool.request()
+            .input('MemberID', sql.Int, memberId)
+            .query('SELECT CoachID, AssignedAt FROM CoachAssignments WHERE MemberID = @MemberID');
+
+        if (asignacion.recordset.length > 0) {
+            const actual = asignacion.recordset[0];
+
+            if (String(actual.CoachID) === String(coachId)) {
+                return res.status(200).json({ success: true, message: 'Ese ya es tu entrenador.' });
+            }
+
+            const haceUnMes = new Date();
+            haceUnMes.setMonth(haceUnMes.getMonth() - 1);
+
+            if (new Date(actual.AssignedAt) > haceUnMes) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Solo puedes cambiar de entrenador una vez al mes.'
+                });
+            }
+
+            await pool.request()
+                .input('CoachID', sql.Int, coachId)
+                .input('MemberID', sql.Int, memberId)
+                .query(`
+                    UPDATE CoachAssignments
+                    SET CoachID = @CoachID, AssignedAt = GETDATE()
+                    WHERE MemberID = @MemberID
+                `);
+        } else {
+            await pool.request()
+                .input('CoachID', sql.Int, coachId)
+                .input('MemberID', sql.Int, memberId)
+                .query('INSERT INTO CoachAssignments (CoachID, MemberID) VALUES (@CoachID, @MemberID)');
+        }
+
+        const { FirstName, LastName } = entrenador.recordset[0];
+
+        res.status(200).json({
+            success: true,
+            message: `${FirstName} ${LastName} es ahora tu entrenador.`,
+            coach: entrenador.recordset[0]
+        });
+    } catch (err) {
+        console.error('Error al elegir entrenador:', err);
+        res.status(500).json({ success: false, message: 'No se pudo asignar el entrenador.' });
     }
 };

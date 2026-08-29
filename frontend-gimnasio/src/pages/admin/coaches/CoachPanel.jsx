@@ -32,27 +32,38 @@ const CoachPanel = () => {
     const coachId = user?.userId; 
 
     const fetchClients = async () => {
-        try {
-            const [clientsRes, unassignedRes] = await Promise.all([
-                api.get(`/routines/coach/${coachId}/clients`),
-                api.get('/coaches/unassigned-members')
-            ]);
-            
-            if (clientsRes.data.success) {
-                setClients(clientsRes.data.clients);
-            } else {
-                setError(clientsRes.data.message);
-            }
+        // allSettled y no all: si falla el listado de socios sin entrenador, el
+        // panel sigue mostrando los alumnos propios en lugar de quedarse en el
+        // mensaje de error.
+        const [clientsResult, unassignedResult] = await Promise.allSettled([
+            api.get(`/routines/coach/${coachId}/clients`),
+            api.get('/coaches/unassigned-members')
+        ]);
 
-            if (unassignedRes.data.success) {
-                setUnassignedClients(unassignedRes.data.members);
+        if (clientsResult.status === 'fulfilled') {
+            const { data } = clientsResult.value;
+            if (data.success) {
+                setClients(data.clients);
+                setError(null);
+            } else {
+                setError(data.message);
             }
-        } catch (err) {
-            console.error("Error al cargar alumnos:", err);
+        } else {
+            console.error("Error al cargar alumnos:", clientsResult.reason);
             setError("No se pudo cargar la lista de alumnos.");
-        } finally {
-            setLoading(false);
         }
+
+        if (unassignedResult.status === 'fulfilled') {
+            const { data } = unassignedResult.value;
+            if (data.success) {
+                setUnassignedClients(data.members);
+            }
+        } else {
+            console.error("Error al cargar socios sin entrenador:", unassignedResult.reason);
+            setUnassignedClients([]);
+        }
+
+        setLoading(false);
     };
 
     useEffect(() => {

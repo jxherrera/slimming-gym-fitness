@@ -1,0 +1,82 @@
+/* Pago en linea con PayPal — se integra bajo el formulario de comprobante */
+
+.paypal-checkout {
+  margin-top: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.paypal-separador {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--admin-muted, #94a3b8);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.paypal-separador::before,
+.paypal-separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--admin-border, rgba(148, 163, 184, 0.25));
+}
+
+.paypal-monto {
+  margin: 0 0 1rem;
+  color: var(--admin-text, #e2e8f0);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.paypal-monto strong {
+  color: #10b981;
+}
+
+.paypal-sandbox {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  font-size: 0.82rem;
+}
+
+.paypal-aviso {
+  margin: 0;
+  color: var(--admin-muted, #94a3b8);
+  font-size: 0.88rem;
+}
+
+/* Los botones los inyecta el SDK de PayPal dentro de este contenedor */
+.paypal-botones {
+  min-height: 3rem;
+  transition: opacity 0.15s ease;
+}
+
+/* Durante la confirmacion se bloquean para evitar el doble cobro */
+.paypal-botones.procesando {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.paypal-procesando {
+  margin: 0.85rem 0 0;
+  color: #60a5fa;
+  font-size: 0.85rem;
+}
+
+.paypal-error {
+  margin: 0.85rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  border-left: 3px solid #f43f5e;
+  background: rgba(244, 63, 94, 0.12);
+  color: #fb7185;
+  font-size: 0.85rem;
+}

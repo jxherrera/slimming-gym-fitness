@@ -112,8 +112,9 @@ const Member = () => {
   }
 
   return (
-    <div className="member-dashboard">
-      <AlertModal 
+    <div className="member-dashboard-wrapper">
+      <div className="member-dashboard">
+        <AlertModal 
         isOpen={showAlertModal} 
         onClose={() => setShowAlertModal(false)}
         reason={alertReason}
@@ -157,7 +158,7 @@ const Member = () => {
           className={`tab-btn ${activeTab === 'pdf' ? 'active' : ''}`}
           onClick={() => handleTabChange('pdf')}
         >
-          <FaFilePdf /> Rutina en PDF
+          <FaFilePdf /> Rutina
         </button>
         <button 
           className={`tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
@@ -210,6 +211,7 @@ const Member = () => {
             onUpdateSuccess={fetchData}
           />
         )}
+      </div>
       </div>
     </div>
   );

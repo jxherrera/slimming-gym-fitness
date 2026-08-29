@@ -52,21 +52,24 @@ export const memberService = {
     }
   },
 
-  // Obtener entrenadores disponibles
+  // Obtener entrenadores disponibles.
+  //
+  // Usa /coaches/disponibles, la unica ruta que un socio puede consultar:
+  // /coaches y /users/role/Coach exigen rol Admin o Coach, asi que desde el
+  // perfil del socio ambas respondian 403 y el desplegable quedaba vacio.
   getCoaches: async () => {
-    try {
-      const response = await api.get('/coaches');
-      return response.data;
-    } catch (error) {
-      console.warn('Error fetching coaches direct route, falling back to role query:', error);
-      const response = await api.get('/users/role/Coach');
-      return response.data;
-    }
+    const response = await api.get('/coaches/disponibles');
+    return response.data.coaches || [];
   },
 
-  // Asignar o solicitar Entrenador
-  assignCoach: async (coachId, memberId, userInitiated = false) => {
-    const response = await api.post(`/coaches/${coachId}/assign`, { MemberID: memberId, userInitiated });
+  // Elegir el propio entrenador.
+  //
+  // Usa /coaches/mi-entrenador y no /coaches/:id/assign: esa ruta permite
+  // asignar a cualquier socio y esta reservada al administrador, por lo que
+  // desde el perfil respondia 403. El socio se identifica con su token, asi que
+  // no hace falta enviar su id.
+  assignCoach: async (coachId) => {
+    const response = await api.post('/coaches/mi-entrenador', { coachId });
     return response.data;
   },
 

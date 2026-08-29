@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import PasswordInput from './PasswordInput';
 import './ModalLogin.css';
 
 const ModalLogin = ({ isVisible, onClose }) => {
@@ -20,7 +21,7 @@ const ModalLogin = ({ isVisible, onClose }) => {
             <input type="email" placeholder="Correo Electrónico" required />
           </div>
           <div className="input-box">
-            <input type="password" placeholder="Contraseña" required />
+            <PasswordInput placeholder="Contraseña" required />
           </div>
           
           <button type="submit" className="btn-entrar">ENTRAR</button>

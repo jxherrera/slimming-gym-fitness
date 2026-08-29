@@ -4,6 +4,8 @@ import Modal from '@/components/common/Modal';
 import { scheduleService } from '@/services/scheduleService';
 import { memberService } from '@/services/memberService';
 import { useToast } from '@/hooks/useToast';
+import PasswordInput from '../../../components/common/PasswordInput';
+import Spinner from '../../../components/common/Spinner';
 import './UserProfile.css';
 import api from '@/services/api';
 
@@ -54,17 +56,18 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
         const list = Array.isArray(data) ? data : (data.coaches || []);
         setCoaches(list);
 
-        // Buscar si hay un entrenador asignado en la base de datos
+        // Entrenador asignado. Se consulta /coaches/mi-entrenador y no
+        // /coaches/assignments: esa ruta devuelve el mapa completo del gimnasio
+        // y solo la puede leer un administrador, por lo que desde el perfil del
+        // socio respondia 403 y siempre parecia no tener entrenador.
         try {
-          const assignRes = await api.get('/coaches/assignments');
-          const assignData = assignRes.data;
-          const myAssignment = Array.isArray(assignData) ? assignData.find(a => String(a.MemberID) === String(userId)) : null;
-          if (myAssignment) {
-            const current = list.find(c => String(c.UserID || c.id) === String(myAssignment.CoachID));
-            if (current) setAssignedCoach(current);
+          const { data } = await api.get('/coaches/mi-entrenador');
+          if (data?.coach) {
+            const current = list.find(c => String(c.UserID || c.id) === String(data.coach.UserID));
+            setAssignedCoach(current || data.coach);
           }
         } catch (err) {
-          console.error("Error obteniendo asignaciones", err);
+          console.error('Error obteniendo el entrenador asignado', err);
         }
 
         if (!assignedCoach && (user?.coachId || user?.assignedCoach)) {
@@ -166,8 +169,8 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
       return;
     }
     try {
-      await memberService.assignCoach(selectedCoachId, userId, true);
-      toast.success('Solicitud de entrenador enviada exitosamente.');
+      const respuesta = await memberService.assignCoach(selectedCoachId);
+      toast.success(respuesta?.message || 'Entrenador asignado correctamente.');
       const coachObj = coaches.find(c => String(c.UserID || c.id) === String(selectedCoachId));
       if (coachObj) {
         setAssignedCoach(coachObj);
@@ -216,7 +219,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
 
           <form onSubmit={handleProfileSubmit} className="profile-form">
             <div className="form-group">
-              <label><FaIdCard /> Número de Identificación (DNI / Cédula)</label>
+              <label><FaIdCard /> Número de cédula o pasaporte</label>
               <input
                 type="text"
                 className="profile-input disabled"
@@ -432,8 +435,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
         <form onSubmit={handleChangePassword} className="profile-form">
           <div className="form-group">
             <label>Contraseña Actual</label>
-            <input
-              type="password"
+            <PasswordInput
               className="profile-input"
               value={passwordData.current}
               onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
@@ -442,8 +444,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
           </div>
           <div className="form-group">
             <label>Nueva Contraseña</label>
-            <input
-              type="password"
+            <PasswordInput
               className="profile-input"
               value={passwordData.new}
               onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
@@ -452,8 +453,7 @@ const UserProfile = ({ user, onUpdateSuccess }) => {
           </div>
           <div className="form-group">
             <label>Confirmar Nueva Contraseña</label>
-            <input
-              type="password"
+            <PasswordInput
               className="profile-input"
               value={passwordData.confirm}
               onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}

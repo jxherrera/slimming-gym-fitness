@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
-import { FaUser, FaDumbbell, FaTrash, FaPlus, FaTimes, FaListUl } from 'react-icons/fa';
+import { FaUser, FaDumbbell, FaTrash, FaPlus, FaTimes, FaListUl, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 import '../shared/admin-core.css';
 import api from '../../../services/api';
+import { useAuth } from '../../../hooks/useAuth';
+import Modal from '../../../components/common/Modal';
 
-const RoutineManager = ({ coachId }) => {
+const RoutineManager = ({ coachId: propCoachId }) => {
     const { isDarkMode, toggleTheme } = useTheme();
+    const { user } = useAuth();
+    const coachId = propCoachId || user?.userId;
     const themeClass = isDarkMode ? 'theme-dark' : 'theme-light';
     const themeIcon = isDarkMode ? '☀️' : '🌙';
 
     const [activeTab, setActiveTab] = useState('templates');
     const [exercises, setExercises] = useState([]);
     const [templates, setTemplates] = useState([]);
+    const [allTemplates, setAllTemplates] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // Dialog state
+    const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
+    const showAlert = (message) => setDialog({ isOpen: true, type: 'alert', message, onConfirm: null });
+    const showConfirm = (message, onConfirm) => setDialog({ isOpen: true, type: 'confirm', message, onConfirm });
 
     // Form state for new exercise
     const [newExercise, setNewExercise] = useState({ name: '', muscleGroup: '', description: '' });
@@ -52,9 +62,23 @@ const RoutineManager = ({ coachId }) => {
         }
     };
 
+    const fetchAllTemplates = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get(`/routines/templates/all`);
+            const data = response.data;
+            if (data.success) setAllTemplates(data.templates);
+        } catch (error) {
+            console.error("Error fetching all templates:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchExercises();
         fetchTemplates();
+        fetchAllTemplates();
     }, [coachId]);
 
     const handleCreateExercise = async (e) => {
@@ -65,16 +89,16 @@ const RoutineManager = ({ coachId }) => {
             const response = editingExerciseId ? await api.put(url, newExercise) : await api.post(url, newExercise);
             const data = response.data;
             if (data.success) {
-                alert(`Ejercicio ${editingExerciseId ? 'actualizado' : 'creado'} exitosamente.`);
+                showAlert(`Ejercicio ${editingExerciseId ? 'actualizado' : 'creado'} exitosamente.`);
                 setNewExercise({ name: '', muscleGroup: '', description: '' });
                 setEditingExerciseId(null);
                 fetchExercises();
             } else {
-                alert(`Error: ${data.message}`);
+                showAlert(`Error: ${data.message}`);
             }
         } catch (error) {
             console.error("Error al crear/editar ejercicio:", error);
-            alert("Error al conectar con el servidor.");
+            showAlert("Error al conectar con el servidor.");
         } finally {
             setIsSubmittingExercise(false);
         }
@@ -85,16 +109,18 @@ const RoutineManager = ({ coachId }) => {
         setNewExercise({ name: ex.Name, muscleGroup: ex.MuscleGroup || '', description: ex.Description || '' });
     };
 
-    const handleDeleteExercise = async (id) => {
-        if (!window.confirm("¿Seguro que deseas eliminar este ejercicio del catálogo?")) return;
-        try {
-            const response = await api.delete(`/routines/catalog/exercises/${id}`);
-            if (response.data.success || response.status === 200) {
-                fetchExercises();
+    const handleDeleteExercise = (id) => {
+        showConfirm("¿Seguro que deseas eliminar este ejercicio del catálogo?", async () => {
+            try {
+                const response = await api.delete(`/routines/catalog/exercises/${id}`);
+                if (response.data.success || response.status === 200) {
+                    fetchExercises();
+                }
+            } catch (error) {
+                console.error("Error al eliminar ejercicio:", error);
+                showAlert("Error al eliminar el ejercicio.");
             }
-        } catch (error) {
-            console.error("Error al eliminar ejercicio:", error);
-        }
+        });
     };
 
     const handleTemplateExerciseChange = (index, field, value) => {
@@ -140,7 +166,7 @@ const RoutineManager = ({ coachId }) => {
             const response = editingTemplateId ? await api.put(url, payload) : await api.post(url, payload);
             const data = response.data;
             if (data.success) {
-                alert(`Plantilla ${editingTemplateId ? 'actualizada' : 'creada'} exitosamente.`);
+                showAlert(`Plantilla ${editingTemplateId ? 'actualizada' : 'creada'} exitosamente.`);
                 setIsCreatingTemplate(false);
                 setEditingTemplateId(null);
                 setTemplateForm({ templateName: '', goal: '' });
@@ -148,11 +174,11 @@ const RoutineManager = ({ coachId }) => {
                 setActiveDay('Lunes');
                 fetchTemplates();
             } else {
-                alert(`Error: ${data.message}`);
+                showAlert(`Error: ${data.message}`);
             }
         } catch (error) {
             console.error("Error creando/editando plantilla:", error);
-            alert("Error al guardar la plantilla.");
+            showAlert("Error al guardar la plantilla.");
         } finally {
             setIsSubmittingTemplate(false);
         }
@@ -175,16 +201,18 @@ const RoutineManager = ({ coachId }) => {
         setIsCreatingTemplate(true);
     };
 
-    const handleDeleteTemplate = async (id) => {
-        if (!window.confirm("¿Seguro que deseas eliminar esta plantilla?")) return;
-        try {
-            const response = await api.delete(`/routines/templates/${id}`);
-            if (response.data.success || response.status === 200) {
-                fetchTemplates();
+    const handleDeleteTemplate = (id) => {
+        showConfirm("¿Seguro que deseas eliminar esta plantilla?", async () => {
+            try {
+                const response = await api.delete(`/routines/templates/${id}`);
+                if (response.data.success || response.status === 200) {
+                    fetchTemplates();
+                }
+            } catch (error) {
+                console.error("Error al eliminar plantilla:", error);
+                showAlert("Error al eliminar la plantilla.");
             }
-        } catch (error) {
-            console.error("Error al eliminar plantilla:", error);
-        }
+        });
     };
 
     return (
@@ -207,7 +235,13 @@ const RoutineManager = ({ coachId }) => {
                         onClick={() => { setActiveTab('templates'); setIsCreatingTemplate(false); setEditingTemplateId(null); }} 
                         style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: activeTab === 'templates' && !isCreatingTemplate ? '#3b82f6' : 'transparent', color: activeTab === 'templates' && !isCreatingTemplate ? '#fff' : '#8b8593' }}
                     >
-                        Plantillas Semanales
+                        Mis Plantillas
+                    </button>
+                    <button 
+                        onClick={() => { setActiveTab('all-templates'); setIsCreatingTemplate(false); setEditingTemplateId(null); }} 
+                        style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: activeTab === 'all-templates' && !isCreatingTemplate ? '#f59e0b' : 'transparent', color: activeTab === 'all-templates' && !isCreatingTemplate ? '#fff' : '#8b8593' }}
+                    >
+                        Plantillas de la Comunidad
                     </button>
                     <button 
                         onClick={() => { setActiveTab('catalog'); setIsCreatingTemplate(false); setEditingTemplateId(null); }} 
@@ -386,6 +420,59 @@ const RoutineManager = ({ coachId }) => {
                         </div>
                     )}
 
+                    {activeTab === 'all-templates' && !isCreatingTemplate && (
+                        <div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <h3 style={{ fontSize: '18px', fontWeight: 'bold' }} className="theme-dark-fix-text">Plantillas de la Comunidad</h3>
+                                <p style={{ color: '#8b8593', fontSize: '14px' }}>Explora las rutinas creadas por otros entrenadores.</p>
+                            </div>
+                            
+                            {loading ? (
+                                <div style={{ textAlign: 'center', padding: '40px', color: '#8b8593' }}>Cargando plantillas...</div>
+                            ) : allTemplates.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px', color: '#8b8593', background: '#f4f4f5', borderRadius: '16px' }} className="theme-dark-fix-bg">
+                                    No hay plantillas creadas por otros entrenadores.
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {allTemplates.map(tpl => (
+                                        <div className="setting-row" key={tpl.TemplateID} style={{ alignItems: 'flex-start' }}>
+                                            <div className="setting-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
+                                                <FaListUl />
+                                            </div>
+                                            <div className="setting-content" style={{ width: '100%' }}>
+                                                <div className="setting-title" style={{ fontSize: '18px' }}>{tpl.TemplateName}</div>
+                                                <div className="setting-desc" style={{ marginBottom: '12px' }}>
+                                                    Objetivo: <strong style={{ color: '#f59e0b' }}>{tpl.Goal || 'General'}</strong> • Creado por: <strong style={{ color: '#8b8593' }}>{tpl.CoachName || 'Entrenador'}</strong>
+                                                </div>
+                                                
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+                                                    {daysOfWeek.map(day => {
+                                                        const dayExercises = tpl.exercises?.filter(e => e.day === day) || [];
+                                                        if (dayExercises.length === 0) return null;
+                                                        return (
+                                                            <div key={day} style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} className="theme-dark-fix-bg theme-dark-fix-border">
+                                                                <h5 style={{ fontSize: '12px', fontWeight: 'bold', color: '#f59e0b', textTransform: 'uppercase', marginBottom: '8px' }}>{day}</h5>
+                                                                <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                                                                    {dayExercises.map((ex, idx) => (
+                                                                        <li key={idx} style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }} className="theme-dark-fix-text">
+                                                                            <span>• {ex.name}</span>
+                                                                            <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 'bold' }}>{ex.sets}x{ex.reps}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {isCreatingTemplate && (
                         <div className="fade-in">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '16px' }} className="theme-dark-fix-border">
@@ -503,6 +590,40 @@ const RoutineManager = ({ coachId }) => {
                     )}
                 </div>
             </div>
+            
+            <Modal
+                isOpen={dialog.isOpen}
+                onClose={() => setDialog({ ...dialog, isOpen: false })}
+                title={dialog.type === 'confirm' ? 'Confirmación' : 'Aviso'}
+                size="sm"
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        {dialog.type === 'confirm' && (
+                            <button 
+                                onClick={() => setDialog({ ...dialog, isOpen: false })}
+                                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #d1d5db', background: 'transparent', cursor: 'pointer' }}
+                            >
+                                Cancelar
+                            </button>
+                        )}
+                        <button 
+                            onClick={() => {
+                                setDialog({ ...dialog, isOpen: false });
+                                if (dialog.onConfirm) dialog.onConfirm();
+                            }}
+                            className={dialog.type === 'confirm' ? "btn-primary-modal" : "btn-pill-blue"}
+                            style={{ padding: '8px 16px' }}
+                        >
+                            Aceptar
+                        </button>
+                    </div>
+                }
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0' }}>
+                    {dialog.type === 'confirm' ? <FaExclamationTriangle color="#f59e0b" size={24} /> : <FaInfoCircle color="#3b82f6" size={24} />}
+                    <span style={{ fontSize: '15px' }}>{dialog.message}</span>
+                </div>
+            </Modal>
         </div>
     );
 };

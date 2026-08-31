@@ -116,23 +116,42 @@ exports.updatePlan = async (req, res) => {
     }
 };
 
-// DELETE /api/plans/:id (Archive logic)
+// DELETE /api/plans/:id (Archive or Permanent)
 exports.deletePlan = async (req, res) => {
     try {
         const { id } = req.params;
+        const { permanent } = req.query;
         const pool = await poolPromise;
         
-        const result = await pool.request()
-            .input('id', sql.Int, id)
-            .query("UPDATE Plans SET Status = 'I' WHERE PlanID = @id");
-            
-        if (result.rowsAffected[0] === 0) {
-            return res.status(404).json({ message: 'Plan not found' });
+        if (permanent === 'true') {
+            try {
+                const result = await pool.request()
+                    .input('id', sql.Int, id)
+                    .query("DELETE FROM Plans WHERE PlanID = @id");
+                    
+                if (result.rowsAffected[0] === 0) {
+                    return res.status(404).json({ message: 'Plan not found' });
+                }
+                return res.status(200).json({ message: 'Plan deleted permanently' });
+            } catch (fkError) {
+                if (fkError.message.includes('REFERENCE constraint')) {
+                    return res.status(400).json({ message: 'No se puede eliminar el plan porque hay socios u otros registros vinculados a él. Mantenlo archivado.' });
+                }
+                throw fkError;
+            }
+        } else {
+            const result = await pool.request()
+                .input('id', sql.Int, id)
+                .query("UPDATE Plans SET Status = 'I' WHERE PlanID = @id");
+                
+            if (result.rowsAffected[0] === 0) {
+                return res.status(404).json({ message: 'Plan not found' });
+            }
+                
+            res.status(200).json({ message: 'Plan archived successfully' });
         }
-            
-        res.status(200).json({ message: 'Plan archived successfully' });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: 'Error archiving plan', error: err.message });
+        res.status(500).json({ message: 'Error archiving/deleting plan', error: err.message });
     }
 };

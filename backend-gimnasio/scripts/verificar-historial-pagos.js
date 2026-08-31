@@ -70,7 +70,7 @@ Module.prototype.require = function(path) {
 };
 
 // Import the controller and db configuration after the mock is installed
-const { getPaymentHistory } = require('./controllers/paymentController');
+const { getPaymentHistory } = require('../controllers/paymentController');
 
 async function runTests() {
   console.log('===========================================================');

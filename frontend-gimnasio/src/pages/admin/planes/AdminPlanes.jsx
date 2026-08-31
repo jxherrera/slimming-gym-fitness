@@ -98,6 +98,18 @@ const AdminPlanes = () => {
     }
   };
 
+  const handlePermanentDelete = async (id) => {
+    if (window.confirm('🚨 CUIDADO: ¿Estás seguro de que deseas ELIMINAR PERMANENTEMENTE este plan? Esta acción no se puede deshacer.')) {
+      try {
+        await api.delete(`/plans/${id}?permanent=true`);
+        fetchPlanes(showArchived);
+      } catch (error) {
+        console.error('Error al eliminar plan:', error);
+        alert(error.response?.data?.message || 'Hubo un error al eliminar el plan.');
+      }
+    }
+  };
+
   return (
     <div className="admin-page fade-in">
       <div className="settings-main-card">
@@ -154,9 +166,14 @@ const AdminPlanes = () => {
                       <FiArchive /> Archivar
                     </button>
                   ) : (
-                    <button className="btn-pill-blue" style={{ background: '#10b981' }} onClick={() => handleRestore(plan.PlanID)} title="Restaurar">
-                      <FiCheckCircle /> Restaurar
-                    </button>
+                    <>
+                      <button className="btn-pill-blue" style={{ background: '#10b981' }} onClick={() => handleRestore(plan.PlanID)} title="Restaurar">
+                        <FiCheckCircle /> Restaurar
+                      </button>
+                      <button className="btn-pill-red" onClick={() => handlePermanentDelete(plan.PlanID)} title="Eliminar Definitivamente">
+                        Eliminar
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

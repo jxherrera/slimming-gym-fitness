@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { memberService } from '../../../services/memberService';
 import api from '../../../services/api';
 import { useToast } from '../../../hooks/useToast';
-import { FiUser, FiCheckCircle, FiXCircle, FiImage, FiFileText, FiDollarSign, FiInfo } from 'react-icons/fi';
+import { FiUser, FiCheckCircle, FiXCircle, FiImage, FiFileText, FiDollarSign, FiInfo, FiBarChart2, FiBell } from 'react-icons/fi';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import '../shared/admin-core.css';
 import './AdminPagosVerificacion.css';
 
@@ -35,7 +36,7 @@ const AdminPagosVerificacion = () => {
         }
       } else {
         const res = await api.get('/payments/history');
-        const list = res.data?.payments || [];
+        const list = res.data?.data || res.data?.payments || [];
         setHistory(list);
         
         if (list.length > 0) {
@@ -112,10 +113,68 @@ const AdminPagosVerificacion = () => {
             >
                 Historial de Pagos
             </button>
+            <button 
+                onClick={() => setActiveTab('stats')} 
+                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: activeTab === 'stats' ? '#10b981' : 'transparent', color: activeTab === 'stats' ? '#fff' : '#8b8593' }}
+            >
+                Métricas y Notificaciones
+            </button>
         </div>
 
-        {loading && ((activeTab === 'pending' && payments.length === 0) || (activeTab === 'history' && history.length === 0)) ? (
+        {loading && ((activeTab === 'pending' && payments.length === 0) || (activeTab === 'history' && history.length === 0) || activeTab === 'stats') ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#fff' }}>Cargando datos...</div>
+        ) : activeTab === 'stats' ? (
+          <div className="stats-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+            <div className="stats-card" style={{ background: '#1e1b4b', padding: '24px', borderRadius: '16px', border: '1px solid #312e81' }}>
+              <h3 style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}><FiBarChart2 /> Estado de Pagos Recientes</h3>
+              <div style={{ height: '300px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Aprobados', value: history.filter(p => p.paymentStatus === 'A').length || 1 },
+                        { name: 'Rechazados', value: history.filter(p => p.paymentStatus === 'R').length || 0 },
+                        { name: 'Pendientes', value: payments.length || 0 }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      <Cell fill="#10b981" />
+                      <Cell fill="#ef4444" />
+                      <Cell fill="#f59e0b" />
+                    </Pie>
+                    <Tooltip contentStyle={{ background: '#312e81', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="stats-card" style={{ background: '#1e1b4b', padding: '24px', borderRadius: '16px', border: '1px solid #312e81' }}>
+              <h3 style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}><FiBell /> Notificaciones Recientes</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {payments.slice(0, 3).map(p => (
+                  <div key={p.paymentId} style={{ padding: '12px', background: '#312e81', borderRadius: '8px', borderLeft: '4px solid #f59e0b' }}>
+                    <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>Nuevo pago de {p.memberName}</div>
+                    <div style={{ color: '#9ca3af', fontSize: '12px' }}>Requiere revisión por ${p.amountPaid}</div>
+                  </div>
+                ))}
+                {history.slice(0, 3).map(p => (
+                  <div key={p.paymentId} style={{ padding: '12px', background: '#312e81', borderRadius: '8px', borderLeft: `4px solid ${p.paymentStatus === 'A' ? '#10b981' : '#ef4444'}` }}>
+                    <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold' }}>Pago de {p.memberName} {p.paymentStatus === 'A' ? 'Aprobado' : 'Rechazado'}</div>
+                    <div style={{ color: '#9ca3af', fontSize: '12px' }}>Hace poco</div>
+                  </div>
+                ))}
+                {payments.length === 0 && history.length === 0 && (
+                  <div style={{ color: '#9ca3af', fontSize: '14px' }}>No hay notificaciones en este momento.</div>
+                )}
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="verification-layout">
             
@@ -132,8 +191,8 @@ const AdminPagosVerificacion = () => {
                       setRejectReason('');
                     }}
                   >
-                    <div className="item-avatar" style={{ background: activeTab === 'history' ? (payment.status === 'Approved' ? '#dcfce7' : '#fee2e2') : undefined, color: activeTab === 'history' ? (payment.status === 'Approved' ? '#16a34a' : '#ef4444') : undefined }}>
-                      {activeTab === 'history' ? (payment.status === 'Approved' ? <FiCheckCircle /> : <FiXCircle />) : <FiUser />}
+                    <div className="item-avatar" style={{ background: activeTab === 'history' ? (payment.paymentStatus === 'A' ? '#dcfce7' : '#fee2e2') : undefined, color: activeTab === 'history' ? (payment.paymentStatus === 'A' ? '#16a34a' : '#ef4444') : undefined }}>
+                      {activeTab === 'history' ? (payment.paymentStatus === 'A' ? <FiCheckCircle /> : <FiXCircle />) : <FiUser />}
                     </div>
                     <div className="item-details">
                       <div className="item-name">{payment.memberName}</div>
@@ -142,7 +201,7 @@ const AdminPagosVerificacion = () => {
                       </div>
                       <div className="item-date-ref">
                         {activeTab === 'history' ? (
-                          <span style={{ fontWeight: 'bold', color: payment.status === 'Approved' ? '#16a34a' : '#ef4444' }}>{payment.status === 'Approved' ? 'Aprobado' : 'Rechazado'}</span>
+                          <span style={{ fontWeight: 'bold', color: payment.paymentStatus === 'A' ? '#16a34a' : '#ef4444' }}>{payment.paymentStatus === 'A' ? 'Aprobado' : 'Rechazado'}</span>
                         ) : (
                           `Ref: ${payment.referenceNumber || 'Sin ref'}`
                         )} • {new Date(payment.paymentDate).toLocaleDateString()}

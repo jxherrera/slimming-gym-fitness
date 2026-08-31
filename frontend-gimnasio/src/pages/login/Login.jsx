@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { soloDigitosCedula, validarCedulaEC, validarEmail, validarPassword } from '../../utils/validaciones';
 import PasswordInput from '../../components/common/PasswordInput';
 import './Login.css';
 

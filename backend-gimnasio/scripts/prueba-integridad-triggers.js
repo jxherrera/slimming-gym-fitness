@@ -58,16 +58,14 @@ async function runStressTest() {
         const promises = [];
         
         // Disparamos múltiples actualizaciones al mismo tiempo (simulando peticiones web concurrentes masivas)
+        // Usamos los estados válidos del constraint CK_Payments_Status: 'P' (Pendiente) y 'A' (Aprobado)
         for(let i=0; i<NUM_UPDATES; i++) {
-            const newStatus = (i % 2 === 0) ? 'V' : 'A'; // Alternar entre Verificando y Aprobado
+            const newStatus = (i % 2 === 0) ? 'P' : 'A'; // Alternar entre Pendiente y Aprobado
             const req = pool.request()
                 .input('PayID', sql.Int, testPaymentId)
                 .input('NewStatus', sql.Char(1), newStatus)
                 .input('ModifiedBy', sql.VarChar(50), `StressTester_${i}`)
                 .query(`
-                    -- Guardar el modificador temporalmente en CONTEXT_INFO si es SQL Server o usar tabla temporal.
-                    -- Dado que el trigger trg_AuditPaymentStatus puede o no requerir LastModifiedBy explícito,
-                    -- simplemente hacemos el UPDATE.
                     UPDATE Payments SET Status = @NewStatus WHERE PaymentID = @PayID
                 `);
             promises.push(req);
@@ -86,24 +84,8 @@ async function runStressTest() {
                 WHERE TableName = 'Payments' AND EntityID = @EntityID
             `);
         
-        // Debe existir 1 inserción inicial + NUM_UPDATES actualizaciones
         const eventsLogged = auditRes.recordset[0].EventCount;
         console.log(`🔎 Registros de auditoría encontrados para este pago: ${eventsLogged}`);
-        
-        // Nota: A veces en concurrencia extrema SQL Server bloquea transacciones pequeñas si no hay retry.
-        // Si hay una discrepancia masiva, significa que los triggers no están soportando la concurrencia.
-        
-        // 4. Teardown: Borrado de datos y probar si el borrado de pago registra auditoría si está programado
-        console.log('\n[Fase 4] Limpiando datos de prueba (Teardown)...');
-        await pool.request()
-            .input('PayID', sql.Int, testPaymentId)
-            .query('DELETE FROM Payments WHERE PaymentID = @PayID');
-        console.log('✅ Pago de prueba eliminado.');
-
-        await pool.request()
-            .input('SubID', sql.Int, testSubscriptionId)
-            .query('DELETE FROM Subscriptions WHERE SubscriptionID = @SubID');
-        console.log('✅ Suscripción de prueba eliminada.');
         
         console.log('\n===========================================================');
         console.log('🎉 PRUEBAS DE ESTRÉS COMPLETADAS CON ÉXITO');
@@ -113,7 +95,27 @@ async function runStressTest() {
     } catch (err) {
         console.error('❌ ERROR DURANTE LAS PRUEBAS DE ESTRÉS:', err);
     } finally {
+        // 4. Teardown: Limpieza de datos de prueba garantizada
         if (pool) {
+            console.log('\n[Fase 4] Limpiando datos de prueba (Teardown)...');
+            try {
+                if (testPaymentId) {
+                    await pool.request()
+                        .input('PayID', sql.Int, testPaymentId)
+                        .query('DELETE FROM Payments WHERE PaymentID = @PayID');
+                    console.log('✅ Pago de prueba eliminado.');
+                }
+                if (testSubscriptionId) {
+                    await pool.request()
+                        .input('SubID', sql.Int, testSubscriptionId)
+                        .query('DELETE FROM Subscriptions WHERE SubscriptionID = @SubID');
+                    console.log('✅ Suscripción de prueba eliminada.');
+                }
+                // Limpiar cualquier residuo previo por seguridad
+                await pool.request().query("DELETE FROM Payments WHERE PaymentMethod = 'StressTest'");
+            } catch (cleanupErr) {
+                console.error('Error al limpiar datos temporales:', cleanupErr);
+            }
             pool.close();
             console.log('Conexión cerrada.');
         }

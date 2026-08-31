@@ -8,31 +8,47 @@ import './AdminPagosVerificacion.css';
 
 const AdminPagosVerificacion = () => {
   const toast = useToast();
+  const [activeTab, setActiveTab] = useState('pending');
   const [payments, setPayments] = useState([]);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [verifying, setVerifying] = useState(false);
 
-  // Cargar pagos pendientes
+  // Cargar pagos pendientes e historial
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/payments/pending');
-      const list = res.data?.payments || [];
-      setPayments(list);
-      
-      // Auto-seleccionar el primero si no hay ninguno seleccionado o si el seleccionado ya no está en la lista
-      if (list.length > 0) {
-        if (!selectedPayment || !list.some(p => p.paymentId === selectedPayment.paymentId)) {
-          setSelectedPayment(list[0]);
+      if (activeTab === 'pending') {
+        const res = await api.get('/payments/pending');
+        const list = res.data?.payments || [];
+        setPayments(list);
+        
+        // Auto-seleccionar el primero si no hay ninguno seleccionado o si el seleccionado ya no está en la lista
+        if (list.length > 0) {
+          if (!selectedPayment || !list.some(p => p.paymentId === selectedPayment.paymentId)) {
+            setSelectedPayment(list[0]);
+          }
+        } else {
+          setSelectedPayment(null);
         }
       } else {
-        setSelectedPayment(null);
+        const res = await api.get('/payments/history');
+        const list = res.data?.payments || [];
+        setHistory(list);
+        
+        if (list.length > 0) {
+          if (!selectedPayment || !list.some(p => p.paymentId === selectedPayment.paymentId)) {
+            setSelectedPayment(list[0]);
+          }
+        } else {
+          setSelectedPayment(null);
+        }
       }
     } catch (error) {
-      console.error('Error al obtener pagos pendientes:', error);
-      toast.error('No se pudieron obtener los comprobantes pendientes del servidor.');
+      console.error('Error al obtener pagos:', error);
+      toast.error('No se pudieron obtener los datos del servidor.');
     } finally {
       setLoading(false);
     }
@@ -40,7 +56,7 @@ const AdminPagosVerificacion = () => {
 
   useEffect(() => {
     fetchPayments();
-  }, []);
+  }, [activeTab]);
 
   const handleVerify = async (status) => {
     if (!selectedPayment) return;
@@ -83,16 +99,31 @@ const AdminPagosVerificacion = () => {
           Revisa y aprueba los pagos reportados por los socios para reactivar sus suscripciones de forma transaccional.
         </p>
 
-        {loading && payments.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#fff' }}>Cargando transacciones pendientes...</div>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <button 
+                onClick={() => setActiveTab('pending')} 
+                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: activeTab === 'pending' ? '#f59e0b' : 'transparent', color: activeTab === 'pending' ? '#fff' : '#8b8593' }}
+            >
+                Pendientes de Revisión
+            </button>
+            <button 
+                onClick={() => setActiveTab('history')} 
+                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: activeTab === 'history' ? '#3b82f6' : 'transparent', color: activeTab === 'history' ? '#fff' : '#8b8593' }}
+            >
+                Historial de Pagos
+            </button>
+        </div>
+
+        {loading && ((activeTab === 'pending' && payments.length === 0) || (activeTab === 'history' && history.length === 0)) ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#fff' }}>Cargando datos...</div>
         ) : (
           <div className="verification-layout">
             
-            {/* COLUMNA IZQUIERDA: LISTA PENDIENTES */}
+            {/* COLUMNA IZQUIERDA: LISTA */}
             <div className="verification-list-panel">
-              <div className="panel-header-badge">Transacciones Pendientes ({payments.length})</div>
+              <div className="panel-header-badge">{activeTab === 'pending' ? `Transacciones Pendientes (${payments.length})` : `Historial (${history.length})`}</div>
               <div className="payments-scroll-list">
-                {payments.map(payment => (
+                {(activeTab === 'pending' ? payments : history).map(payment => (
                   <div 
                     key={payment.paymentId}
                     className={`payment-list-item ${selectedPayment?.paymentId === payment.paymentId ? 'selected' : ''}`}
@@ -101,22 +132,33 @@ const AdminPagosVerificacion = () => {
                       setRejectReason('');
                     }}
                   >
-                    <div className="item-avatar"><FiUser /></div>
+                    <div className="item-avatar" style={{ background: activeTab === 'history' ? (payment.status === 'Approved' ? '#dcfce7' : '#fee2e2') : undefined, color: activeTab === 'history' ? (payment.status === 'Approved' ? '#16a34a' : '#ef4444') : undefined }}>
+                      {activeTab === 'history' ? (payment.status === 'Approved' ? <FiCheckCircle /> : <FiXCircle />) : <FiUser />}
+                    </div>
                     <div className="item-details">
                       <div className="item-name">{payment.memberName}</div>
                       <div className="item-meta">
                         {payment.planName} • <strong className="item-amount">${parseFloat(payment.amountPaid).toFixed(2)}</strong>
                       </div>
                       <div className="item-date-ref">
-                        Ref: {payment.referenceNumber || 'Sin ref'} • {new Date(payment.paymentDate).toLocaleDateString()}
+                        {activeTab === 'history' ? (
+                          <span style={{ fontWeight: 'bold', color: payment.status === 'Approved' ? '#16a34a' : '#ef4444' }}>{payment.status === 'Approved' ? 'Aprobado' : 'Rechazado'}</span>
+                        ) : (
+                          `Ref: ${payment.referenceNumber || 'Sin ref'}`
+                        )} • {new Date(payment.paymentDate).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
                 ))}
 
-                {payments.length === 0 && (
+                {activeTab === 'pending' && payments.length === 0 && (
                   <div className="empty-payments-state">
                     🎉 ¡Todo al día! No hay comprobantes pendientes de verificación en este momento.
+                  </div>
+                )}
+                {activeTab === 'history' && history.length === 0 && (
+                  <div className="empty-payments-state">
+                    No hay pagos en el historial.
                   </div>
                 )}
               </div>
@@ -177,36 +219,38 @@ const AdminPagosVerificacion = () => {
                   </div>
 
                   {/* Acciones de Verificación */}
-                  <div className="verification-actions-card">
-                    <div className="reject-reason-container">
-                      <label htmlFor="reject-reason-input"><FiFileText /> Observaciones o motivo de rechazo (opcional):</label>
-                      <input 
-                        type="text" 
-                        id="reject-reason-input"
-                        placeholder="Ej: La referencia no coincide con el depósito..."
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        className="reason-input"
-                      />
-                    </div>
+                  {activeTab === 'pending' && (
+                    <div className="verification-actions-card">
+                      <div className="reject-reason-container">
+                        <label htmlFor="reject-reason-input"><FiFileText /> Observaciones o motivo de rechazo (opcional):</label>
+                        <input 
+                          type="text" 
+                          id="reject-reason-input"
+                          placeholder="Ej: La referencia no coincide con el depósito..."
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          className="reason-input"
+                        />
+                      </div>
 
-                    <div className="action-buttons">
-                      <button 
-                        className="btn-verify-approve"
-                        onClick={() => handleVerify('A')}
-                        disabled={verifying}
-                      >
-                        <FiCheckCircle /> Aprobar Transacción
-                      </button>
-                      <button 
-                        className="btn-verify-reject"
-                        onClick={() => handleVerify('R')}
-                        disabled={verifying}
-                      >
-                        <FiXCircle /> Rechazar Pago
-                      </button>
+                      <div className="action-buttons">
+                        <button 
+                          className="btn-verify-approve"
+                          onClick={() => handleVerify('A')}
+                          disabled={verifying}
+                        >
+                          <FiCheckCircle /> Aprobar Transacción
+                        </button>
+                        <button 
+                          className="btn-verify-reject"
+                          onClick={() => handleVerify('R')}
+                          disabled={verifying}
+                        >
+                          <FiXCircle /> Rechazar Pago
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                 </div>
               ) : (

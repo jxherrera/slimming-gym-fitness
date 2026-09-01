@@ -81,7 +81,7 @@ function MainLayout() {
               <Route path="/admin/pagos/verificacion" element={<ProtectedRoute allowedRoles={['admin']}><AdminPagosVerificacion /></ProtectedRoute>} />
               <Route path="/admin/horarios" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><AdminHorarios /></ProtectedRoute>} />
               <Route path="/admin/correos" element={<ProtectedRoute allowedRoles={['admin']}><AdminCorreos /></ProtectedRoute>} />
-              <Route path="/admin/accesos" element={<ProtectedRoute allowedRoles={['admin']}><AdminAccesos /></ProtectedRoute>} />
+              <Route path="/admin/accesos" element={<ProtectedRoute allowedRoles={['admin', 'coach']}><AdminAccesos /></ProtectedRoute>} />
             </Route>
           </Routes>
         </Suspense>

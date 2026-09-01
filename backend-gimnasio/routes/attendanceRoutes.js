@@ -4,7 +4,7 @@ const attendanceController = require('../controllers/attendanceController');
 const { authMiddleware, checkRole } = require('../middleware/authMiddleware');
 
 // El control de ingreso lo opera la recepcion desde el panel administrativo.
-router.use(authMiddleware, checkRole(['Admin']));
+router.use(authMiddleware, checkRole(['Admin', 'Coach']));
 
 // POST /api/attendance        -> validar y registrar el ingreso de un socio
 router.post('/', attendanceController.registerAttendance);

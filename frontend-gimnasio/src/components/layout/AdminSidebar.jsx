@@ -138,6 +138,12 @@ const AdminSidebar = ({ isCollapsed, toggleCollapse }) => {
             ]
           }
         ]
+      },
+      {
+        category: 'Recepción',
+        items: [
+          { path: '/admin/accesos', name: 'Control de Ingreso', icon: <FaDoorOpen /> }
+        ]
       }
     ],
     member: [

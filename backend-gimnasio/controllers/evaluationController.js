@@ -5,6 +5,10 @@ const addEvaluation = async (req, res) => {
     try {
         const { userId, coachId, weightKg, bodyFatPercentage, muscleMassPercentage } = req.body;
 
+        if (req.user && req.user.role === 'Member' && String(req.user.userId) !== String(userId)) {
+            return res.status(403).json({ success: false, message: 'No tienes permisos para registrar la evaluación de otro usuario.' });
+        }
+
         if (!userId || !coachId || !weightKg) {
             return res.status(400).json({ success: false, message: 'Faltan datos obligatorios (Usuario, Entrenador o Peso).' });
         }

@@ -52,7 +52,7 @@ const checkOwnership = (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({ success: false, message: 'Acceso denegado. Sesión no válida.' });
     }
-    if (req.user.role === 'Admin' || String(req.user.userId) === String(req.params.id)) {
+    if (req.user.role === 'Admin' || String(req.user.userId) === String(req.params.id || req.params.userId)) {
         return next();
     }
     return res.status(403).json({ success: false, message: 'No puedes acceder a datos de otro usuario.' });

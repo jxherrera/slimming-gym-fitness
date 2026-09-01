@@ -262,6 +262,8 @@ const ProgressChart = ({ userId }) => {
               fillOpacity={1}
               fill={`url(#colorMetric-${metric})`}
               strokeWidth={3}
+              dot={{ stroke: currentConfig.color, strokeWidth: 2, fill: '#1e1e24', r: 4 }}
+              activeDot={{ stroke: currentConfig.color, strokeWidth: 2, fill: '#fff', r: 6 }}
             />
           </AreaChart>
         </ResponsiveContainer>

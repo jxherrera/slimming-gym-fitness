@@ -180,7 +180,8 @@ const ProgressChart = ({ userId }) => {
   const diff = (lastVal - firstVal).toFixed(1);
 
   // Formatear datos para el gráfico de Recharts
-  const chartData = history.map(item => ({
+  const chartData = history.map((item, index) => ({
+    id: index,
     name: item.date.split('-').slice(1).join('/'),
     valor: item[currentConfig.key],
     ...item
@@ -234,7 +235,8 @@ const ProgressChart = ({ userId }) => {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
             <XAxis
-              dataKey="name"
+              dataKey="id"
+              tickFormatter={(id) => chartData[id]?.name || ''}
               stroke="#888"
               tickLine={false}
               style={{ fontSize: esMovil ? '10px' : '11px' }}
@@ -251,6 +253,7 @@ const ProgressChart = ({ userId }) => {
               tickCount={esMovil ? 4 : 6}
             />
             <Tooltip
+              labelFormatter={(id) => chartData[id]?.name || ''}
               contentStyle={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
               labelStyle={{ fontWeight: 'bold', color: '#ff3b3b' }}
             />
